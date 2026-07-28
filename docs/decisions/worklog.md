@@ -5,6 +5,40 @@ with justification, follow-ups discovered.
 
 ---
 
+## fu-04d-polish — 2026-07-28
+
+Owner feedback pass.
+
+### Changed
+
+- **Cloze cards fill the blank in place.** `ClozeParser.segments` splits the sentence into
+  pieces so the study screen keeps one sentence on screen and swaps only the hidden part on
+  the flip; the answer word is emphasised. The note's own back is now a separate explanation
+  rather than being appended to the revealed sentence.
+- **The daily reminder is real.** `ReminderScheduler` requests authorization only when the
+  switch is turned on and schedules a repeating `UNCalendarNotificationTrigger`.
+- **A refused permission no longer flips the switch back.** The user's choice is kept and
+  the screen explains that iOS is holding notifications back — the thing they can act on.
+- **The import flow leads with a copyable prompt** for ChatGPT that states the exact CSV
+  format, localized so the assistant answers in the user's language.
+- Trash deletion and restore are now covered by a UI test, as is the reminder in both the
+  granted and refused cases, and the prompt card.
+
+### Verification
+
+`ci/test.sh` green: SwiftLint 0 violations in 71 files, 95 domain and repository tests, and
+12 UI tests. Checked by hand on iOS 17.4 and iOS 26.4.
+
+### Notes
+
+- The missing Library, Groups and Settings tabs on iOS 26 were a stale build on that
+  simulator, not a bug.
+- Two UI-test lessons worth keeping: a `Toggle` in a `List` reports a frame covering the
+  whole row, so `tap()` lands on the label and does not flip it — aim at the trailing edge;
+  and reaching a screen through a tab is more robust than through a localized back button.
+
+---
+
 ## fu-04c-app-complete-on-mocks — 2026-07-28
 
 Owner goal: complete the app in all its parts except the iCloud connection, on mock data,

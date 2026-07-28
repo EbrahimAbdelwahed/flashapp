@@ -89,6 +89,40 @@ public enum ClozeParser {
         return rendered
     }
 
+    /// Splits `source` into the pieces the study screen renders.
+    ///
+    /// Deletions of `group` become one answer segment — the blank before the flip, the real
+    /// text after it. Every other deletion is always shown revealed, because only one group
+    /// is being asked about.
+    public static func segments(_ source: String, group: Int, revealed: Bool) -> [ClozeSegment] {
+        let result = parse(source)
+        guard !result.deletions.isEmpty else {
+            return [ClozeSegment(text: source, isAnswer: false)]
+        }
+
+        var segments: [ClozeSegment] = []
+        var cursor = source.startIndex
+
+        func appendLiteral(upTo index: String.Index) {
+            let literal = String(source[cursor..<index])
+            if !literal.isEmpty { segments.append(ClozeSegment(text: literal, isAnswer: false)) }
+        }
+
+        for deletion in result.deletions {
+            appendLiteral(upTo: deletion.range.lowerBound)
+            if deletion.group == group {
+                let text = revealed ? deletion.text : (deletion.hint.map { "[\($0)]" } ?? maskPlaceholder)
+                segments.append(ClozeSegment(text: text, isAnswer: true))
+            } else {
+                segments.append(ClozeSegment(text: deletion.text, isAnswer: false))
+            }
+            cursor = deletion.range.upperBound
+        }
+        appendLiteral(upTo: source.endIndex)
+
+        return segments
+    }
+
     // MARK: - Body grammar
 
     private enum BodyParse {

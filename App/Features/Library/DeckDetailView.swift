@@ -41,6 +41,7 @@ struct DeckDetailView: View {
                         NoteSummaryLabel(summary: summary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("note.row")
                     .swipeActions {
                         Button("common.delete", role: .destructive) {
                             Task {
@@ -48,6 +49,7 @@ struct DeckDetailView: View {
                                 await reload()
                             }
                         }
+                        .accessibilityIdentifier("note.delete")
                     }
                 }
             }

@@ -62,7 +62,7 @@ struct RootTabView: View {
         case .groups:
             GroupsView()
         case .settings:
-            SettingsView(library: environment.library)
+            SettingsView(library: environment.library, reminders: environment.reminders)
         }
     }
 }

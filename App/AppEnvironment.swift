@@ -19,9 +19,11 @@ final class AppEnvironment {
 
     let logger: Logger
     let library: any LibraryRepository
+    let reminders: any ReminderScheduling
 
-    init(library: (any LibraryRepository)? = nil) {
+    init(library: (any LibraryRepository)? = nil, reminders: (any ReminderScheduling)? = nil) {
         self.logger = Logger(subsystem: Self.loggingSubsystem, category: "app")
         self.library = library ?? InMemoryLibrary()
+        self.reminders = reminders ?? StubReminderScheduler.fromEnvironment() ?? ReminderScheduler()
     }
 }

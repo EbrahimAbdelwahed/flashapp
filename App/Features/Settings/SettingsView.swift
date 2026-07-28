@@ -4,6 +4,7 @@ import SwiftUI
 /// Settings, and the host for backup, data and support (spec §A11.2).
 struct SettingsView: View {
     let library: any LibraryRepository
+    let reminders: any ReminderScheduling
 
     @State private var settings: StudySettings = .default
     @State private var status: SyncStatus = .upToDate(lastSyncedAt: nil)
@@ -11,6 +12,8 @@ struct SettingsView: View {
     @State private var isRestoring = false
     @State private var backupFile: ExportedFile?
     @State private var restoreSummary: RestoreSummary?
+    /// Set when the reminder is on but iOS will not deliver it.
+    @State private var isNotificationPermissionMissing = false
 
     var body: some View {
         List {
@@ -23,7 +26,12 @@ struct SettingsView: View {
         }
         .navigationTitle("tab.settings")
         .task { await reload() }
-        .onChange(of: settings) { Task { await library.updateSettings(settings) } }
+        .onChange(of: settings) { previous, updated in
+            // The reminder toggle persists itself, because it also has to report back what
+            // the system granted.
+            guard previous.reminder == updated.reminder else { return }
+            Task { await library.updateSettings(updated) }
+        }
         .fileImporter(isPresented: $isRestoring, allowedContentTypes: [.json, .data]) { result in
             Task { await restore(result) }
         }
@@ -96,8 +104,23 @@ struct SettingsView: View {
 
     private var reminderSection: some View {
         Section("settings.reminder") {
-            Toggle("settings.reminder.enabled", isOn: $settings.reminder.isEnabled)
-                .accessibilityIdentifier("settings.reminder")
+            Toggle("settings.reminder.enabled", isOn: Binding(
+                get: { settings.reminder.isEnabled },
+                set: { isOn in
+                    var updated = settings
+                    updated.reminder.isEnabled = isOn
+                    settings = updated
+                    Task { await persist(updated) }
+                }
+            ))
+            .accessibilityIdentifier("settings.reminder")
+            if isNotificationPermissionMissing {
+                Label("settings.reminder.blocked", systemImage: "exclamationmark.triangle")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+                    .accessibilityIdentifier("settings.reminder.blocked")
+            }
+
             if settings.reminder.isEnabled {
                 DatePicker(
                     "settings.reminder.time",
@@ -160,6 +183,7 @@ struct SettingsView: View {
                 TrashView(library: library)
             } label: {
                 Label("library.trash_title", systemImage: "trash")
+                    .accessibilityIdentifier("settings.trash")
             }
 
             Button(role: .destructive) {
@@ -194,6 +218,17 @@ struct SettingsView: View {
     private func reload() async {
         settings = await library.settings()
         status = await library.syncStatus()
+    }
+
+    /// Saves the settings and reflects what the system actually granted: if notification
+    /// permission is refused, the switch goes back off instead of promising a reminder that
+    /// will never arrive.
+    /// Saves the choice, then reports whether iOS will actually deliver it. The switch is
+    /// never moved behind the user's back.
+    private func persist(_ updated: StudySettings) async {
+        await library.updateSettings(updated)
+        let scheduled = await reminders.apply(updated.reminder)
+        isNotificationPermissionMissing = updated.reminder.isEnabled && !scheduled
     }
 
     private func makeBackup() async {

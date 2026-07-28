@@ -32,17 +32,12 @@ public enum CardGenerator {
                 CardTemplate(
                     templateKey: clozeKey(group: group),
                     front: ClozeParser.render(note.front, maskGroup: group),
-                    back: clozeBack(of: note)
+                    back: ClozeParser.render(note.front, maskGroup: nil),
+                    extra: note.back?.isEmpty == false ? note.back : nil,
+                    cloze: ClozeContext(source: note.front, group: group)
                 )
             }
         }
     }
 
-    /// The answer side of a cloze card: the whole sentence revealed, plus the note's back
-    /// as an extra explanation when it carries one.
-    private static func clozeBack(of note: Note) -> String {
-        let revealed = ClozeParser.render(note.front, maskGroup: nil)
-        guard let extra = note.back, !extra.isEmpty else { return revealed }
-        return "\(revealed)\n\n\(extra)"
-    }
 }

@@ -24,6 +24,7 @@ struct TrashView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityIdentifier("trash.row")
                 .swipeActions {
                     Button("trash.restore") {
                         Task {
@@ -32,6 +33,7 @@ struct TrashView: View {
                         }
                     }
                     .tint(.green)
+                    .accessibilityIdentifier("trash.restore")
                 }
             }
         }

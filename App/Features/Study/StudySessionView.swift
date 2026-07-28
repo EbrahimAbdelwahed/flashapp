@@ -59,22 +59,10 @@ struct StudySessionView: View {
 
     private var card: some View {
         ScrollView {
-            VStack(spacing: Spacing.loose) {
-                Text(model.current?.front ?? "")
-                    .font(.title2)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-
-                if model.isRevealed {
-                    Divider()
-                    Text(model.current?.back ?? "")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
+            if let current = model.current {
+                CardFaceView(card: current, isRevealed: model.isRevealed)
+                    .padding(Spacing.loose)
             }
-            .padding(Spacing.loose)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Opaque, not glass: study text must never fight a blurred background.
@@ -85,7 +73,6 @@ struct StudySessionView: View {
         .padding(.horizontal, Spacing.normal)
         .contentShape(Rectangle())
         .onTapGesture { if !model.isRevealed { model.reveal() } }
-        .accessibilityElement(children: .combine)
     }
 
     private var revealButton: some View {

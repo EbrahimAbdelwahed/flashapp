@@ -88,6 +88,7 @@ struct LibraryView: View {
             } label: {
                 Label("library.trash \(model.trashed.count)", systemImage: "trash")
             }
+            .accessibilityIdentifier("library.trash")
         }
     }
 

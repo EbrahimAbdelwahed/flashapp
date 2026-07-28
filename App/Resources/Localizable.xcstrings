@@ -1423,6 +1423,96 @@
         }
       }
     },
+    "import.prompt.body": {
+      "comment": "The prompt the user copies. Keep the CSV header and cloze syntax verbatim.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are helping me make flashcards. Answer with ONLY a CSV file, no commentary.\n\nColumns, in this exact order, with this exact header row:\ntype,front,back,tags\n\nRules:\n- type is basic, reversed or cloze.\n- basic: front is the question, back is the answer.\n- reversed: use it for translations and pairs; it makes two cards automatically.\n- cloze: put the hidden words in the front as {{c1::word}}. Use c1, c2, c3 for different blanks in the same sentence. Leave back empty, or use it for a short note.\n- tags: separated by semicolons, e.g. anatomy;heart\n- Wrap any field containing a comma in double quotes.\n- Keep each front under 200 characters.\n\nNow make cards from this material:"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mi stai aiutando a creare delle flashcard. Rispondi SOLO con un file CSV, senza commenti.\n\nColonne, in questo ordine esatto, con questa riga di intestazione esatta:\ntype,front,back,tags\n\nRegole:\n- type è basic, reversed o cloze.\n- basic: front è la domanda, back è la risposta.\n- reversed: usalo per traduzioni e coppie; crea due schede automaticamente.\n- cloze: metti le parole da nascondere nel front come {{c1::parola}}. Usa c1, c2, c3 per buchi diversi nella stessa frase. Lascia back vuoto, oppure usalo per una nota breve.\n- tags: separati da punto e virgola, es. anatomia;cuore\n- Metti tra virgolette doppie ogni campo che contiene una virgola.\n- Tieni ogni front sotto i 200 caratteri.\n\nOra crea le schede da questo materiale:"
+          }
+        }
+      }
+    },
+    "import.prompt.copied": {
+      "comment": "Confirms the copy.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiato"
+          }
+        }
+      }
+    },
+    "import.prompt.copy": {
+      "comment": "Copies the prompt.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy prompt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia il prompt"
+          }
+        }
+      }
+    },
+    "import.prompt.explanation": {
+      "comment": "Explains what to do with the prompt.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy this, paste it into ChatGPT with your notes, and save the answer as a .csv file."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copialo, incollalo in ChatGPT insieme ai tuoi appunti e salva la risposta come file .csv."
+          }
+        }
+      }
+    },
+    "import.prompt.title": {
+      "comment": "Header of the copyable prompt card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask an AI to prepare the file"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fai preparare il file a una IA"
+          }
+        }
+      }
+    },
     "import.reason.back": {
       "comment": "Rejection: missing back.",
       "extractionState": "manual",
@@ -2449,6 +2539,42 @@
         }
       }
     },
+    "reminder.body": {
+      "comment": "Notification body.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A few cards are waiting for you."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ti aspettano alcune schede."
+          }
+        }
+      }
+    },
+    "reminder.title": {
+      "comment": "Notification title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to study"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "È ora di studiare"
+          }
+        }
+      }
+    },
     "settings.about": {
       "comment": "About section header.",
       "extractionState": "manual",
@@ -2733,6 +2859,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Promemoria"
+          }
+        }
+      }
+    },
+    "settings.reminder.blocked": {
+      "comment": "Shown when the reminder is on but iOS notifications are off for the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS notifications are off for Flash Up. Turn them on in iOS Settings to get this reminder."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le notifiche di iOS sono disattivate per Flash Up. Attivale in Impostazioni per ricevere il promemoria."
           }
         }
       }

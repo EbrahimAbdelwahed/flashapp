@@ -56,20 +56,43 @@ struct CardGeneratorTests {
         #expect(cards.first?.front == "[...] e [...]")
     }
 
-    @Test("The cloze answer reveals everything and appends the note's back")
-    func clozeBackRevealsAndExplains() {
+    @Test("A cloze answer keeps the explanation separate from the sentence")
+    func clozeKeepsTheExplanationSeparate() {
         let cards = CardGenerator.generate(
             note(.cloze, front: "{{c1::Roma}} è la capitale", back: "Dal 1871")
         )
 
-        #expect(cards.first?.back == "Roma è la capitale\n\nDal 1871")
+        #expect(cards.first?.back == "Roma è la capitale")
+        #expect(cards.first?.extra == "Dal 1871")
     }
 
-    @Test("A cloze answer with no extra explanation is just the revealed sentence")
-    func clozeBackWithoutExplanation() {
+    @Test("A cloze card carries the source and group so the blank can be filled in place")
+    func clozeCarriesItsContext() {
         let cards = CardGenerator.generate(note(.cloze, front: "{{c1::Roma}} è la capitale"))
 
-        #expect(cards.first?.back == "Roma è la capitale")
+        #expect(cards.first?.cloze == ClozeContext(source: "{{c1::Roma}} è la capitale", group: 1))
+        #expect(cards.first?.extra == nil)
+    }
+
+    @Test("Flipping a cloze card swaps the blank for the answer, in place")
+    func clozeSegmentsSwapOnlyTheBlank() {
+        let source = "{{c1::Roma}} è la capitale d'{{c2::Italia}}"
+
+        let hidden = ClozeParser.segments(source, group: 1, revealed: false)
+        let shown = ClozeParser.segments(source, group: 1, revealed: true)
+
+        #expect(hidden.map(\.text) == ["[...]", " è la capitale d'", "Italia"])
+        #expect(shown.map(\.text) == ["Roma", " è la capitale d'", "Italia"])
+        // Only the answered group is marked, so only it is emphasised on screen.
+        #expect(shown.map(\.isAnswer) == [true, false, false])
+    }
+
+    @Test("A hint stands in for the blank until the card is flipped")
+    func clozeHintIsUsedAsTheBlank() {
+        let source = "La mitosi ha {{c1::quattro::numero}} fasi"
+
+        #expect(ClozeParser.segments(source, group: 1, revealed: false)[1].text == "[numero]")
+        #expect(ClozeParser.segments(source, group: 1, revealed: true)[1].text == "quattro")
     }
 
     @Test("A note whose cloze deletions are all malformed produces no cards")

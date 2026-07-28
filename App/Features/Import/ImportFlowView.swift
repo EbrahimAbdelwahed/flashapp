@@ -69,6 +69,10 @@ struct ImportFlowView: View {
                 Text("import.format_help")
             }
 
+            Section {
+                CSVPromptCard()
+            }
+
             Section("import.destination") {
                 Picker("import.destination", selection: $model.destination) {
                     Text("import.new_deck").tag(ImportModel.Destination.newDeck)

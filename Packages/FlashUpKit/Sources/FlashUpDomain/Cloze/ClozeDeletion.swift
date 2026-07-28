@@ -60,3 +60,30 @@ public struct ClozeParseResult: Equatable, Sendable {
         Set(deletions.map(\.group))
     }
 }
+
+/// One piece of a cloze sentence as it is shown to the learner.
+///
+/// Splitting the sentence into segments lets the study screen keep one single sentence on
+/// screen and swap only the hidden part when the card is flipped, instead of repeating the
+/// whole sentence underneath.
+public struct ClozeSegment: Equatable, Sendable {
+    public let text: String
+    /// True for the piece that is hidden before the flip and filled in after it.
+    public let isAnswer: Bool
+
+    public init(text: String, isAnswer: Bool) {
+        self.text = text
+        self.isAnswer = isAnswer
+    }
+}
+
+/// Where a cloze card came from, so the study screen can re-render it in either state.
+public struct ClozeContext: Equatable, Sendable {
+    public let source: String
+    public let group: Int
+
+    public init(source: String, group: Int) {
+        self.source = source
+        self.group = group
+    }
+}

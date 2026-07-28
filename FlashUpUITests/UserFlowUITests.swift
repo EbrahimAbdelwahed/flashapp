@@ -2,6 +2,13 @@ import XCTest
 
 /// The journeys a real user takes. Each test drives the app the way a person would, from a
 /// clean install, and asserts on what is actually on screen.
+/// Mirrors `StubReminderScheduler.environmentKey`; UI tests cannot import the app target.
+enum ReminderStubEnvironment {
+    static let key = "FLASHUP_UI_TEST_REMINDERS"
+    static let granted = "granted"
+    static let denied = "denied"
+}
+
 final class UserFlowUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -21,6 +28,28 @@ final class UserFlowUITests: XCTestCase {
         let skip = app.buttons["onboarding.skip"]
         if skip.waitForExistence(timeout: 5) {
             skip.tap()
+        }
+    }
+
+    /// Taps the switch itself.
+    ///
+    /// A `Toggle` in a `List` reports a frame that covers the whole row, so `tap()` lands on
+    /// the label — which does not flip it. Aiming at the trailing edge hits the control.
+    private func flip(_ toggle: XCUIElement) {
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+    }
+
+    /// Goes back one level. The back button is identified by role rather than by its label,
+    /// which is the previous screen's title and therefore localized.
+    private func goBack() {
+        let back = app.navigationBars.buttons.matching(
+            NSPredicate(format: "identifier == %@ OR label CONTAINS[c] %@ OR label CONTAINS[c] %@",
+                        "BackButton", "Libreria", "Library")
+        ).firstMatch
+        if back.waitForExistence(timeout: 5) {
+            back.tap()
+        } else {
+            app.navigationBars.buttons.element(boundBy: 0).tap()
         }
     }
 
@@ -131,24 +160,115 @@ final class UserFlowUITests: XCTestCase {
         )
     }
 
-    /// Deleting a note and getting it back is covered end to end by the repository tests
-    /// (`LibraryFlowTests.trashRoundTrip`). Here the point is that the user can reach the
-    /// trash and understand what it is for.
-    func testTrashIsReachableAndExplainsItself() {
+    func testDeleteANoteAndRestoreItFromTheTrash() {
         skipOnboarding()
         openTab("tab.library")
 
-        let trash = app.cells.containing(
-            NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Cestino", "Trash")
-        ).firstMatch
-        XCTAssertTrue(trash.waitForExistence(timeout: 10), "the trash row is missing from the library")
-        trash.tap()
+        // Open the first deck and remember which note is about to be deleted.
+        let deck = app.cells.element(boundBy: 0)
+        XCTAssertTrue(deck.waitForExistence(timeout: 10), "no decks to open")
+        deck.tap()
 
+        let note = app.descendants(matching: .any).matching(identifier: "note.row").element(boundBy: 0)
+        XCTAssertTrue(note.waitForExistence(timeout: 5), "the deck has no notes")
+        let deletedLabel = note.label
+
+        note.swipeLeft()
+        let delete = app.buttons["note.delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 5), "swiping did not reveal Delete")
+        delete.tap()
+
+        // It leaves the deck…
+        XCTAssertFalse(
+            app.staticTexts[deletedLabel].exists,
+            "the deleted note is still listed in the deck"
+        )
+
+        // …and is waiting in the trash, reached from Settings so the test never depends on
+        // the back button's localized label.
+        openTab("tab.settings")
+        let trashRow = app.buttons["settings.trash"]
+        XCTAssertTrue(trashRow.waitForExistence(timeout: 10), "the trash row is missing from Settings")
+        if !trashRow.isHittable { app.swipeUp() }
+        trashRow.tap()
+
+        let trashed = app.descendants(matching: .any).matching(identifier: "trash.row").element(boundBy: 0)
+        XCTAssertTrue(trashed.waitForExistence(timeout: 5), "the deleted note is not in the trash")
+
+        trashed.swipeLeft()
+        let restore = app.buttons["trash.restore"]
+        XCTAssertTrue(restore.waitForExistence(timeout: 5), "swiping did not reveal Restore")
+        restore.tap()
+
+        // Restored: the trash empties and says so.
         XCTAssertTrue(
             app.staticTexts.matching(
-                NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "cestino", "Trash")
+                NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "vuoto", "empty")
             ).firstMatch.waitForExistence(timeout: 5),
-            "the trash screen does not explain itself"
+            "the trash did not empty after restoring"
+        )
+    }
+
+    func testEnablingTheReminderKeepsItOnAndOffersATime() {
+        app.terminate()
+        app.launchEnvironment[ReminderStubEnvironment.key] = ReminderStubEnvironment.granted
+        app.launch()
+        skipOnboarding()
+        openTab("tab.settings")
+
+        let reminder = app.switches["settings.reminder"]
+        XCTAssertTrue(reminder.waitForExistence(timeout: 10), "the reminder toggle is missing")
+        flip(reminder)
+
+        XCTAssertEqual(reminder.value as? String, "1", "the reminder should stay on when permission is granted")
+        XCTAssertTrue(
+            app.datePickers.firstMatch.waitForExistence(timeout: 5),
+            "enabling the reminder should offer a time"
+        )
+        XCTAssertFalse(
+            app.staticTexts["settings.reminder.blocked"].exists,
+            "nothing should warn about permissions when they were granted"
+        )
+    }
+
+    func testARefusedReminderExplainsThatiOSIsBlockingIt() {
+        app.terminate()
+        app.launchEnvironment[ReminderStubEnvironment.key] = ReminderStubEnvironment.denied
+        app.launch()
+        skipOnboarding()
+        openTab("tab.settings")
+
+        let reminder = app.switches["settings.reminder"]
+        XCTAssertTrue(reminder.waitForExistence(timeout: 10), "the reminder toggle is missing")
+        flip(reminder)
+
+        // The user's choice is kept; what changes is that the screen says why nothing will
+        // arrive, which is the thing they can actually fix.
+        XCTAssertEqual(reminder.value as? String, "1", "the user's choice must not be undone")
+        XCTAssertTrue(
+            app.staticTexts["settings.reminder.blocked"].waitForExistence(timeout: 5),
+            "a blocked reminder must explain itself"
+        )
+    }
+
+    func testImportOffersACopyablePromptForChatGPT() {
+        skipOnboarding()
+        openTab("tab.library")
+
+        app.buttons["library.import"].tap()
+
+        let prompt = app.staticTexts["import.prompt.text"]
+        XCTAssertTrue(prompt.waitForExistence(timeout: 5), "the CSV prompt is not shown")
+        XCTAssertTrue(prompt.label.contains("type,front,back,tags"), "the prompt does not state the format")
+
+        let copy = app.buttons["import.prompt.copy"]
+        XCTAssertTrue(copy.exists, "the prompt cannot be copied")
+        copy.tap()
+        XCTAssertTrue(
+            app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Copiato", "Copied")
+            ).firstMatch.waitForExistence(timeout: 5),
+            "copying the prompt gives no feedback"
         )
     }
 
@@ -162,7 +282,7 @@ final class UserFlowUITests: XCTestCase {
 
         let reminder = app.switches["settings.reminder"]
         XCTAssertTrue(reminder.exists, "the reminder toggle is missing")
-        reminder.tap()
+        flip(reminder)
 
         openTab("tab.today")
         app.buttons["today.statistics"].tap()
