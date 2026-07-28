@@ -1,0 +1,8 @@
+# Nested configuration: UI test code may force-unwrap fixtures (spec §0.2 scopes
+# force_unwrapping: error to non-test code).
+
+parent_config: ../.swiftlint.yml
+
+disabled_rules:
+  - force_unwrapping
+  - force_try

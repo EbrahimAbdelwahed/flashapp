@@ -1,0 +1,36 @@
+# Flash Up lint contract (spec §0.2): default rules plus force_unwrapping as an error
+# outside test code. CI fails on lint errors.
+
+included:
+  - App
+  - Packages/FlashUpKit/Sources
+  - Packages/FlashUpKit/Tests
+  - FlashUpUITests
+
+excluded:
+  - Packages/FlashUpKit/.build
+  - Spikes
+  - DerivedData
+  - agent-flywheel
+
+opt_in_rules:
+  - force_unwrapping
+
+# Production code may not force-unwrap. Test directories relax this through their own
+# nested .swiftlint.yml files.
+force_unwrapping:
+  severity: error
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  excluded:
+    - id
+    - db
+
+type_name:
+  allowed_symbols: ["_"]

@@ -1,0 +1,15 @@
+// Flash Up — project-wide configuration placeholders.
+//
+// PLACEHOLDER (bead fu-00 / B0.5): the real values come from the App Store Connect
+// setup bead. Change them here only — nothing else hard-codes the identifiers.
+// Spec §A12 requires the shipping identifier to be `com.<team>.flashup`.
+
+FLASHUP_BUNDLE_ID = com.flashup.app
+FLASHUP_ICLOUD_CONTAINER = iCloud.$(FLASHUP_BUNDLE_ID)
+
+// Empty until a real Apple Developer team is attached. Simulator builds sign with
+// CODE_SIGNING_ALLOWED=NO (see ci/build.sh and ci/test.sh).
+FLASHUP_DEVELOPMENT_TEAM =
+
+FLASHUP_MARKETING_VERSION = 1.0
+FLASHUP_PROJECT_VERSION = 1
