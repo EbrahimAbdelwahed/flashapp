@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    "sandbox/sample-flow/docs/decision-requests/fw-sandbox-001-course-profile-source.md",
+    "sandbox/sample-flow/docs/reviews/fw-sandbox-001.review.md",
+    "sandbox/sample-flow/docs/session-end/fw-sandbox-001.session-end.md",
+    "sandbox/sample-flow/docs/specs/sample-course-profile.spec.md",
+    "sandbox/sample-flow/docs/tasks/fw-sandbox-001.md",
+    "sandbox/sample-flow/docs/worker-briefs/fw-sandbox-001.prompt-profile-worker.md",
+    "sandbox/sample-flow/docs/worker-profiles/prompt-profile-worker.md",
+    "sandbox/sample-flow/docs/workflow-improvements/fw-sandbox-001.workflow-improvement.md"
+  ],
+  "generated_at": "2026-06-23 12:06",
+  "missing": [],
+  "next_step": "Install and test br/bv/Agent Mail, then add live-tool mode.",
+  "sandbox": "sandbox/sample-flow",
+  "tools": {
+    "am": {
+      "available": false
+    },
+    "br": {
+      "available": true,
+      "path": "/Users/ebrahimabdelwahed/.local/bin/br",
+      "version": "br 0.2.15"
+    },
+    "bv": {
+      "available": true,
+      "path": "/Users/ebrahimabdelwahed/.local/bin/bv",
+      "version": "bv v0.17.0"
+    },
+    "mcp-agent-mail": {
+      "available": false
+    }
+  }
+}

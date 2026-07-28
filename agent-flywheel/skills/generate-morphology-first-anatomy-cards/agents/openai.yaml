@@ -1,0 +1,4 @@
+interface:
+  display_name: "Morphology-First Anatomy Cards"
+  short_description: "Generate grounded morphology-first anatomy cards"
+  default_prompt: "Use $generate-morphology-first-anatomy-cards to turn this anatomy source into validated morphology-first Anki cards."

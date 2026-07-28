@@ -1,0 +1,4 @@
+interface:
+  display_name: "Expert Refactorer"
+  short_description: "Expert behavior-preserving refactors"
+  default_prompt: "Use $simplify-and-refactor-code-isomorphically to simplify this code like an expert maintainer while preserving behavior."

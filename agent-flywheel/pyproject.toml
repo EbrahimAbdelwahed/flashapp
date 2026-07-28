@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77,<80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "study-agent-devkit"
+version = "0.1.0"
+description = "Private deterministic development factory for study-agent-harness"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+  "study-agent-harness @ git+https://github.com/EbrahimAbdelwahed/study-agent-harness.git@e74c4da9c737f97dd460c606dbb7afcc66137b84",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2,<2",
+  "mypy>=1.15,<2",
+  "pytest>=8.3,<9",
+  "ruff>=0.11,<1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+study_agent_devkit = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = ["scripts", "skills", "sandbox"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

@@ -1,0 +1,22 @@
+# macOS / Xcode
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/**/.build/
+
+# Flywheel operational caches and local secrets
+agent-flywheel/.env
+agent-flywheel/.venv/
+agent-flywheel/.pytest_cache/
+agent-flywheel/.ruff_cache/
+agent-flywheel/.mypy_cache/
+agent-flywheel/dist/
+__pycache__/
+*.py[cod]

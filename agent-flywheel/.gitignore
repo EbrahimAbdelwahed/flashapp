@@ -1,0 +1,15 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+coverage/
+.venv/
+.pytest_cache/
+.env
+.env.local
+.beads/*.db
+.beads/*.db-*
+sandbox/agent-mail-*/
+sandbox/core-tools-smoke/
+sandbox/wrapper-smoke/
