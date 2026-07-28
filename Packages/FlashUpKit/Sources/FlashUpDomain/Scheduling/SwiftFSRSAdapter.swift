@@ -26,7 +26,7 @@ public struct SwiftFSRSAdapter: FSRSService {
         let outcome = try schedule(state, grade: grade, at: now)
         return ScheduleTransition(
             previous: state,
-            updated: Self.reviewState(from: outcome.card),
+            updated: Self.reviewState(from: outcome),
             grade: grade,
             reviewedAt: now,
             elapsedDays: Int(outcome.log.elapsedDays.rounded()),
@@ -36,16 +36,35 @@ public struct SwiftFSRSAdapter: FSRSService {
 
     public func preview(_ state: ReviewState, at now: Date) throws -> SchedulePreview {
         SchedulePreview(
-            again: Self.reviewState(from: try schedule(state, grade: .again, at: now).card),
-            hard: Self.reviewState(from: try schedule(state, grade: .hard, at: now).card),
-            good: Self.reviewState(from: try schedule(state, grade: .good, at: now).card),
-            easy: Self.reviewState(from: try schedule(state, grade: .easy, at: now).card)
+            again: Self.reviewState(from: try schedule(state, grade: .again, at: now)),
+            hard: Self.reviewState(from: try schedule(state, grade: .hard, at: now)),
+            good: Self.reviewState(from: try schedule(state, grade: .good, at: now)),
+            easy: Self.reviewState(from: try schedule(state, grade: .easy, at: now))
         )
     }
 
     private func schedule(_ state: ReviewState, grade: Grade, at now: Date) throws -> RecordLogItem {
         do {
-            return try engine.next(card: Self.card(from: state), now: now, grade: Self.rating(for: grade))
+            // The engine's own `Card` type cannot be written down here: the module `FSRS`
+            // and its class `FSRS` share a name, so `FSRS.Card` does not resolve. `.init`
+            // infers it from the parameter, which is why this is the only construction site.
+            return try engine.next(
+                card: .init(
+                    due: state.dueAt,
+                    stability: state.stability,
+                    difficulty: state.difficulty,
+                    // Recomputed by the engine from `lastReview` and the review time, so
+                    // they are never persisted on our side.
+                    elapsedDays: 0,
+                    scheduledDays: 0,
+                    reps: state.reps,
+                    lapses: state.lapses,
+                    state: Self.cardState(for: state.state),
+                    lastReview: state.lastReviewedAt
+                ),
+                now: now,
+                grade: Self.rating(for: grade)
+            )
         } catch {
             throw SchedulingError.engineRejected(reason: String(describing: error))
         }
@@ -80,31 +99,17 @@ public struct SwiftFSRSAdapter: FSRSService {
         }
     }
 
-    /// `elapsedDays` and `scheduledDays` are recomputed by the engine from `lastReview`
-    /// and the review time, so they are passed as zero rather than persisted.
-    private static func card(from state: ReviewState) -> Card {
-        Card(
-            due: state.dueAt,
-            stability: state.stability,
-            difficulty: state.difficulty,
-            elapsedDays: 0,
-            scheduledDays: 0,
-            reps: state.reps,
-            lapses: state.lapses,
-            state: cardState(for: state.state),
-            lastReview: state.lastReviewedAt
-        )
-    }
-
-    private static func reviewState(from card: Card) -> ReviewState {
+    /// Reads through `RecordLogItem`, whose name does not collide, so the engine's card
+    /// type never has to be named.
+    private static func reviewState(from item: RecordLogItem) -> ReviewState {
         ReviewState(
-            state: scheduleState(for: card.state),
-            stability: card.stability,
-            difficulty: card.difficulty,
-            dueAt: card.due,
-            lastReviewedAt: card.lastReview,
-            reps: card.reps,
-            lapses: card.lapses
+            state: scheduleState(for: item.card.state),
+            stability: item.card.stability,
+            difficulty: item.card.difficulty,
+            dueAt: item.card.due,
+            lastReviewedAt: item.card.lastReview,
+            reps: item.card.reps,
+            lapses: item.card.lapses
         )
     }
 }

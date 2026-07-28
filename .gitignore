@@ -1,6 +1,7 @@
 # macOS / Xcode
 .DS_Store
 DerivedData/
+DerivedData*/
 build/
 *.xcuserstate
 *.xccheckout

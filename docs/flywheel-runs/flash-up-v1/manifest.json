@@ -23,7 +23,8 @@
       "docs/tasks/flash-up-v1/fu-13-group-history.md",
       "docs/tasks/flash-up-v1/fu-14-guidance-and-erasure.md",
       "docs/tasks/flash-up-v1/fu-15-release.md",
-      "docs/tasks/flash-up-v1/fu-04a-pure-domain.md"
+      "docs/tasks/flash-up-v1/fu-04a-pure-domain.md",
+      "docs/tasks/flash-up-v1/fu-04b-ui-on-fakes.md"
     ],
     "validation": "docs/flywheel-runs/flash-up-v1/validation.md",
     "validation_json": "docs/flywheel-runs/flash-up-v1/validation.json",
@@ -44,7 +45,8 @@
       "docs/worker-briefs/flash-up-v1/fu-13-group-history.md",
       "docs/worker-briefs/flash-up-v1/fu-14-guidance-and-erasure.md",
       "docs/worker-briefs/flash-up-v1/fu-15-release.md",
-      "docs/worker-briefs/flash-up-v1/fu-04a-pure-domain.md"
+      "docs/worker-briefs/flash-up-v1/fu-04a-pure-domain.md",
+      "docs/worker-briefs/flash-up-v1/fu-04b-ui-on-fakes.md"
     ],
     "worker_profiles": {
       "cloudkit-systems-engineer": "docs/worker-profiles/cloudkit-systems-engineer.md",
@@ -56,7 +58,8 @@
     "worker_reports": {
       "fu-00-scaffold": "docs/worker-reports/flash-up-v1/fu-00-scaffold.md",
       "fu-03-fsrs-spike": "docs/worker-reports/flash-up-v1/fu-03-fsrs-spike.md",
-      "fu-04a-pure-domain": "docs/worker-reports/flash-up-v1/fu-04a-pure-domain.md"
+      "fu-04a-pure-domain": "docs/worker-reports/flash-up-v1/fu-04a-pure-domain.md",
+      "fu-04b-ui-on-fakes": "docs/worker-reports/flash-up-v1/fu-04b-ui-on-fakes.md"
     }
   },
   "br_beads": {},
@@ -69,7 +72,7 @@
   "phases": {
     "beads": {
       "br_created": {},
-      "count": 17,
+      "count": 18,
       "paths": [
         "docs/tasks/flash-up-v1/fu-00-scaffold.md",
         "docs/tasks/flash-up-v1/fu-01-store-spike.md",
@@ -87,13 +90,14 @@
         "docs/tasks/flash-up-v1/fu-13-group-history.md",
         "docs/tasks/flash-up-v1/fu-14-guidance-and-erasure.md",
         "docs/tasks/flash-up-v1/fu-15-release.md",
-        "docs/tasks/flash-up-v1/fu-04a-pure-domain.md"
+        "docs/tasks/flash-up-v1/fu-04a-pure-domain.md",
+        "docs/tasks/flash-up-v1/fu-04b-ui-on-fakes.md"
       ],
       "status": "complete",
       "updated_at": "2026-07-28T12:30:31+00:00"
     },
     "briefs": {
-      "count": 17,
+      "count": 18,
       "paths": [
         "docs/worker-briefs/flash-up-v1/fu-00-scaffold.md",
         "docs/worker-briefs/flash-up-v1/fu-01-store-spike.md",
@@ -111,7 +115,8 @@
         "docs/worker-briefs/flash-up-v1/fu-13-group-history.md",
         "docs/worker-briefs/flash-up-v1/fu-14-guidance-and-erasure.md",
         "docs/worker-briefs/flash-up-v1/fu-15-release.md",
-        "docs/worker-briefs/flash-up-v1/fu-04a-pure-domain.md"
+        "docs/worker-briefs/flash-up-v1/fu-04a-pure-domain.md",
+        "docs/worker-briefs/flash-up-v1/fu-04b-ui-on-fakes.md"
       ],
       "status": "complete",
       "updated_at": "2026-07-28T12:30:35+00:00"
@@ -165,14 +170,14 @@
       "updated_at": "2026-07-28T13:05:47+00:00"
     },
     "worker_report": {
-      "path": "docs/worker-reports/flash-up-v1/fu-04a-pure-domain.md",
+      "path": "docs/worker-reports/flash-up-v1/fu-04b-ui-on-fakes.md",
       "status": "complete",
-      "task": "fu-04a-pure-domain",
-      "updated_at": "2026-07-28T13:53:38+00:00"
+      "task": "fu-04b-ui-on-fakes",
+      "updated_at": "2026-07-28T14:21:37+00:00"
     }
   },
   "project": "/Users/ebrahimabdelwahed/Desktop/Dev/flashapp",
   "run_id": "flash-up-v1",
   "schema_version": 1,
-  "updated_at": "2026-07-28T13:53:38+00:00"
+  "updated_at": "2026-07-28T14:21:37+00:00"
 }

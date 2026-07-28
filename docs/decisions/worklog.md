@@ -5,6 +5,54 @@ with justification, follow-ups discovered.
 
 ---
 
+## fu-04b-ui-on-fakes — 2026-07-28
+
+New bead, created at the owner's direction: build the interface on fake data now and plug
+CloudKit in later. Covers the domain half of B2.2 and a preview-stage slice of §A11.
+
+### Built
+
+- `LibraryRepository`: the read/write boundary, expressed purely in domain value types.
+  `InMemoryLibrary` implements all of it — schedules run through the pinned FSRS adapter,
+  answers accumulate, undo restores the pre-answer state. `AppEnvironment` is the only place
+  that chooses an implementation.
+- Domain content model (`Deck`, `Note`, `Card`, `CardTemplate`) and `CardGenerator` per
+  §A3.1.
+- `GlassSurface`: the single file that branches on the OS version, giving real Liquid Glass
+  on iOS 26 and a material approximation below, with identical layout on both.
+- Today (counts, one primary action, deck rows) and the study session (reveal, four grades
+  captioned with real FSRS intervals, undo, keyboard shortcuts 1-4 and space).
+- 26 new strings in English and Italian.
+
+### Verification
+
+`ci/test.sh` green: SwiftLint 0 violations in 41 files, 75 domain tests, UI tests
+`** TEST SUCCEEDED **`. The study loop was driven by hand on iPhone 17 / iOS 26.4 and Today
+verified on iPhone 15 / iOS 17.4.
+
+### What this bead does NOT do
+
+It is a preview stage, not a replacement for its parent batches. `fu-08`, `fu-09` and
+`fu-06` keep every source bead they own: Library, editor, search, trash, import flow,
+statistics, session persistence, and the real `QueueBuilder` and `MetricsService`. The queue
+and metrics inside `InMemoryLibrary` are the smallest correct stand-ins and are labelled as
+such in the source.
+
+### Bugs found and fixed
+
+- `PrimaryActionButton` used a `simultaneousGesture(DragGesture(minimumDistance: 0))` for
+  touch-down feedback, which swallowed the button's action: taps did nothing. Replaced with
+  a `ButtonStyle` reading `configuration.isPressed`, which is the correct mechanism and is
+  now shared by every pressable surface.
+- The study session was presented from state held on the observable model, and the cover
+  dismissed itself when the model was rebuilt. Presentation state now lives in the view.
+
+### Follow-up owed
+
+- A UI test for the study loop. B6.1 requires one; only the four-tab shell is covered today.
+
+---
+
 ## fu-04a-pure-domain — 2026-07-28
 
 New bead, created because the owner confirmed there is no Apple Developer account yet.

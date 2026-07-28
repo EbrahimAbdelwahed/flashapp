@@ -81,12 +81,18 @@ Use at most two implementation lanes until the data core is proven:
 | `fu-00-scaffold` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-00-scaffold.md`, `docs/decisions/worklog.md` |
 | `fu-03-fsrs-spike` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-03-fsrs-spike.md`, `docs/decisions/ADR-003-fsrs.md` |
 | `fu-04a-pure-domain` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-04a-pure-domain.md` |
+| `fu-04b-ui-on-fakes` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-04b-ui-on-fakes.md` |
 | all others | Open | — |
 
 `fu-04a-pure-domain` is a bead added on 2026-07-28. It carries B2.1 out of
 `fu-05-note-domain` and B4.1 out of `fu-07-portability`; the source specification lists both
 as depending on B0.1 alone, so the graph is unchanged and only the dispatch order moved.
 Both parent batches keep all their other source-bead coverage.
+
+`fu-04b-ui-on-fakes` (2026-07-28) introduces the `LibraryRepository` boundary and an
+in-memory implementation, so interface batches can proceed against real behaviour while the
+persistence lane waits. It is a preview stage: `fu-06`, `fu-08` and `fu-09` keep all their
+source-bead coverage.
 
 **Blocked, and this is now the critical path:** `fu-01-store-spike` needs a real iCloud
 container and `fu-02-sharing-spike` needs two Apple accounts. The owner confirmed on

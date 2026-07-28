@@ -34,13 +34,14 @@ enum RootTab: String, CaseIterable, Identifiable {
 
 /// The adaptive four-tab shell used on both iPhone and iPad.
 struct RootTabView: View {
+    @Environment(AppEnvironment.self) private var environment
     @State private var selection: RootTab = .today
 
     var body: some View {
         TabView(selection: $selection) {
             ForEach(RootTab.allCases) { tab in
                 NavigationStack {
-                    TabPlaceholderView(tab: tab)
+                    content(for: tab)
                 }
                 .tabItem {
                     Label(tab.titleKey, systemImage: tab.systemImage)
@@ -50,8 +51,14 @@ struct RootTabView: View {
             }
         }
     }
-}
 
-#Preview {
-    RootTabView()
+    @ViewBuilder
+    private func content(for tab: RootTab) -> some View {
+        switch tab {
+        case .today:
+            TodayView(library: environment.library)
+        case .library, .groups, .settings:
+            TabPlaceholderView(tab: tab)
+        }
+    }
 }
