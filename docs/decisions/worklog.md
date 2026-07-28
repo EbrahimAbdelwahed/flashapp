@@ -29,6 +29,15 @@ Owner feedback pass.
 `ci/test.sh` green: SwiftLint 0 violations in 71 files, 95 domain and repository tests, and
 12 UI tests. Checked by hand on iOS 17.4 and iOS 26.4.
 
+### Fixed after the pass
+
+- **The appearance picker did nothing.** The chosen appearance was read once at launch into
+  the root scene's own state, so a later change in Settings had no way to reach the view
+  that applies `preferredColorScheme`. It now lives on `AppEnvironment`, which both screens
+  observe. Covered by a UI test that also checks the choice survives leaving Settings.
+  Note it does not survive relaunch yet: the in-memory repository forgets everything, as it
+  does for decks, until `fu-04-data-core` lands.
+
 ### Notes
 
 - The missing Library, Groups and Settings tabs on iOS 26 were a stale build on that

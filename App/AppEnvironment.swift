@@ -21,6 +21,24 @@ final class AppEnvironment {
     let library: any LibraryRepository
     let reminders: any ReminderScheduling
 
+    /// The chosen appearance lives here because two screens need it: Settings writes it and
+    /// the root scene applies it. Holding it in either one alone means the other never hears
+    /// about the change.
+    var appearance: StudySettings.Appearance = .system
+
+    /// What the root scene hands to `preferredColorScheme`.
+    var colorScheme: ColorScheme? {
+        switch appearance {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    func loadAppearance() async {
+        appearance = await library.settings().appearance
+    }
+
     init(library: (any LibraryRepository)? = nil, reminders: (any ReminderScheduling)? = nil) {
         self.logger = Logger(subsystem: Self.loggingSubsystem, category: "app")
         self.library = library ?? InMemoryLibrary()

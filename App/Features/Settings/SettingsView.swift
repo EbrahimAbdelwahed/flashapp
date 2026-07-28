@@ -6,6 +6,8 @@ struct SettingsView: View {
     let library: any LibraryRepository
     let reminders: any ReminderScheduling
 
+    @Environment(AppEnvironment.self) private var appEnvironment
+
     @State private var settings: StudySettings = .default
     @State private var status: SyncStatus = .upToDate(lastSyncedAt: nil)
     @State private var isConfirmingErase = false
@@ -27,6 +29,8 @@ struct SettingsView: View {
         .navigationTitle("tab.settings")
         .task { await reload() }
         .onChange(of: settings) { previous, updated in
+            // The appearance has to reach the root scene, which is what actually applies it.
+            appEnvironment.appearance = updated.appearance
             // The reminder toggle persists itself, because it also has to report back what
             // the system granted.
             guard previous.reminder == updated.reminder else { return }

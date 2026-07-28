@@ -9,7 +9,6 @@ import SwiftUI
 struct FlashUpApp: App {
     @State private var environment = AppEnvironment()
     @State private var tutorial = TutorialState()
-    @State private var appearance: StudySettings.Appearance = .system
 
     var body: some Scene {
         WindowGroup {
@@ -21,16 +20,8 @@ struct FlashUpApp: App {
                 }
             }
             .environment(environment)
-            .preferredColorScheme(colorScheme)
-            .task { appearance = await environment.library.settings().appearance }
-        }
-    }
-
-    private var colorScheme: ColorScheme? {
-        switch appearance {
-        case .system: nil
-        case .light: .light
-        case .dark: .dark
+            .preferredColorScheme(environment.colorScheme)
+            .task { await environment.loadAppearance() }
         }
     }
 }

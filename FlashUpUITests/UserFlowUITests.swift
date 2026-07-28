@@ -294,6 +294,28 @@ final class UserFlowUITests: XCTestCase {
         )
     }
 
+    /// The appearance is applied by the root scene, not by the Settings screen, so the
+    /// choice has to survive leaving Settings and coming back.
+    func testAppearanceChoiceIsAppliedAndKept() {
+        skipOnboarding()
+        openTab("tab.settings")
+
+        let picker = app.segmentedControls["settings.appearance"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "the appearance picker is missing")
+
+        let dark = picker.buttons.element(boundBy: 2)
+        dark.tap()
+        XCTAssertTrue(dark.isSelected, "the dark option did not become selected")
+
+        openTab("tab.today")
+        openTab("tab.settings")
+
+        XCTAssertTrue(
+            app.segmentedControls["settings.appearance"].buttons.element(boundBy: 2).isSelected,
+            "the appearance choice was lost on the way back"
+        )
+    }
+
     func testGroupsExplainsWhyItIsUnavailable() {
         skipOnboarding()
         openTab("tab.groups")
