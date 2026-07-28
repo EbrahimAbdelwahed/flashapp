@@ -1,6 +1,132 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "common.cancel": {
+      "comment": "Dismisses without acting.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
+          }
+        }
+      }
+    },
+    "common.close": {
+      "comment": "Closes a sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiudi"
+          }
+        }
+      }
+    },
+    "common.create": {
+      "comment": "Confirms creation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea"
+          }
+        }
+      }
+    },
+    "common.delete": {
+      "comment": "Destructive action.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina"
+          }
+        }
+      }
+    },
+    "common.more": {
+      "comment": "Opens a menu.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altro"
+          }
+        }
+      }
+    },
+    "common.ok": {
+      "comment": "Acknowledges a message.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "common.save": {
+      "comment": "Confirms an edit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva"
+          }
+        }
+      }
+    },
     "deck.accessibility_hint": {
       "comment": "VoiceOver hint for a deck row.",
       "extractionState": "manual",
@@ -37,6 +163,24 @@
         }
       }
     },
+    "deck.add_note": {
+      "comment": "Creates a note.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi nota"
+          }
+        }
+      }
+    },
     "deck.card_count %lld": {
       "comment": "Total cards in a deck.",
       "extractionState": "manual",
@@ -51,6 +195,474 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld schede"
+          }
+        }
+      }
+    },
+    "deck.counts %lld %lld %lld": {
+      "comment": "Deck row: total, due, new.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cards · %lld due · %lld new"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld schede · %lld da ripassare · %lld nuove"
+          }
+        }
+      }
+    },
+    "deck.due_new %lld %lld": {
+      "comment": "Per-deck workload.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld due · %lld new"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld da ripassare · %lld nuove"
+          }
+        }
+      }
+    },
+    "deck.empty.message": {
+      "comment": "How to fill it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a note or import a CSV file."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi una nota o importa un file CSV."
+          }
+        }
+      }
+    },
+    "deck.empty.title": {
+      "comment": "Deck has no notes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deck is empty"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo mazzo è vuoto"
+          }
+        }
+      }
+    },
+    "deck.export": {
+      "comment": "Exports this deck.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export CSV"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta CSV"
+          }
+        }
+      }
+    },
+    "deck.filter": {
+      "comment": "Filter control label.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtro"
+          }
+        }
+      }
+    },
+    "deck.notes %lld": {
+      "comment": "Notes section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes (%lld)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note (%lld)"
+          }
+        }
+      }
+    },
+    "deck.study": {
+      "comment": "Studies this deck.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Study this deck"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Studia questo mazzo"
+          }
+        }
+      }
+    },
+    "editor.back": {
+      "comment": "Back field header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dietro"
+          }
+        }
+      }
+    },
+    "editor.edit_title": {
+      "comment": "Editor title when editing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica nota"
+          }
+        }
+      }
+    },
+    "editor.front": {
+      "comment": "Front field header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Front"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davanti"
+          }
+        }
+      }
+    },
+    "editor.new_title": {
+      "comment": "Editor title when creating.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova nota"
+          }
+        }
+      }
+    },
+    "editor.preview": {
+      "comment": "Card preview header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cards this note creates"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schede che genera"
+          }
+        }
+      }
+    },
+    "editor.preview_empty": {
+      "comment": "Shown when no card can be generated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No card yet — fill in the fields above."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancora nessuna scheda: compila i campi qui sopra."
+          }
+        }
+      }
+    },
+    "editor.tags": {
+      "comment": "Tags field header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag"
+          }
+        }
+      }
+    },
+    "editor.tags_placeholder": {
+      "comment": "Tags field hint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anatomy, heart"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anatomia, cuore"
+          }
+        }
+      }
+    },
+    "editor.type": {
+      "comment": "Type picker label.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipo"
+          }
+        }
+      }
+    },
+    "export.message %@": {
+      "comment": "Explains what is exported.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes in “%@” in the same format Flash Up imports."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le note di “%@” nello stesso formato che Flash Up importa."
+          }
+        }
+      }
+    },
+    "export.nav_title": {
+      "comment": "Export navigation title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta"
+          }
+        }
+      }
+    },
+    "export.share": {
+      "comment": "Shares the file.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share file"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi file"
+          }
+        }
+      }
+    },
+    "export.title": {
+      "comment": "Export sheet title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export as CSV"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta in CSV"
+          }
+        }
+      }
+    },
+    "filter.all": {
+      "comment": "No state filter.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutte"
+          }
+        }
+      }
+    },
+    "filter.due": {
+      "comment": "Due today.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da fare"
+          }
+        }
+      }
+    },
+    "filter.new": {
+      "comment": "Never studied.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuove"
+          }
+        }
+      }
+    },
+    "filter.state": {
+      "comment": "State filter label.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "State"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stato"
+          }
+        }
+      }
+    },
+    "filter.suspended": {
+      "comment": "Suspended cards.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sospese"
           }
         }
       }
@@ -127,6 +739,960 @@
         }
       }
     },
+    "groups.feature.history": {
+      "comment": "Groups feature.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See who changed what"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vedere chi ha modificato cosa"
+          }
+        }
+      }
+    },
+    "groups.feature.private_progress": {
+      "comment": "Groups feature.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep your own progress private"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenere privati i tuoi progressi"
+          }
+        }
+      }
+    },
+    "groups.feature.share": {
+      "comment": "Groups feature.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share decks with classmates"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividere mazzi con i compagni"
+          }
+        }
+      }
+    },
+    "groups.unavailable.body": {
+      "comment": "Explains why.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared decks need iCloud sharing, which is not switched on in this build."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I mazzi condivisi richiedono la condivisione iCloud, non attiva in questa versione."
+          }
+        }
+      }
+    },
+    "groups.unavailable.title": {
+      "comment": "Groups not available yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groups are not ready yet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I gruppi non sono ancora pronti"
+          }
+        }
+      }
+    },
+    "groups.what_you_get": {
+      "comment": "Groups feature list header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What groups will do"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa faranno i gruppi"
+          }
+        }
+      }
+    },
+    "help.cloze.a": {
+      "comment": "FAQ answer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sentence with words hidden: write {{c1::the word}}. Each number becomes its own card."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una frase con parole nascoste: scrivi {{c1::la parola}}. Ogni numero diventa una scheda."
+          }
+        }
+      }
+    },
+    "help.cloze.q": {
+      "comment": "FAQ question.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is a cloze?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cos'è una cloze?"
+          }
+        }
+      }
+    },
+    "help.contact": {
+      "comment": "Opens a support email.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact support"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contatta l'assistenza"
+          }
+        }
+      }
+    },
+    "help.faq": {
+      "comment": "FAQ section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domande"
+          }
+        }
+      }
+    },
+    "help.grades.a": {
+      "comment": "FAQ answer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer honestly: Again if you did not know it, Good if it took effort, Easy if it was instant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rispondi con onestà: Di nuovo se non la sapevi, Buono se ci hai pensato, Facile se è stata immediata."
+          }
+        }
+      }
+    },
+    "help.grades.q": {
+      "comment": "FAQ question.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which grade should I pick?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quale voto scelgo?"
+          }
+        }
+      }
+    },
+    "help.groups.a": {
+      "comment": "FAQ answer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared decks with classmates. Your own progress always stays private."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mazzi condivisi con i compagni. I tuoi progressi restano sempre privati."
+          }
+        }
+      }
+    },
+    "help.groups.q": {
+      "comment": "FAQ question.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What are groups?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa sono i gruppi?"
+          }
+        }
+      }
+    },
+    "help.import.a": {
+      "comment": "FAQ answer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library → Import from CSV. Ask any AI for a CSV with columns type, front, back, tags."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Libreria → Importa da CSV. Chiedi a una qualsiasi IA un CSV con le colonne type, front, back, tags."
+          }
+        }
+      }
+    },
+    "help.import.q": {
+      "comment": "FAQ question.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How do I get my cards in?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come inserisco le mie schede?"
+          }
+        }
+      }
+    },
+    "help.support": {
+      "comment": "Support section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenza"
+          }
+        }
+      }
+    },
+    "help.sync.a": {
+      "comment": "FAQ answer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your device and in your own iCloud. Nobody else can read them."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sul tuo dispositivo e nel tuo iCloud. Nessun altro può leggerle."
+          }
+        }
+      }
+    },
+    "help.sync.q": {
+      "comment": "FAQ question.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where are my cards stored?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dove sono salvate le mie schede?"
+          }
+        }
+      }
+    },
+    "import.confirm": {
+      "comment": "Commits the import.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa"
+          }
+        }
+      }
+    },
+    "import.default_deck": {
+      "comment": "Fallback deck name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importate"
+          }
+        }
+      }
+    },
+    "import.destination": {
+      "comment": "Destination section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destination"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinazione"
+          }
+        }
+      }
+    },
+    "import.done.close": {
+      "comment": "Closes the flow.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fatto"
+          }
+        }
+      }
+    },
+    "import.done.count %lld": {
+      "comment": "How many notes were created.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes added"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld note aggiunte"
+          }
+        }
+      }
+    },
+    "import.done.title": {
+      "comment": "Import finished.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import complete"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import completato"
+          }
+        }
+      }
+    },
+    "import.duplicates": {
+      "comment": "Duplicate rows.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicates"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate"
+          }
+        }
+      }
+    },
+    "import.duplicates_section": {
+      "comment": "Duplicate section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already in this deck"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Già in questo mazzo"
+          }
+        }
+      }
+    },
+    "import.error.encoding": {
+      "comment": "Wrong encoding.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is not UTF-8. Re-export it as UTF-8 and try again."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file non è in formato UTF-8. Riesportalo in UTF-8 e riprova."
+          }
+        }
+      }
+    },
+    "import.error.missing_columns %@": {
+      "comment": "Missing required columns.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing columns: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colonne mancanti: %@"
+          }
+        }
+      }
+    },
+    "import.error.no_header": {
+      "comment": "Missing header row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file has no header row."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file non ha la riga di intestazione."
+          }
+        }
+      }
+    },
+    "import.error.too_large %lld": {
+      "comment": "File over the size cap.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is larger than %lld MB."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file supera %lld MB."
+          }
+        }
+      }
+    },
+    "import.error.too_many_rows %lld": {
+      "comment": "Too many rows.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file has more than %lld rows."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file ha più di %lld righe."
+          }
+        }
+      }
+    },
+    "import.error.unreadable": {
+      "comment": "File could not be read.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file could not be read."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è stato possibile leggere il file."
+          }
+        }
+      }
+    },
+    "import.format_help": {
+      "comment": "Explains the format.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Columns: type, front, back, tags. Type is basic, reversed or cloze."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colonne: type, front, back, tags. Il tipo è basic, reversed o cloze."
+          }
+        }
+      }
+    },
+    "import.new_deck": {
+      "comment": "Creates a deck for the import.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New deck"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuovo mazzo"
+          }
+        }
+      }
+    },
+    "import.new_deck_name": {
+      "comment": "Name field for the new deck.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deck name"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome del mazzo"
+          }
+        }
+      }
+    },
+    "import.pick_file": {
+      "comment": "Opens the file picker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a CSV file"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli un file CSV"
+          }
+        }
+      }
+    },
+    "import.preview_rows": {
+      "comment": "First rows preview.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First rows"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prime righe"
+          }
+        }
+      }
+    },
+    "import.reason.back": {
+      "comment": "Rejection: missing back.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This type needs a back"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo tipo richiede il retro"
+          }
+        }
+      }
+    },
+    "import.reason.cloze": {
+      "comment": "Rejection: no cloze deletion.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No valid cloze deletion (e.g. {{c1::text}})"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna cancellazione cloze valida (es. {{c1::testo}})"
+          }
+        }
+      }
+    },
+    "import.reason.front": {
+      "comment": "Rejection: empty front.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The front is empty"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il campo davanti è vuoto"
+          }
+        }
+      }
+    },
+    "import.reason.long %@ %lld": {
+      "comment": "Rejection: field too long.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” is too long (%lld characters)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” è troppo lungo (%lld caratteri)"
+          }
+        }
+      }
+    },
+    "import.reason.type %@": {
+      "comment": "Rejection: unknown type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown type “%@”"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipo sconosciuto “%@”"
+          }
+        }
+      }
+    },
+    "import.rejected": {
+      "comment": "Rejected rows.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refused"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scartate"
+          }
+        }
+      }
+    },
+    "import.rejected_section": {
+      "comment": "Rejected section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refused rows"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Righe scartate"
+          }
+        }
+      }
+    },
+    "import.row %lld": {
+      "comment": "Row number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Row %lld"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riga %lld"
+          }
+        }
+      }
+    },
+    "import.sample_name": {
+      "comment": "Name of the built-in example file.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Example"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esempio"
+          }
+        }
+      }
+    },
+    "import.source": {
+      "comment": "Source section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Origine"
+          }
+        }
+      }
+    },
+    "import.summary": {
+      "comment": "Preview summary header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riepilogo"
+          }
+        }
+      }
+    },
+    "import.title": {
+      "comment": "Import flow title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa"
+          }
+        }
+      }
+    },
+    "import.try_sample": {
+      "comment": "Loads the built-in example.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try the example"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova l'esempio"
+          }
+        }
+      }
+    },
+    "import.undo": {
+      "comment": "Undoes the import.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo import"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla import"
+          }
+        }
+      }
+    },
+    "import.will_import": {
+      "comment": "Rows that will be created.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Will be imported"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verranno importate"
+          }
+        }
+      }
+    },
     "interval.days %lld": {
       "comment": "Next-review interval in days.",
       "extractionState": "manual",
@@ -199,6 +1765,1176 @@
         }
       }
     },
+    "library.deck_name": {
+      "comment": "Deck name field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deck name"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome del mazzo"
+          }
+        }
+      }
+    },
+    "library.decks": {
+      "comment": "Deck list header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decks"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mazzi"
+          }
+        }
+      }
+    },
+    "library.empty.message": {
+      "comment": "How to get started.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a deck or import a CSV to begin."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea un mazzo o importa un CSV per iniziare."
+          }
+        }
+      }
+    },
+    "library.empty.title": {
+      "comment": "No decks yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No decks yet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancora nessun mazzo"
+          }
+        }
+      }
+    },
+    "library.import": {
+      "comment": "Opens the import flow.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import from CSV"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa da CSV"
+          }
+        }
+      }
+    },
+    "library.new_deck": {
+      "comment": "Creates a deck.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New deck"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuovo mazzo"
+          }
+        }
+      }
+    },
+    "library.no_results.message": {
+      "comment": "Suggests a change.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try a shorter search or a different tag."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova una ricerca più breve o un altro tag."
+          }
+        }
+      }
+    },
+    "library.no_results.title": {
+      "comment": "Search found nothing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing found"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun risultato"
+          }
+        }
+      }
+    },
+    "library.results %lld": {
+      "comment": "Search results header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld results"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld risultati"
+          }
+        }
+      }
+    },
+    "library.search_prompt": {
+      "comment": "Search field placeholder.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search notes and tags"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerca note e tag"
+          }
+        }
+      }
+    },
+    "library.tools": {
+      "comment": "Section header for import and trash.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tools"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strumenti"
+          }
+        }
+      }
+    },
+    "library.trash %lld": {
+      "comment": "Trash row with item count.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trash (%lld)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cestino (%lld)"
+          }
+        }
+      }
+    },
+    "library.trash_title": {
+      "comment": "Trash screen title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trash"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cestino"
+          }
+        }
+      }
+    },
+    "note.badge_due %lld": {
+      "comment": "Badge for due cards.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld due"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld da fare"
+          }
+        }
+      }
+    },
+    "note.badge_new": {
+      "comment": "Badge for unstudied notes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "new"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nuova"
+          }
+        }
+      }
+    },
+    "note.badge_suspended": {
+      "comment": "Badge for suspended notes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "suspended"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sospesa"
+          }
+        }
+      }
+    },
+    "note.card_count %lld": {
+      "comment": "Cards generated by a note.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cards"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld schede"
+          }
+        }
+      }
+    },
+    "note_type.basic": {
+      "comment": "Note type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base"
+          }
+        }
+      }
+    },
+    "note_type.basic.help": {
+      "comment": "Explains the basic type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One card: front asks, back answers."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una scheda: davanti la domanda, dietro la risposta."
+          }
+        }
+      }
+    },
+    "note_type.cloze": {
+      "comment": "Note type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloze"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloze"
+          }
+        }
+      }
+    },
+    "note_type.cloze.help": {
+      "comment": "Explains cloze syntax.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide words with {{c1::like this}}. Each number becomes its own card."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nascondi le parole con {{c1::così}}. Ogni numero diventa una scheda."
+          }
+        }
+      }
+    },
+    "note_type.reversed": {
+      "comment": "Note type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reversed"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inversa"
+          }
+        }
+      }
+    },
+    "note_type.reversed.help": {
+      "comment": "Explains the reversed type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two cards, one in each direction."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due schede, una per ogni direzione."
+          }
+        }
+      }
+    },
+    "onboarding.grades.body": {
+      "comment": "Onboarding step 3 body.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your answer decides when the card comes back. Honest grading is what makes it work."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La tua risposta decide quando la scheda tornerà. È l'onestà a farlo funzionare."
+          }
+        }
+      }
+    },
+    "onboarding.grades.title": {
+      "comment": "Onboarding step 3.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Be honest"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sii onesto"
+          }
+        }
+      }
+    },
+    "onboarding.import.body": {
+      "comment": "Onboarding step 1 body.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask any AI for a CSV of your notes, then import it. No typing them in one by one."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi a una IA un CSV dei tuoi appunti e importalo. Niente da riscrivere a mano."
+          }
+        }
+      }
+    },
+    "onboarding.import.title": {
+      "comment": "Onboarding step 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring your own cards"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porta le tue schede"
+          }
+        }
+      }
+    },
+    "onboarding.next": {
+      "comment": "Next onboarding page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avanti"
+          }
+        }
+      }
+    },
+    "onboarding.review.body": {
+      "comment": "Onboarding step 2 body.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the question, answer in your head, then reveal."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi la domanda, rispondi mentalmente, poi scopri."
+          }
+        }
+      }
+    },
+    "onboarding.review.title": {
+      "comment": "Onboarding step 2.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One card at a time"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una scheda alla volta"
+          }
+        }
+      }
+    },
+    "onboarding.skip": {
+      "comment": "Skips onboarding.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salta"
+          }
+        }
+      }
+    },
+    "onboarding.start": {
+      "comment": "Finishes onboarding.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start studying"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inizia a studiare"
+          }
+        }
+      }
+    },
+    "privacy.point.icloud": {
+      "comment": "Privacy point.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your own iCloud, if enabled"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nel tuo iCloud, se attivo"
+          }
+        }
+      }
+    },
+    "privacy.point.local": {
+      "comment": "Privacy point.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On this device"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Su questo dispositivo"
+          }
+        }
+      }
+    },
+    "privacy.point.no_account": {
+      "comment": "Privacy point.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sign-up, no password"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna registrazione, nessuna password"
+          }
+        }
+      }
+    },
+    "privacy.point.no_tracking": {
+      "comment": "Privacy point.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No tracking, no advertising"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun tracciamento, nessuna pubblicità"
+          }
+        }
+      }
+    },
+    "privacy.summary": {
+      "comment": "Privacy summary.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash Up has no account, no tracking and no analytics. Your cards never reach our servers, because there are none."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash Up non ha account, tracciamento o analitiche. Le tue schede non arrivano ai nostri server, perché non esistono."
+          }
+        }
+      }
+    },
+    "privacy.what_we_store": {
+      "comment": "Privacy section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your data lives"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dove stanno i tuoi dati"
+          }
+        }
+      }
+    },
+    "settings.about": {
+      "comment": "About section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informazioni"
+          }
+        }
+      }
+    },
+    "settings.appearance": {
+      "comment": "Appearance section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aspetto"
+          }
+        }
+      }
+    },
+    "settings.appearance.dark": {
+      "comment": "Dark mode.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scuro"
+          }
+        }
+      }
+    },
+    "settings.appearance.light": {
+      "comment": "Light mode.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiaro"
+          }
+        }
+      }
+    },
+    "settings.appearance.system": {
+      "comment": "Follows the system.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistema"
+          }
+        }
+      }
+    },
+    "settings.backup": {
+      "comment": "Creates a backup.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create backup"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea backup"
+          }
+        }
+      }
+    },
+    "settings.backup.share": {
+      "comment": "Shares the backup file.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share backup"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi backup"
+          }
+        }
+      }
+    },
+    "settings.data": {
+      "comment": "Data section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dati"
+          }
+        }
+      }
+    },
+    "settings.erase": {
+      "comment": "Erases everything.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina tutti i dati"
+          }
+        }
+      }
+    },
+    "settings.erase.action": {
+      "comment": "Confirms erasure.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete everything"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina tutto"
+          }
+        }
+      }
+    },
+    "settings.erase.message": {
+      "comment": "States the consequence.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every deck, note and study record on this device will be deleted. This cannot be undone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutti i mazzi, le note e lo storico di studio su questo dispositivo saranno eliminati. L'operazione è irreversibile."
+          }
+        }
+      }
+    },
+    "settings.erase.title": {
+      "comment": "Erase confirmation title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminare tutti i dati?"
+          }
+        }
+      }
+    },
+    "settings.help": {
+      "comment": "Help screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Help"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aiuto"
+          }
+        }
+      }
+    },
+    "settings.new_per_day": {
+      "comment": "New cards per day.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New per day"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuove al giorno"
+          }
+        }
+      }
+    },
+    "settings.privacy": {
+      "comment": "Privacy screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        }
+      }
+    },
+    "settings.reminder": {
+      "comment": "Reminder section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promemoria"
+          }
+        }
+      }
+    },
+    "settings.reminder.enabled": {
+      "comment": "Enables the daily reminder.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily reminder"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promemoria giornaliero"
+          }
+        }
+      }
+    },
+    "settings.reminder.time": {
+      "comment": "Reminder time.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ora"
+          }
+        }
+      }
+    },
+    "settings.restore": {
+      "comment": "Restores a backup.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from backup"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripristina da backup"
+          }
+        }
+      }
+    },
+    "settings.restore.done": {
+      "comment": "Restore finished.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore complete"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripristino completato"
+          }
+        }
+      }
+    },
+    "settings.restore.summary %lld %lld %lld": {
+      "comment": "What the restore added.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld decks and %lld notes added, %lld already present."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld mazzi e %lld note aggiunti, %lld già presenti."
+          }
+        }
+      }
+    },
+    "settings.reviews_per_day": {
+      "comment": "Reviews per day.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviews per day"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripassi al giorno"
+          }
+        }
+      }
+    },
+    "settings.study": {
+      "comment": "Study section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Study"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Studio"
+          }
+        }
+      }
+    },
+    "settings.study.help": {
+      "comment": "Explains the limits.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many cards a day Flash Up puts in front of you."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quante schede al giorno Flash Up ti propone."
+          }
+        }
+      }
+    },
+    "settings.sync": {
+      "comment": "Sync section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud"
+          }
+        }
+      }
+    },
+    "settings.sync.explanation": {
+      "comment": "What sync does.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your cards stay on your devices and in your own iCloud."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le tue schede restano sui tuoi dispositivi e nel tuo iCloud."
+          }
+        }
+      }
+    },
+    "settings.version": {
+      "comment": "App version row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versione"
+          }
+        }
+      }
+    },
     "shell.placeholder.description": {
       "comment": "Empty state shown in every tab of the scaffold shell before its feature ships.",
       "extractionState": "manual",
@@ -213,6 +2949,222 @@
           "stringUnit": {
             "state": "translated",
             "value": "Qui non c'è ancora niente."
+          }
+        }
+      }
+    },
+    "stats.axis_day": {
+      "comment": "Chart axis.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giorno"
+          }
+        }
+      }
+    },
+    "stats.axis_reviews": {
+      "comment": "Chart axis.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviews"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripassi"
+          }
+        }
+      }
+    },
+    "stats.days %lld": {
+      "comment": "Streak value.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld giorni"
+          }
+        }
+      }
+    },
+    "stats.history": {
+      "comment": "History chart header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 30 days"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultimi 30 giorni"
+          }
+        }
+      }
+    },
+    "stats.history_value %lld": {
+      "comment": "Chart accessibility value.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld answers in the last 30 days"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld risposte negli ultimi 30 giorni"
+          }
+        }
+      }
+    },
+    "stats.overview": {
+      "comment": "Overview section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overview"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riepilogo"
+          }
+        }
+      }
+    },
+    "stats.per_deck": {
+      "comment": "Per-deck section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By deck"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per mazzo"
+          }
+        }
+      }
+    },
+    "stats.retention_30": {
+      "comment": "30-day retention.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retention (30 days)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ritenzione (30 giorni)"
+          }
+        }
+      }
+    },
+    "stats.retention_7": {
+      "comment": "7-day retention.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retention (7 days)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ritenzione (7 giorni)"
+          }
+        }
+      }
+    },
+    "stats.streak": {
+      "comment": "Streak row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streak"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie"
+          }
+        }
+      }
+    },
+    "stats.studied_today": {
+      "comment": "Cards answered today.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Studied today"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Studiate oggi"
+          }
+        }
+      }
+    },
+    "stats.title": {
+      "comment": "Statistics screen title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistiche"
           }
         }
       }
@@ -361,6 +3313,96 @@
         }
       }
     },
+    "sync.failed": {
+      "comment": "Sync state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync problem"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problema di sincronizzazione"
+          }
+        }
+      }
+    },
+    "sync.no_account": {
+      "comment": "Sync state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No iCloud account"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun account iCloud"
+          }
+        }
+      }
+    },
+    "sync.offline": {
+      "comment": "Sync state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline — changes will sync later"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline: le modifiche si sincronizzeranno dopo"
+          }
+        }
+      }
+    },
+    "sync.syncing": {
+      "comment": "Sync state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syncing…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizzazione…"
+          }
+        }
+      }
+    },
+    "sync.up_to_date": {
+      "comment": "Sync state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up to date"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiornato"
+          }
+        }
+      }
+    },
     "tab.groups": {
       "comment": "Title of the Groups tab.",
       "extractionState": "manual",
@@ -487,6 +3529,96 @@
         }
       }
     },
+    "today.resume.action": {
+      "comment": "Resumes the session.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprendi"
+          }
+        }
+      }
+    },
+    "today.resume.discard": {
+      "comment": "Discards the session.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start fresh"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ricomincia"
+          }
+        }
+      }
+    },
+    "today.resume.message %lld": {
+      "comment": "Resume prompt detail.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cards left from earlier."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sono rimaste %lld schede da prima."
+          }
+        }
+      }
+    },
+    "today.resume.title": {
+      "comment": "Resume prompt title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume your session?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprendi la sessione?"
+          }
+        }
+      }
+    },
+    "today.statistics": {
+      "comment": "Opens statistics.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistiche"
+          }
+        }
+      }
+    },
     "today.streak %lld": {
       "comment": "Consecutive days studied.",
       "extractionState": "manual",
@@ -555,6 +3687,150 @@
           "stringUnit": {
             "state": "translated",
             "value": "I tuoi mazzi"
+          }
+        }
+      }
+    },
+    "trash.confirm.action": {
+      "comment": "Confirms emptying.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty trash"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svuota cestino"
+          }
+        }
+      }
+    },
+    "trash.confirm.message": {
+      "comment": "States the consequence.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes and their study history will be deleted for good."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le note e la loro cronologia di studio saranno eliminate definitivamente."
+          }
+        }
+      }
+    },
+    "trash.confirm.title": {
+      "comment": "Confirmation title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty the trash?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svuotare il cestino?"
+          }
+        }
+      }
+    },
+    "trash.empty.message": {
+      "comment": "Reassures about deletion.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted notes stay here so you can get them back."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le note eliminate restano qui, così puoi recuperarle."
+          }
+        }
+      }
+    },
+    "trash.empty.title": {
+      "comment": "Trash is empty.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trash is empty"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il cestino è vuoto"
+          }
+        }
+      }
+    },
+    "trash.empty_action": {
+      "comment": "Empties the trash.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svuota"
+          }
+        }
+      }
+    },
+    "trash.restorable": {
+      "comment": "Row subtitle.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can be restored"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperabile"
+          }
+        }
+      }
+    },
+    "trash.restore": {
+      "comment": "Restores a note.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripristina"
           }
         }
       }

@@ -21,28 +21,15 @@ public struct DeckSummary: Identifiable, Equatable, Sendable {
 public struct TodaySnapshot: Equatable, Sendable {
     public let dueCount: Int
     public let newCount: Int
-    public let studiedToday: Int
-    public let streakDays: Int
-    /// Share of non-again answers over the last 7 days; `nil` when there is too little
-    /// history to be meaningful (spec §A6.7 hides noisy numbers).
-    public let retention7Days: Double?
+    public let metrics: StudyMetrics
     public let decks: [DeckSummary]
 
     public var hasWorkToDo: Bool { dueCount + newCount > 0 }
 
-    public init(
-        dueCount: Int,
-        newCount: Int,
-        studiedToday: Int,
-        streakDays: Int,
-        retention7Days: Double?,
-        decks: [DeckSummary]
-    ) {
+    public init(dueCount: Int, newCount: Int, metrics: StudyMetrics, decks: [DeckSummary]) {
         self.dueCount = dueCount
         self.newCount = newCount
-        self.studiedToday = studiedToday
-        self.streakDays = streakDays
-        self.retention7Days = retention7Days
+        self.metrics = metrics
         self.decks = decks
     }
 }
@@ -56,17 +43,55 @@ public enum StudyScope: Equatable, Hashable, Sendable {
 /// The read and write surface the app talks to.
 ///
 /// Deliberately expressed in domain value types with no Core Data or CloudKit in sight, so
-/// the interface layer can be built and tested against an in-memory implementation and
-/// then run unchanged on the persistent one (`fu-04-data-core`).
+/// the interface layer can be built and tested against an in-memory implementation and then
+/// run unchanged on the persistent one (`fu-04-data-core`).
 public protocol LibraryRepository: Sendable {
+    // MARK: Reading
+
     func todaySnapshot(now: Date) async -> TodaySnapshot
+    func metrics(now: Date) async -> StudyMetrics
     func decks() async -> [DeckSummary]
-    func cards(in scope: StudyScope) async -> [Card]
-    /// Cards to study now, due first and then new, honouring the daily limits.
+    func deck(_ id: UUID) async -> Deck?
+    func notes(in deckID: UUID, filters: SearchFilters, now: Date) async -> [NoteSummary]
+    func search(_ filters: SearchFilters, now: Date) async -> [NoteSummary]
+    func note(_ id: UUID) async -> Note?
+    func cards(for noteID: UUID) async -> [Card]
+    func trashedNotes() async -> [Note]
+    func contentHashes(in deckID: UUID) async -> [UUID: String]
+    func settings() async -> StudySettings
+    func syncStatus() async -> SyncStatus
+
+    // MARK: Studying
+
     func studyQueue(scope: StudyScope, now: Date) async -> [Card]
+    func cards(withIDs ids: [UUID]) async -> [Card]
     func schedule(for cardID: UUID) async -> ReviewState?
-    /// Records an answer and returns the resulting transition.
-    func record(_ transition: ScheduleTransition, for cardID: UUID) async
-    /// Reverts the most recent answer of the current session (spec §A6.3).
+    func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) async
     func revokeLastAnswer(in scope: StudyScope) async
+    func setSuspended(_ suspended: Bool, cardID: UUID) async
+    /// Revokes every log for the card and drops its schedule, so it returns to "new".
+    func resetCard(_ cardID: UUID) async
+    func storedSession() async -> SessionState?
+    func storeSession(_ state: SessionState?) async
+
+    // MARK: Writing
+
+    func createDeck(named name: String) async -> Deck
+    func renameDeck(_ deckID: UUID, to name: String) async
+    func trashDeck(_ deckID: UUID) async
+    @discardableResult func saveNote(_ draft: NoteDraft) async -> Note?
+    func trashNote(_ noteID: UUID) async
+    func restoreNote(_ noteID: UUID) async
+    func emptyTrash() async
+    func updateSettings(_ settings: StudySettings) async
+
+    // MARK: Portability
+
+    func commitImport(_ plan: ImportPlan, into deckID: UUID, sourceName: String, wasNewDeck: Bool) async -> ImportBatch
+    func undoImport(_ batchID: UUID) async
+    func exportCSV(deckID: UUID?) async -> Data
+    func backupDocument(appVersion: String, now: Date) async -> BackupDocument
+    func restore(_ document: BackupDocument) async -> RestoreSummary
+    /// Irreversible local erasure (spec §A11.2 DeleteAllDataFlow).
+    func deleteAllData() async
 }

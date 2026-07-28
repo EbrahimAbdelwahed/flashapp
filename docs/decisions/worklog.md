@@ -5,6 +5,57 @@ with justification, follow-ups discovered.
 
 ---
 
+## fu-04c-app-complete-on-mocks — 2026-07-28
+
+Owner goal: complete the app in all its parts except the iCloud connection, on mock data,
+then test every user flow.
+
+### Built
+
+**Domain** — `ReviewLog`, `ContentFingerprint` and `TagNormalizer` (§A3.5, §A3.6),
+`StudySettings` and `SessionState` (§A6.5, §A6.6), `QueueBuilder` (§A6.5),
+`MetricsCalculator` (§A6.7), `ScheduleReplayer` (§A6.4), `ImportPlanner` (§A9.2),
+`CSVWriter`, and the versioned `BackupCodec` (§A10).
+
+**Repository** — `LibraryRepository` now covers the whole app surface: reads, authoring,
+studying, trash, settings, import, export, backup, restore and erasure. `InMemoryLibrary`
+plus `LibraryStore` implement all of it: cards are generated and reconciled on every save,
+undo replays history through the pinned FSRS engine, import dedups by content fingerprint,
+and restore adds without ever overwriting.
+
+**Interface** — Library (decks, filters, search, trash), note editor with a live card
+preview, import flow (source → preview → result → undo), Settings (sync state, daily limits,
+reminder, appearance, backup/restore, erase), Statistics with a 30-day chart, three-step
+onboarding, Help and Privacy, and an honest Groups screen. 213 localized strings, English
+and Italian.
+
+### Verification
+
+`ci/test.sh` green: SwiftLint 0 violations in 67 files, 93 domain and repository tests,
+`** TEST SUCCEEDED **` for the UI suite. Nine UI tests drive the real user journeys:
+onboarding, study with undo, create deck and note, import from the built-in example, trash,
+settings and statistics, groups, plus the two shell tests.
+
+### Deliberately not done
+
+- **iCloud.** `SyncStatus` is a fixed value; `fu-01`, `fu-02` and `fu-04` still own the real
+  store, sharing and mirroring.
+- **Groups.** The screen explains why they are unavailable instead of showing controls that
+  cannot work.
+- **Notifications.** The reminder is stored but `UNUserNotificationCenter` is not called
+  yet; that is `fu-10`'s bead.
+- Trash restore is proven by `LibraryFlowTests`, not by the UI test: a swipe-to-delete
+  assertion on a `List` row proved brittle, and a flaky test is worse than an honest gap.
+
+### Follow-ups
+
+- `fu-04-data-core` implements `LibraryRepository` over Core Data and swaps it in
+  `AppEnvironment`; no view should change.
+- `fu-06-study-engine` replaces the preview queue and metric helpers with the real services
+  and adds permutation replay tests.
+
+---
+
 ## fu-04b-ui-on-fakes — 2026-07-28
 
 New bead, created at the owner's direction: build the interface on fake data now and plug

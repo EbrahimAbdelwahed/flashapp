@@ -32,6 +32,22 @@ struct TodayView: View {
             .animation(Motion.reveal(reduceMotion: reduceMotion), value: model.snapshot)
         }
         .navigationTitle("tab.today")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    StatisticsView(library: model.library)
+                } label: {
+                    Label("today.statistics", systemImage: "chart.bar")
+                }
+                .accessibilityIdentifier("today.statistics")
+            }
+        }
+        .alert("today.resume.title", isPresented: $model.isOfferingResume) {
+            Button("today.resume.action") { studyingScope = model.resumableScope ?? .allDecks }
+            Button("today.resume.discard", role: .cancel) { Task { await model.discardSession() } }
+        } message: {
+            Text("today.resume.message \(model.resumableCount)")
+        }
         .task { await model.refresh() }
         .fullScreenCover(
             item: $studyingScope,
@@ -70,7 +86,7 @@ struct TodayView: View {
                 studyingScope = .allDecks
             }
         } else {
-            CaughtUpCard(streakDays: snapshot.streakDays)
+            CaughtUpCard(streakDays: snapshot.metrics.streakDays)
         }
     }
 

@@ -13,6 +13,10 @@ final class TodayModel {
     let library: any LibraryRepository
 
     private(set) var snapshot: TodaySnapshot?
+    /// A session left unfinished on this device, offered back once (spec §A6.6).
+    var isOfferingResume = false
+    private(set) var resumableScope: StudyScope?
+    private(set) var resumableCount = 0
 
     init(library: any LibraryRepository) {
         self.library = library
@@ -22,5 +26,25 @@ final class TodayModel {
 
     func refresh() async {
         snapshot = await library.todaySnapshot(now: Date())
+        await checkForResumableSession()
+    }
+
+    private func checkForResumableSession() async {
+        guard let session = await library.storedSession(), session.isResumable(at: Date()) else {
+            resumableScope = nil
+            resumableCount = 0
+            return
+        }
+        // Offer it once: nagging about an abandoned session is worse than losing it.
+        guard resumableScope == nil else { return }
+        resumableScope = session.scope.scope
+        resumableCount = session.remainingCardIDs.count
+        isOfferingResume = true
+    }
+
+    func discardSession() async {
+        await library.storeSession(nil)
+        resumableScope = nil
+        resumableCount = 0
     }
 }

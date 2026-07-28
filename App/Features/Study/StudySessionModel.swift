@@ -16,6 +16,9 @@ final class StudySessionModel {
     private(set) var preview: SchedulePreview?
     private(set) var answeredCount = 0
     private(set) var canUndo = false
+    /// When the current prompt appeared, so the answer can record how long it took.
+    private var shownAt = Date()
+    private var startedAt = Date()
 
     init(library: any LibraryRepository, scope: StudyScope, scheduler: FSRSService = SwiftFSRSAdapter()) {
         self.library = library
@@ -36,15 +39,46 @@ final class StudySessionModel {
     var remaining: Int { max(queue.count - index, 0) }
 
     func start() async {
-        queue = await library.studyQueue(scope: scope, now: Date())
+        // A stored session for this scope wins: the user asked to carry on, not to be
+        // handed a freshly built queue.
+        if let stored = await library.storedSession(),
+           stored.scope.scope == scope,
+           stored.isResumable(at: Date()) {
+            queue = await library.cards(withIDs: stored.remainingCardIDs)
+            answeredCount = stored.answeredCount
+            startedAt = stored.startedAt
+        } else {
+            queue = await library.studyQueue(scope: scope, now: Date())
+            answeredCount = 0
+            startedAt = Date()
+        }
         index = 0
-        answeredCount = 0
         canUndo = false
+        await persistSession()
         await loadPreview()
+    }
+
+    private func persistSession() async {
+        guard !isFinished else {
+            await library.storeSession(nil)
+            return
+        }
+        await library.storeSession(
+            SessionState(
+                scope: scope,
+                remainingCardIDs: queue[index...].map(\.id),
+                answeredCount: answeredCount,
+                startedAt: startedAt
+            )
+        )
     }
 
     func reveal() {
         isRevealed = true
+    }
+
+    private func durationMs(since start: Date) -> Int {
+        Int(Date().timeIntervalSince(start) * 1000)
     }
 
     func answer(_ grade: Grade) async {
@@ -53,10 +87,11 @@ final class StudySessionModel {
         let state = await library.schedule(for: card.id) ?? .unseen(dueAt: now)
         guard let transition = try? scheduler.next(state, grade: grade, at: now) else { return }
 
-        await library.record(transition, for: card.id)
+        await library.record(transition, for: card.id, durationMs: durationMs(since: shownAt))
         answeredCount += 1
         canUndo = true
         advance()
+        await persistSession()
         await loadPreview()
     }
 
@@ -80,6 +115,7 @@ final class StudySessionModel {
     private func advance() {
         index += 1
         isRevealed = false
+        shownAt = Date()
     }
 
     private func loadPreview() async {

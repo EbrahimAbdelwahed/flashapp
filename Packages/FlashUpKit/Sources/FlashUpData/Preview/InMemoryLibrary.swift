@@ -1,184 +1,272 @@
 import FlashUpDomain
 import Foundation
 
-/// In-memory `LibraryRepository` used to build and demo the interface before the Core Data
-/// stack exists (`fu-04-data-core`).
+/// In-memory `LibraryRepository` used to build, demo and test the interface before the Core
+/// Data stack exists (`fu-04-data-core`).
 ///
-/// It is a real implementation of the real protocol, not a stub: schedules move through the
-/// pinned FSRS adapter, answers accumulate, and undo works. What it does not do is persist
-/// anything or talk to CloudKit. When the persistent repository lands, the interface layer
-/// is unchanged — only `AppEnvironment` picks a different implementation.
-///
-/// The queue and metric rules here are the smallest thing that behaves correctly for the
-/// screens; `fu-06-study-engine` replaces them with the real `QueueBuilder` and
-/// `MetricsService`.
+/// It is a real implementation of the real protocol, not a stub: content is generated into
+/// cards, schedules move through the pinned FSRS adapter, undo replays history, import and
+/// backup round-trip. What it does not do is persist anything or talk to CloudKit. When the
+/// persistent repository lands, the interface layer is unchanged — only `AppEnvironment`
+/// picks a different implementation.
 public actor InMemoryLibrary: LibraryRepository {
-    /// Spec §A6.5 defaults.
-    private let newPerDay = 20
-    private let reviewsPerDay = 200
-
     private let scheduler: FSRSService
-    private var decksByID: [UUID: Deck] = [:]
-    private var notesByID: [UUID: Note] = [:]
-    private var cards: [Card] = []
-    private var schedules: [UUID: ReviewState] = [:]
-    private var answers: [ScheduleTransition] = []
-    private var answeredCardIDs: [UUID] = []
+    private var store: LibraryStore
+    /// Fixed while sync is not wired; the interface is built against every state.
+    private var status: SyncStatus
 
-    public init(scheduler: FSRSService = SwiftFSRSAdapter(), seeded: Bool = true) {
+    public init(
+        scheduler: FSRSService = SwiftFSRSAdapter(),
+        seeded: Bool = true,
+        status: SyncStatus = .upToDate(lastSyncedAt: Date())
+    ) {
         self.scheduler = scheduler
-        guard seeded else { return }
-
-        // Seeding is computed outside the actor's isolation and then assigned, so `init`
-        // never calls an isolated method.
-        let seed = Self.seedContent(scheduler: scheduler)
-        self.decksByID = seed.decksByID
-        self.notesByID = seed.notesByID
-        self.cards = seed.cards
-        self.schedules = seed.schedules
+        self.status = status
+        self.store = seeded ? DemoContent.seededStore(scheduler: scheduler) : LibraryStore()
     }
 
-    // MARK: - Reads
+    // MARK: - Reading
 
     public func todaySnapshot(now: Date) async -> TodaySnapshot {
-        let summaries = deckSummaries(now: now)
+        let candidates = store.candidates(in: .allDecks)
         return TodaySnapshot(
-            dueCount: summaries.reduce(0) { $0 + $1.dueCount },
-            newCount: summaries.reduce(0) { $0 + $1.newCount },
-            studiedToday: answers.filter { Calendar.current.isDate($0.reviewedAt, inSameDayAs: now) }.count,
-            streakDays: answers.isEmpty ? 0 : 1,
-            retention7Days: retention(now: now),
-            decks: summaries
+            dueCount: QueueBuilder.dueCount(candidates: candidates, now: now),
+            newCount: QueueBuilder.newCount(candidates: candidates),
+            metrics: MetricsCalculator.metrics(logs: store.logs, now: now),
+            decks: deckSummaries(now: now)
         )
+    }
+
+    public func metrics(now: Date) async -> StudyMetrics {
+        MetricsCalculator.metrics(logs: store.logs, now: now)
     }
 
     public func decks() async -> [DeckSummary] {
         deckSummaries(now: Date())
     }
 
-    public func cards(in scope: StudyScope) async -> [Card] {
-        cards.filter { matches($0, scope) }
+    public func deck(_ id: UUID) async -> Deck? {
+        store.deckDeletedAt[id] == nil ? store.decks[id] : nil
     }
 
+    public func notes(in deckID: UUID, filters: SearchFilters, now: Date) async -> [NoteSummary] {
+        summaries(for: store.liveNotes(in: deckID), filters: filters, now: now)
+    }
+
+    public func search(_ filters: SearchFilters, now: Date) async -> [NoteSummary] {
+        summaries(for: store.liveNotes(), filters: filters, now: now)
+    }
+
+    public func note(_ id: UUID) async -> Note? {
+        store.noteDeletedAt[id] == nil ? store.notes[id] : nil
+    }
+
+    public func cards(for noteID: UUID) async -> [Card] {
+        store.cards(forNote: noteID)
+    }
+
+    public func trashedNotes() async -> [Note] {
+        store.noteDeletedAt.keys
+            .compactMap { store.notes[$0] }
+            .sorted { ($0.updatedAt) > ($1.updatedAt) }
+    }
+
+    public func contentHashes(in deckID: UUID) async -> [UUID: String] {
+        var result: [UUID: String] = [:]
+        for note in store.liveNotes(in: deckID) {
+            result[note.id] = store.contentHashes[note.id]
+        }
+        return result
+    }
+
+    public func settings() async -> StudySettings {
+        store.settings
+    }
+
+    public func syncStatus() async -> SyncStatus {
+        status
+    }
+
+    // MARK: - Studying
+
     public func studyQueue(scope: StudyScope, now: Date) async -> [Card] {
-        let eligible = cards.filter { matches($0, scope) }
+        QueueBuilder.build(
+            candidates: store.candidates(in: scope),
+            settings: store.settings,
+            progress: store.progress(in: scope, now: now),
+            now: now
+        )
+    }
 
-        let due = eligible
-            .compactMap { card -> (Card, Date)? in
-                guard let state = schedules[card.id], state.dueAt <= now else { return nil }
-                return (card, state.dueAt)
-            }
-            .sorted { $0.1 < $1.1 }
-            .prefix(reviewsPerDay)
-            .map(\.0)
-
-        let unseen = eligible
-            .filter { schedules[$0.id] == nil }
-            .sorted { lhs, rhs in
-                let left = notesByID[lhs.noteID]?.createdAt ?? .distantPast
-                let right = notesByID[rhs.noteID]?.createdAt ?? .distantPast
-                return left == right ? lhs.templateKey < rhs.templateKey : left < right
-            }
-            .prefix(newPerDay)
-
-        // Due first, then new (brief §Study).
-        return due + unseen
+    public func cards(withIDs ids: [UUID]) async -> [Card] {
+        ids.compactMap { store.cards[$0] }
     }
 
     public func schedule(for cardID: UUID) async -> ReviewState? {
-        schedules[cardID]
+        store.schedules[cardID]
     }
 
-    // MARK: - Writes
-
-    public func record(_ transition: ScheduleTransition, for cardID: UUID) async {
-        schedules[cardID] = transition.updated
-        answers.append(transition)
-        answeredCardIDs.append(cardID)
+    public func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) async {
+        store.record(transition, for: cardID, durationMs: durationMs)
     }
 
     public func revokeLastAnswer(in scope: StudyScope) async {
-        guard let cardID = answeredCardIDs.last, let transition = answers.last else { return }
-        answeredCardIDs.removeLast()
-        answers.removeLast()
-        // The pre-transition snapshot is exactly what undo restores; a `new` card loses its
-        // schedule entirely so it returns to the unseen queue.
-        schedules[cardID] = transition.previous.state == .new ? nil : transition.previous
+        store.revokeLastAnswer(in: scope, using: scheduler, now: Date())
     }
 
-    // MARK: - Derived values
+    public func setSuspended(_ suspended: Bool, cardID: UUID) async {
+        let now = Date()
+        if var state = store.schedules[cardID] {
+            state.suspendedAt = suspended ? now : nil
+            store.schedules[cardID] = state
+        } else if suspended {
+            // A never-studied card can still be suspended: it gets a schedule that only
+            // carries the suspension.
+            var state = ReviewState.unseen(dueAt: now)
+            state.suspendedAt = now
+            store.schedules[cardID] = state
+        }
+    }
+
+    public func resetCard(_ cardID: UUID) async {
+        let now = Date()
+        for index in store.logs.indices where store.logs[index].cardID == cardID {
+            store.logs[index].revokedAt = store.logs[index].revokedAt ?? now
+        }
+        store.schedules.removeValue(forKey: cardID)
+    }
+
+    public func storedSession() async -> SessionState? {
+        store.session
+    }
+
+    public func storeSession(_ state: SessionState?) async {
+        store.session = state
+    }
+
+    // MARK: - Writing
+
+    public func createDeck(named name: String) async -> Deck {
+        let deck = Deck(name: name)
+        store.decks[deck.id] = deck
+        return deck
+    }
+
+    public func renameDeck(_ deckID: UUID, to name: String) async {
+        guard var deck = store.decks[deckID] else { return }
+        deck.name = name
+        deck.updatedAt = Date()
+        store.decks[deckID] = deck
+    }
+
+    public func trashDeck(_ deckID: UUID) async {
+        store.deckDeletedAt[deckID] = Date()
+    }
+
+    @discardableResult
+    public func saveNote(_ draft: NoteDraft) async -> Note? {
+        store.save(draft, now: Date())
+    }
+
+    public func trashNote(_ noteID: UUID) async {
+        store.noteDeletedAt[noteID] = Date()
+    }
+
+    public func restoreNote(_ noteID: UUID) async {
+        store.noteDeletedAt.removeValue(forKey: noteID)
+    }
+
+    public func emptyTrash() async {
+        for noteID in store.noteDeletedAt.keys {
+            for card in store.cards(forNote: noteID) {
+                store.cards.removeValue(forKey: card.id)
+                store.schedules.removeValue(forKey: card.id)
+            }
+            store.notes.removeValue(forKey: noteID)
+            store.contentHashes.removeValue(forKey: noteID)
+        }
+        store.noteDeletedAt.removeAll()
+
+        for deckID in store.deckDeletedAt.keys {
+            store.decks.removeValue(forKey: deckID)
+        }
+        store.deckDeletedAt.removeAll()
+    }
+
+    public func updateSettings(_ settings: StudySettings) async {
+        store.settings = settings
+    }
+
+    // MARK: - Derived
 
     private func deckSummaries(now: Date) -> [DeckSummary] {
-        decksByID.values
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            .map { deck in
-                let deckCards = cards.filter { $0.deckID == deck.id }
-                return DeckSummary(
-                    deck: deck,
-                    dueCount: deckCards.filter { (schedules[$0.id]?.dueAt).map { $0 <= now } ?? false }.count,
-                    newCount: deckCards.filter { schedules[$0.id] == nil }.count,
-                    totalCards: deckCards.count
-                )
+        store.liveDecks.map { deck in
+            let candidates = store.candidates(in: .deck(deck.id))
+            return DeckSummary(
+                deck: deck,
+                dueCount: QueueBuilder.dueCount(candidates: candidates, now: now),
+                newCount: QueueBuilder.newCount(candidates: candidates),
+                totalCards: candidates.count
+            )
+        }
+    }
+
+    private func summaries(for notes: [Note], filters: SearchFilters, now: Date) -> [NoteSummary] {
+        notes
+            .filter { matches($0, filters: filters, now: now) }
+            .map(summary(for:))
+            .sorted { lhs, rhs in
+                switch filters.sorting {
+                case .updated: lhs.note.updatedAt > rhs.note.updatedAt
+                case .created: lhs.note.createdAt > rhs.note.createdAt
+                case .name: lhs.note.front.localizedCaseInsensitiveCompare(rhs.note.front) == .orderedAscending
+                }
             }
     }
 
-    private func retention(now: Date) -> Double? {
-        let window = now.addingTimeInterval(-7 * 86_400)
-        let mature = answers.filter { $0.reviewedAt >= window && $0.previous.state != .new }
-        guard mature.count >= 10 else { return nil }
-        return Double(mature.filter { $0.grade != .again }.count) / Double(mature.count)
+    private func summary(for note: Note) -> NoteSummary {
+        let cards = store.cards(forNote: note.id)
+        let states = cards.map { store.schedules[$0.id] }
+        return NoteSummary(
+            note: note,
+            cardCount: cards.count,
+            dueCount: states.filter { ($0?.dueAt).map { $0 <= Date() } ?? false }.count,
+            isNew: states.allSatisfy { $0 == nil },
+            isSuspended: !states.isEmpty && states.allSatisfy { $0?.suspendedAt != nil }
+        )
     }
 
-    private func matches(_ card: Card, _ scope: StudyScope) -> Bool {
-        switch scope {
-        case .allDecks: true
-        case let .deck(id): card.deckID == id
+    private func matches(_ note: Note, filters: SearchFilters, now: Date) -> Bool {
+        let query = filters.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !query.isEmpty {
+            let haystack = [note.front, note.back ?? ""] + note.tags
+            guard haystack.contains(where: { $0.localizedCaseInsensitiveContains(query) }) else { return false }
         }
-    }
 
-    // MARK: - Seeding
+        if let type = filters.type, note.type != type { return false }
 
-    private struct Seed {
-        var decksByID: [UUID: Deck] = [:]
-        var notesByID: [UUID: Note] = [:]
-        var cards: [Card] = []
-        var schedules: [UUID: ReviewState] = [:]
-    }
-
-    private static func seedContent(scheduler: FSRSService) -> Seed {
-        var seed = Seed()
-
-        let decks = DemoContent.decks()
-        for deck in decks { seed.decksByID[deck.id] = deck }
-
-        for note in DemoContent.notes(in: decks) {
-            seed.notesByID[note.id] = note
-            for template in CardGenerator.generate(note) {
-                seed.cards.append(Card(noteID: note.id, deckID: note.deckID, template: template))
+        switch filters.state {
+        case .any:
+            return true
+        case .new:
+            return store.cards(forNote: note.id).allSatisfy { store.schedules[$0.id] == nil }
+        case .due:
+            return store.cards(forNote: note.id).contains { card in
+                guard let state = store.schedules[card.id], state.suspendedAt == nil else { return false }
+                return state.dueAt <= now
             }
+        case .suspended:
+            return store.cards(forNote: note.id).contains { store.schedules[$0.id]?.suspendedAt != nil }
         }
-
-        seed.schedules = seedHistory(for: seed.cards, scheduler: scheduler)
-        return seed
     }
 
-    /// Gives roughly a third of the cards a plausible past, so the interface is designed
-    /// against a used library rather than an empty one: some cards due now, some later.
-    private static func seedHistory(for cards: [Card], scheduler: FSRSService) -> [UUID: ReviewState] {
-        let now = Date()
-        let grades: [Grade] = [.good, .easy, .hard, .good]
-        var schedules: [UUID: ReviewState] = [:]
+    // MARK: - Portability (see InMemoryLibrary+Portability)
 
-        for (offset, card) in cards.enumerated() where offset % 3 == 0 {
-            let answeredAt = now.addingTimeInterval(-Double((offset % 5) + 1) * 86_400)
-            guard let transition = try? scheduler.next(
-                .unseen(dueAt: answeredAt),
-                grade: grades[offset % grades.count],
-                at: answeredAt
-            ) else { continue }
-            schedules[card.id] = transition.updated
-        }
+    func mutate(_ change: (inout LibraryStore) -> Void) {
+        change(&store)
+    }
 
-        return schedules
+    func read<T>(_ value: (LibraryStore) -> T) -> T {
+        value(store)
     }
 }

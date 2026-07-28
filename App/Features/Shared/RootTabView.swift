@@ -57,8 +57,12 @@ struct RootTabView: View {
         switch tab {
         case .today:
             TodayView(library: environment.library)
-        case .library, .groups, .settings:
-            TabPlaceholderView(tab: tab)
+        case .library:
+            LibraryView(library: environment.library)
+        case .groups:
+            GroupsView()
+        case .settings:
+            SettingsView(library: environment.library)
         }
     }
 }

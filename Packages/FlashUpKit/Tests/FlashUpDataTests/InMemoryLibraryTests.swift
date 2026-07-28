@@ -65,11 +65,11 @@ struct InMemoryLibraryTests {
         let before = await library.schedule(for: card.id) ?? .unseen(dueAt: now)
 
         let transition = try scheduler.next(before, grade: .good, at: now)
-        await library.record(transition, for: card.id)
+        await library.record(transition, for: card.id, durationMs: 1_100)
 
         let after = await library.schedule(for: card.id)
         #expect(after == transition.updated)
-        #expect(await library.todaySnapshot(now: now).studiedToday == 1)
+        #expect(await library.todaySnapshot(now: now).metrics.studiedToday == 1)
     }
 
     @Test("Undo restores the state the card had before the answer")
@@ -81,10 +81,10 @@ struct InMemoryLibraryTests {
         let before = await library.schedule(for: card.id)
 
         let transition = try scheduler.next(before ?? .unseen(dueAt: now), grade: .again, at: now)
-        await library.record(transition, for: card.id)
+        await library.record(transition, for: card.id, durationMs: 1_100)
         await library.revokeLastAnswer(in: .allDecks)
 
         #expect(await library.schedule(for: card.id) == before)
-        #expect(await library.todaySnapshot(now: now).studiedToday == 0)
+        #expect(await library.todaySnapshot(now: now).metrics.studiedToday == 0)
     }
 }

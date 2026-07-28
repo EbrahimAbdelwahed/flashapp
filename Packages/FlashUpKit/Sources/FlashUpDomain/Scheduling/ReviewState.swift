@@ -24,6 +24,10 @@ public struct ReviewState: Equatable, Sendable {
     public let lastReviewedAt: Date?
     public let reps: Int
     public let lapses: Int
+    /// Set while the card is suspended: it stays in the library but leaves every queue
+    /// (spec §A6.3). Suspension is a user choice, not a scheduling outcome, so the engine
+    /// never reads or writes it.
+    public var suspendedAt: Date?
 
     public init(
         state: ScheduleState,
@@ -32,7 +36,8 @@ public struct ReviewState: Equatable, Sendable {
         dueAt: Date,
         lastReviewedAt: Date?,
         reps: Int,
-        lapses: Int
+        lapses: Int,
+        suspendedAt: Date? = nil
     ) {
         self.state = state
         self.stability = stability
@@ -41,6 +46,7 @@ public struct ReviewState: Equatable, Sendable {
         self.lastReviewedAt = lastReviewedAt
         self.reps = reps
         self.lapses = lapses
+        self.suspendedAt = suspendedAt
     }
 
     /// The state of a card that has never been answered. A card with no `CDSchedule` row
@@ -53,7 +59,8 @@ public struct ReviewState: Equatable, Sendable {
             dueAt: dueAt,
             lastReviewedAt: nil,
             reps: 0,
-            lapses: 0
+            lapses: 0,
+            suspendedAt: nil
         )
     }
 }

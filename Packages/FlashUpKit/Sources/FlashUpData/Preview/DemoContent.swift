@@ -7,6 +7,46 @@ import Foundation
 /// interface is always designed against realistic Italian and English study material
 /// rather than lorem ipsum.
 public enum DemoContent {
+    /// Builds a library that looks used: content, generated cards, and enough history that
+    /// counters, streaks and the queue all have something real to show.
+    static func seededStore(scheduler: FSRSService) -> LibraryStore {
+        var store = LibraryStore()
+        let decks = decks()
+        for deck in decks { store.decks[deck.id] = deck }
+
+        for note in notes(in: decks) {
+            let draft = NoteDraft(
+                id: note.id,
+                deckID: note.deckID,
+                type: note.type,
+                front: note.front,
+                back: note.back,
+                tags: note.tags
+            )
+            _ = store.save(draft, now: note.createdAt)
+        }
+
+        seedHistory(into: &store, scheduler: scheduler, now: Date())
+        return store
+    }
+
+    /// Answers roughly a third of the cards over the past few days, so streaks, retention
+    /// and the due queue are exercised by the interface from the first launch.
+    private static func seedHistory(into store: inout LibraryStore, scheduler: FSRSService, now: Date) {
+        let grades: [Grade] = [.good, .easy, .hard, .good, .good, .again]
+        let cards = store.cards.values.sorted { $0.id.uuidString < $1.id.uuidString }
+
+        for (offset, card) in cards.enumerated() where offset % 3 == 0 {
+            let answeredAt = now.addingTimeInterval(-Double((offset % 4) + 1) * 86_400)
+            guard let transition = try? scheduler.next(
+                .unseen(dueAt: answeredAt),
+                grade: grades[offset % grades.count],
+                at: answeredAt
+            ) else { continue }
+            store.record(transition, for: card.id, durationMs: 3_200)
+        }
+    }
+
     public static func decks() -> [Deck] {
         [
             Deck(name: "Anatomia — Sistema cardiovascolare", isDemo: true),
