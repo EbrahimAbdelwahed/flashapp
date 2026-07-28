@@ -80,14 +80,23 @@ Use at most two implementation lanes until the data core is proven:
 | --- | --- | --- |
 | `fu-00-scaffold` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-00-scaffold.md`, `docs/decisions/worklog.md` |
 | `fu-03-fsrs-spike` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-03-fsrs-spike.md`, `docs/decisions/ADR-003-fsrs.md` |
+| `fu-04a-pure-domain` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-04a-pure-domain.md` |
 | all others | Open | — |
 
-Ready next: `fu-01-store-spike` (architecture lane) and `fu-04-data-core` (product lane,
-now that FSRS is pinned). `fu-04` also depends on `fu-01`, so the store spike is the
-critical path.
+`fu-04a-pure-domain` is a bead added on 2026-07-28. It carries B2.1 out of
+`fu-05-note-domain` and B4.1 out of `fu-07-portability`; the source specification lists both
+as depending on B0.1 alone, so the graph is unchanged and only the dispatch order moved.
+Both parent batches keep all their other source-bead coverage.
 
-Blocked on an owner decision: every UI batch from `fu-08` onward, pending
-`docs/decision-requests/flash-up-v1/liquid-glass-minimum-os.md`.
+**Blocked, and this is now the critical path:** `fu-01-store-spike` needs a real iCloud
+container and `fu-02-sharing-spike` needs two Apple accounts. The owner confirmed on
+2026-07-28 that no paid Apple Developer account exists yet, so `fu-01`, `fu-02` and
+everything downstream of them — including `fu-04-data-core` — cannot start. No further
+persistence, sync, group or UI batch can be dispatched until that account exists.
+
+Resolved 2026-07-28: the minimum deployment target stays iOS 17 and Liquid Glass is applied
+progressively (`docs/decision-requests/flash-up-v1/liquid-glass-minimum-os.md`,
+`docs/ux-principles.md`).
 
 ## Next agent prompt
 

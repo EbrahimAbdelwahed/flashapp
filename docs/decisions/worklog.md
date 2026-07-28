@@ -5,6 +5,46 @@ with justification, follow-ups discovered.
 
 ---
 
+## fu-04a-pure-domain — 2026-07-28
+
+New bead, created because the owner confirmed there is no Apple Developer account yet.
+Covers source beads B2.1 (ClozeParser) and B4.1 (CSVParser), both of which the source
+specification marks as depending on B0.1 alone — so this is not a re-slice of the
+dependency graph, only a change in the order the batches are dispatched.
+
+### Built
+
+- `ClozeParser`: hand-written scanner for `{{cN::text::hint}}`, with repeated groups,
+  literal nested braces, issue reporting for malformed input, and a renderer that masks one
+  group while revealing the others.
+- `CSVParser` plus `CSVDocument` (RFC 4180 tokenizer), `NoteType`, `ParsedRow`,
+  `RowRejection`, `CSVParseError` and `CSVLimits`.
+
+### Verification
+
+`swift test` 60 tests in 5 suites; `ci/test.sh` green (SwiftLint 0 violations in 22 files,
+UI tests `** TEST SUCCEEDED **`).
+
+### Interpretations recorded
+
+1. **Required CSV columns are `type` and `front` only.** §A9.1 says a missing required
+   column fails the file but does not name the set. `back` and `tags` are treated as
+   optional columns because row validation already requires a non-empty `back` for basic
+   and reversed rows, and a cloze-only export legitimately carries neither. Worth an owner
+   confirmation before `fu-07-portability` writes the export side.
+2. **An over-long field rejects its row, not the file.** §A9.1 lists the 20 000-character
+   field cap alongside the file and row caps but does not say at which level it applies.
+   Row-level matches the surrounding row-validation rules and is kinder to the user.
+
+### Bugs found and fixed while testing
+
+- Swift treats `"\r\n"` as a single `Character`, so a `switch` on `"\r"` and `"\n"` never
+  matched CRLF files and swallowed the whole file into one field. The scanner now branches
+  on `Character.isNewline`.
+- Physical line numbers were off by one after the first record.
+
+---
+
 ## fu-03-fsrs-spike — 2026-07-28
 
 Covers source bead B0.4. Full detail in `docs/decisions/ADR-003-fsrs.md`.

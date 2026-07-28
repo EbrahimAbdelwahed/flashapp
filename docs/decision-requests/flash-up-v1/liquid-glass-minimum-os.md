@@ -1,6 +1,6 @@
 # Decision Request: liquid-glass-minimum-os
 
-Status: Open
+Status: Resolved
 Run ID: `flash-up-v1`
 Bead: fu-08-library-edit-import
 Agent: ios-foundation-engineer
@@ -51,7 +51,7 @@ Block all UI batches (fu-08 onward). Non-UI batches (fu-01 through fu-07) procee
 
 ## Resolution
 
-Answered by:
-Answered at:
-Decision:
+Answered by: product owner
+Answered at: 2026-07-28 15:45
+Decision: ios17-progressive
 Follow-up beads:

@@ -5,9 +5,23 @@ Status: binding for every UI batch (`fu-08` through `fu-14`), set by the product
 direction the brief left open. Where it conflicts with the brief, the brief still wins and
 the conflict becomes a decision request.
 
-Open dependency: native Liquid Glass requires iOS 26, while the brief pins the minimum to
-iOS 17. Tracked in `docs/decision-requests/flash-up-v1/liquid-glass-minimum-os.md`. No UI
-batch starts before that is answered.
+**Resolved 2026-07-28: the minimum stays iOS 17 and Liquid Glass is applied progressively**
+(`docs/decision-requests/flash-up-v1/liquid-glass-minimum-os.md`). Consequences that bind
+every UI batch:
+
+- One abstraction owns the difference. A single `GlassSurface` view modifier in
+  `App/Features/Shared` applies the real system glass under `if #available(iOS 26, *)` and
+  a `.ultraThinMaterial` approximation below it. **No feature view may branch on OS version
+  itself** — if a second `#available` for appearance appears outside that file, the
+  abstraction is wrong and must absorb it.
+- Layout must be identical on both paths. Only material, blur and edge treatment differ;
+  nothing may move, resize or disappear between them, or the two appearances become two
+  designs to maintain.
+- Every UI batch verifies on both: a simulator at iOS 17 and one at the newest installed
+  iOS. A batch that has only been seen on one of them is not done.
+- Where the fallback cannot approximate a Liquid Glass behaviour (morphing between glass
+  shapes, scroll edge effects), the fallback drops the effect entirely rather than
+  imitating it badly. A plain opaque bar beats a fake.
 
 ## 1. Liquid Glass, used as a system — not as decoration
 
