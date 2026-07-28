@@ -5,6 +5,43 @@ with justification, follow-ups discovered.
 
 ---
 
+## fu-03-fsrs-spike — 2026-07-28
+
+Covers source bead B0.4. Full detail in `docs/decisions/ADR-003-fsrs.md`.
+
+### Built
+
+- `FSRSService` protocol in `FlashUpDomain` with `Grade`, `ScheduleState`, `ReviewState`,
+  `ScheduleTransition`, `SchedulePreview` and `SchedulingError`.
+- `SwiftFSRSAdapter`, the only file in the product that imports swift-fsrs. Fixed
+  configuration: FSRS v5 default weights, desired retention 0.90, fuzz explicitly off.
+
+### Verification
+
+`swift test` 12 tests passing; `ci/test.sh` green end to end (SwiftLint 0 violations in 14
+files, UI tests `** TEST SUCCEEDED **`).
+
+### Deviations
+
+1. **The dependency is pinned to a commit, not a tag.** swift-fsrs `5.0.0` declares its
+   whole scheduler API `internal` — an importing module cannot construct the engine or set
+   the retention the brief requires. Proven by compiling a probe against the tag. Commit
+   `4fbaf20184d62f82a9f44f343337c61a2c5483e9` fixes the access levels but was never
+   released. Rationale and rejected alternatives in ADR-003 §2. Owner sign-off requested;
+   it does not block the remaining batches.
+2. **Fuzz is set explicitly even though it currently defaults off**, because a default
+   change upstream would silently break deterministic multi-device replay (§A6.4).
+
+### Follow-ups
+
+- `fu-04-data-core`: the `CDSchedule` attribute set in §A2 is confirmed sufficient — the
+  engine recomputes elapsed and scheduled days, so no extra attributes are needed. Keeping
+  the v5 algorithm is what makes that true; FSRS-6 would add a `learningSteps` counter and
+  require a migration.
+- `fu-15-release`: re-check for a tagged swift-fsrs release and move the pin to it.
+
+---
+
 ## fu-00-scaffold — 2026-07-28
 
 Covers source bead B0.1.

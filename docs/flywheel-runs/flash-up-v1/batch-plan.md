@@ -79,10 +79,15 @@ Use at most two implementation lanes until the data core is proven:
 | Batch | Status | Evidence |
 | --- | --- | --- |
 | `fu-00-scaffold` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-00-scaffold.md`, `docs/decisions/worklog.md` |
+| `fu-03-fsrs-spike` | Done 2026-07-28 | `docs/worker-reports/flash-up-v1/fu-03-fsrs-spike.md`, `docs/decisions/ADR-003-fsrs.md` |
 | all others | Open | — |
 
-Ready next: `fu-01-store-spike` (architecture lane) and `fu-03-fsrs-spike` (product lane);
-both depend only on `fu-00`.
+Ready next: `fu-01-store-spike` (architecture lane) and `fu-04-data-core` (product lane,
+now that FSRS is pinned). `fu-04` also depends on `fu-01`, so the store spike is the
+critical path.
+
+Blocked on an owner decision: every UI batch from `fu-08` onward, pending
+`docs/decision-requests/flash-up-v1/liquid-glass-minimum-os.md`.
 
 ## Next agent prompt
 

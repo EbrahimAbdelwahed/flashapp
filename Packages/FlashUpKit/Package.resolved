@@ -1,5 +1,5 @@
 {
-  "originHash" : "7109bbdcb8878d1ebac3510de4492c71d6fa686983a44c7e7717de8bfacf4b63",
+  "originHash" : "04e614e52216c30f558e69161eca2e231bef8e173c9360076da2265ba3c87c06",
   "pins" : [
     {
       "identity" : "swift-cmark",
@@ -15,8 +15,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/open-spaced-repetition/swift-fsrs.git",
       "state" : {
-        "revision" : "129e4dc4e99625ee2dd2ee627fab866f2993e3d7",
-        "version" : "5.0.0"
+        "revision" : "4fbaf20184d62f82a9f44f343337c61a2c5483e9"
       }
     },
     {

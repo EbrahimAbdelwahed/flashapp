@@ -1,6 +1,6 @@
 # Task Bead: fu-03-fsrs-spike Pin and prove the FSRS adapter contract
 
-Status: Open
+Status: Done (2026-07-28) — report: `docs/worker-reports/flash-up-v1/fu-03-fsrs-spike.md`
 Priority: P0
 Type: spike
 Depends On: fu-00-scaffold
@@ -49,11 +49,18 @@ Retires third-party API uncertainty without coupling storage to library types.
 
 ## Acceptance Criteria
 
-- [ ] All B0.4 mapping and determinism requirements are covered by tests and ADR-003.
+- [x] All B0.4 mapping and determinism requirements are covered by tests and ADR-003.
 
 ## Verification
 
-- `Swift Testing deterministic adapter cases`: expected to pass or produce documented output
+- `Swift Testing deterministic adapter cases`: passed — 12 tests in `SwiftFSRSAdapterTests`,
+  covering determinism across folds and adapter instances, retention configurability,
+  four-grade preview ordering and non-commitment, lapse handling, and the persisted raw
+  value contract.
+- Full pipeline: `ci/test.sh` green (SwiftLint 0 violations in 14 files, 12 domain tests,
+  UI tests `** TEST SUCCEEDED **`).
+- Deviation recorded in ADR-003 §2: the dependency is pinned to commit `4fbaf20` because
+  tag `5.0.0` exposes no usable scheduler API.
 
 ## Out Of Scope
 

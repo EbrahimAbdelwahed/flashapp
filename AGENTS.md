@@ -4,6 +4,7 @@
 
 - Product decisions: `flash-up-architecture-brief.md`.
 - Engineering contract: `flash-up-implementation-spec.md`.
+- Design direction for every UI batch: `docs/ux-principles.md` (owner amendment, 2026-07-28).
 - Delivery state, batch beads, worker briefs, and review evidence: `docs/flywheel-runs/flash-up-v1/`.
 
 If the brief conflicts with the implementation specification, stop and record the conflict as an ADR; the brief wins.
