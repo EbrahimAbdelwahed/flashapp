@@ -1,0 +1,12 @@
+# Per-clip pacing waivers.
+#
+# One line per waived clip: <clip_id>: <reason>
+#
+# A waiver is not a lower threshold. The global limits in scripts/analyse_clip.py stay
+# where they are, the numbers are still measured and printed, and the clip is still marked
+# — it simply does not fail the run. Every line here has to say why, so that "we relaxed it
+# once" can never quietly become "we relax it whenever something fails".
+#
+# Waive a clip only when the footage that fails is footage the edit discards by design.
+
+clip6_deck: stalls sit in the tab-change and navigation-push transitions, which §1.7 cuts out of the film — the frames the edit keeps are the deck list and the deck detail, both static

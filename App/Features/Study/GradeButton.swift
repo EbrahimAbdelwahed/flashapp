@@ -35,6 +35,18 @@ struct GradeButton: View {
         .keyboardShortcut(shortcut, modifiers: [])
         .accessibilityLabel(Text(title))
         .accessibilityValue(Text(caption))
+        .accessibilityIdentifier("study.grade.\(name)")
+    }
+
+    /// Stable, language-independent handle for UI tests and the recording flows. The
+    /// localized title cannot serve: it changes with the device language.
+    private var name: String {
+        switch grade {
+        case .again: "again"
+        case .hard: "hard"
+        case .good: "good"
+        case .easy: "easy"
+        }
     }
 
     private var title: LocalizedStringKey {

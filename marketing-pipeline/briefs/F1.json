@@ -1,0 +1,91 @@
+{
+  "video_id": "F1",
+  "variant_tag": "fu-F1-none-anat-h01",
+  "promise": "Le tue schede, ripassate al momento giusto",
+  "music": {
+    "src": "assets/audio/bed_calm_01.mp3",
+    "bpm": 83.3,
+    "offset": 0.04,
+    "snap": true
+  },
+  "storyboard": [
+    "La giornata: quante schede aspettano, senza dover cercare nulla.",
+    "Il mazzo e vero: materiale universitario, 47 schede.",
+    "Il payoff: la carta si gira e l'intervallo appare.",
+    "La promessa, scritta."
+  ],
+  "segments": [
+    {
+      "src": "clip6_deck",
+      "in": 10.0,
+      "out": 13.0,
+      "ramp": [
+        {
+          "at": 0.0,
+          "rate": 0.45
+        },
+        {
+          "at": 3.0,
+          "rate": 0.45
+        }
+      ],
+      "push": "in"
+    },
+    {
+      "src": "clip6_deck",
+      "in": 18.9,
+      "out": 20.6,
+      "ramp": [
+        {
+          "at": 0.0,
+          "rate": 0.4
+        },
+        {
+          "at": 1.7,
+          "rate": 0.4
+        }
+      ],
+      "push": "out"
+    },
+    {
+      "src": "clip4_firstcard_take3",
+      "in": 26.6,
+      "out": 30.4,
+      "ramp": [
+        {
+          "at": 0.0,
+          "rate": 1.0
+        },
+        {
+          "at": 1.0,
+          "rate": 0.45
+        },
+        {
+          "at": 3.8,
+          "rate": 0.45
+        }
+      ],
+      "push": "in"
+    }
+  ],
+  "overlays": [
+    {
+      "text": "Le tue schede, ripassate\nal momento giusto.",
+      "style": "hook",
+      "anchor": "top",
+      "start": 0.6,
+      "end": 4.4
+    },
+    {
+      "text": "Salvalo per dopo",
+      "style": "save_cta",
+      "anchor": "bottom",
+      "start": 10.5,
+      "end": 13.5
+    }
+  ],
+  "endcard": {
+    "still": "out/clips/stills/clip4_front.png",
+    "duration": 2.8
+  }
+}

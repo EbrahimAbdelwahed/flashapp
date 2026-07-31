@@ -1,3 +1,4 @@
+import FlashUpData
 import SwiftUI
 
 /// Persisted flags for one-off guidance (spec §A11.4).
@@ -14,9 +15,14 @@ final class TutorialState {
         didSet { defaults.set(didFinishOnboarding, forKey: Key.onboarding) }
     }
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, environment: [String: String] = ProcessInfo.processInfo.environment) {
         self.defaults = defaults
-        self.didFinishOnboarding = defaults.bool(forKey: Key.onboarding)
+        // A recording opens on the product, never on a tutorial: spec §1.7 rules out a
+        // splash screen or a static introductory frame as the first thing a viewer sees.
+        // The pipeline reinstalls the app before every take, so onboarding would otherwise
+        // be waiting at the top of every single clip.
+        self.didFinishOnboarding = environment[DemoMode.modeKey] == "1"
+            || defaults.bool(forKey: Key.onboarding)
     }
 }
 

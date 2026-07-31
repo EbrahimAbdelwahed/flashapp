@@ -25,6 +25,17 @@ public actor InMemoryLibrary: LibraryRepository {
         self.store = seeded ? DemoContent.seededStore(scheduler: scheduler) : LibraryStore()
     }
 
+    /// Adopts a store built elsewhere — today only the marketing pipeline's demo seed.
+    init(
+        scheduler: FSRSService,
+        store: LibraryStore,
+        status: SyncStatus = .upToDate(lastSyncedAt: Date())
+    ) {
+        self.scheduler = scheduler
+        self.store = store
+        self.status = status
+    }
+
     // MARK: - Reading
 
     public func todaySnapshot(now: Date) async -> TodaySnapshot {

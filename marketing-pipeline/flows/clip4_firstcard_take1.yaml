@@ -1,0 +1,54 @@
+# clip4 — the money shot (spec §3.4, §1.7).
+#
+# Deck open, card front, tap to flip, back shown. In the edit it plays at 0.5x and holds
+# for two full seconds; it is the only moment that slows down and the thing viewers must
+# remember. Recorded in three takes, and the cleanest one wins.
+#
+# Take 1 — shortest reading beat before the flip.
+#
+# The app is already seeded and in the foreground: scripts/seed.sh did that, and the
+# reproducible demo library depends on it. Relaunching here would reset the deck, so the
+# flow asserts its way in rather than starting the app itself.
+appId: com.flashup.app
+---
+- assertVisible:
+    id: "deck.row"
+
+# Settle before anything moves. The first frame of the edit is cut from somewhere in here,
+# and §1.7 requires it to already be in motion rather than to open on a static list.
+- runScript:
+    file: dwell.js
+    env:
+      MS: 600
+
+- tapOn:
+    id: "deck.row"
+
+- extendedWaitUntil:
+    visible:
+      id: "study.card"
+    timeout: 8000
+- waitForAnimationToEnd
+
+# Reading beat: long enough that a viewer registers a real question, short enough to keep
+# the clip inside its 8–12 s budget.
+- runScript:
+    file: dwell.js
+    env:
+      MS: 900
+
+- tapOn:
+    id: "study.card"
+
+- extendedWaitUntil:
+    visible:
+      id: "study.grade.good"
+    timeout: 5000
+- waitForAnimationToEnd
+
+# Hold on the answer and the four intervals. This is the frame the whole video exists for;
+# record_clip.sh adds a further 1.5 s tail, so the edit has handles on both sides.
+- runScript:
+    file: dwell.js
+    env:
+      MS: 2000

@@ -1,0 +1,53 @@
+# clip6 — the deck and its counter (spec §3.4).
+#
+# Library, then into the deck. Acceptance is that the card counter reads clearly: the
+# viewer has to believe there is a real deck here, not a demo with three cards in it.
+#
+# Seeded and foregrounded by scripts/seed.sh; the flow never relaunches, or it would reset
+# the library it is about to film.
+appId: com.flashup.app
+---
+- assertVisible:
+    id: "today.study_now"
+
+- runScript:
+    file: dwell.js
+    env:
+      MS: 400
+
+# By label, not by id, and deliberately so. On a freshly installed app the accessibility
+# identifiers of the *unselected* tab bar items are not exposed — ten seconds of polling
+# never sees `tab.library`, while the same assertion passes once the app has been running a
+# while. The visible label is present immediately. This is the one place in the flows that
+# depends on the interface language; the recordings are Italian throughout (§1.11), so the
+# coupling is real but contained.
+- tapOn: "Libreria"
+
+- extendedWaitUntil:
+    visible:
+      id: "library.deck_row"
+    timeout: 8000
+- waitForAnimationToEnd
+
+# The deck row carries name and counts together — "47 schede · 21 da ripassare · 10 nuove".
+# This is the frame the clip exists for, so it gets a beat before anything moves again.
+- runScript:
+    file: dwell.js
+    env:
+      MS: 2600
+
+- tapOn:
+    id: "library.deck_row"
+
+- extendedWaitUntil:
+    visible:
+      id: "note.row"
+    timeout: 8000
+- waitForAnimationToEnd
+
+# The deck detail is the second shot, and it needs the same room. record_clip.sh adds only
+# 1.5 s of tail, which is an editing handle, not a hold.
+- runScript:
+    file: dwell.js
+    env:
+      MS: 2600

@@ -45,8 +45,13 @@ struct RootTabView: View {
                 }
                 .tabItem {
                     Label(tab.titleKey, systemImage: tab.systemImage)
+                        // On the tab bar button, not only on the tab's content. The
+                        // identifier applied to the page below reaches whichever tab is
+                        // already showing, which is of no use to anything trying to switch
+                        // tabs — UI tests and the recording flows both need the control.
+                        .accessibilityIdentifier(tab.accessibilityIdentifier)
                 }
-                .accessibilityIdentifier(tab.accessibilityIdentifier)
+                .accessibilityIdentifier("\(tab.accessibilityIdentifier).page")
                 .tag(tab)
             }
         }

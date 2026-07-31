@@ -1,0 +1,33 @@
+type,front,back,tags
+basic,Quali sono i quattro strati della parete del tubo digerente?,"Mucosa, sottomucosa, tonaca muscolare e sierosa (avventizia nei tratti retroperitoneali).",anatomia;digerente
+basic,Dove sbocca il dotto della ghiandola parotide?,"Nel vestibolo orale, all'altezza del secondo molare superiore (dotto di Stenone).",anatomia;digerente;ghiandole
+basic,Qual è la lunghezza media dell'esofago nell'adulto?,Circa 25 cm.,anatomia;digerente
+basic,Quali sono i tre restringimenti fisiologici dell'esofago?,"Cricofaringeo, aortobronchiale e diaframmatico.",anatomia;digerente
+basic,Quali cellule della mucosa gastrica secernono il pepsinogeno?,Le cellule principali (zimogeniche) delle ghiandole gastriche.,anatomia;digerente;stomaco
+basic,Che cosa secernono le cellule parietali dello stomaco?,Acido cloridrico e fattore intrinseco.,anatomia;digerente;stomaco
+basic,In quante porzioni si divide il duodeno?,"Quattro: superiore, discendente, orizzontale e ascendente.",anatomia;digerente
+basic,Dove sbocca il dotto pancreatico principale?,"Nella papilla duodenale maggiore, insieme al coledoco.",anatomia;digerente;pancreas
+basic,Qual è la funzione delle valvole conniventi?,Aumentano la superficie assorbente dell'intestino tenue.,anatomia;digerente
+basic,Quale arteria irrora il colon discendente?,L'arteria mesenterica inferiore.,anatomia;digerente;vascolarizzazione
+basic,In quanti segmenti è diviso il fegato secondo Couinaud?,Otto.,anatomia;digerente;fegato
+basic,Che cosa contiene il legamento epatoduodenale?,"Coledoco, arteria epatica propria e vena porta.",anatomia;digerente;fegato
+basic,Dove si proietta la milza sulla parete toracica?,"Nell'ipocondrio sinistro, tra la nona e l'undicesima costa.",anatomia;milza
+basic,Qual è la capacità media della colecisti?,Circa 50 ml.,anatomia;digerente;fegato
+basic,Quanti lobi ha il polmone destro?,"Tre: superiore, medio e inferiore.",anatomia;respiratorio
+basic,Perché i corpi estranei inalati finiscono più spesso nel bronco destro?,"Il bronco principale destro è più corto, più largo e più verticale del sinistro.",anatomia;respiratorio
+basic,Quanti segmenti broncopolmonari ha il polmone sinistro?,"Otto, contro i dieci del destro.",anatomia;respiratorio
+basic,Quali sono i tre restringimenti fisiologici dell'uretere?,"Giunzione pieloureterale, incrocio con i vasi iliaci e sbocco vescicale.",anatomia;urinario
+reversed,Grande omento,Piega peritoneale che scende dalla grande curvatura dello stomaco davanti alle anse intestinali.,anatomia;peritoneo
+reversed,Cieco,Prima porzione dell'intestino crasso a cui si aggancia l'appendice vermiforme.,anatomia;digerente
+reversed,Ilo polmonare,"Punto di ingresso di bronco, vasi e nervi nel polmone.",anatomia;respiratorio
+reversed,Pleura viscerale,Foglietto sieroso che aderisce direttamente alla superficie del polmone.,anatomia;respiratorio
+reversed,Trigono vescicale,Area liscia tra i due osti ureterali e l'ostio uretrale interno.,anatomia;urinario
+reversed,Nefrone,Unità funzionale del rene formata da corpuscolo renale e tubulo.,anatomia;urinario
+cloze,"Lo stomaco è diviso in {{c1::fondo}}, {{c2::corpo}} e antro pilorico.",Il piloro lo separa dal duodeno.,anatomia;digerente;stomaco
+cloze,Il dotto {{c1::coledoco}} sbocca nella papilla duodenale maggiore o papilla di {{c2::Vater}}.,,anatomia;digerente;fegato
+cloze,Il rene è avvolto dalla capsula {{c1::fibrosa}} e più esternamente dalla fascia {{c2::di Gerota}}.,,anatomia;urinario
+cloze,"L'intestino tenue comprende duodeno, {{c1::digiuno}} e {{c2::ileo}}.",La valvola ileocecale lo separa dal crasso.,anatomia;digerente
+cloze,La trachea si biforca a livello della {{c1::quarta}} vertebra toracica nei due bronchi {{c2::principali}}.,,anatomia;respiratorio
+cloze,Il fegato è rivestito dalla capsula di {{c1::Glisson}} ed è fissato al diaframma dal legamento {{c2::falciforme}}.,,anatomia;digerente;fegato
+cloze,La vescica è rivestita da epitelio {{c1::di transizione}} e la sua tonaca muscolare è il muscolo {{c2::detrusore}}.,,anatomia;urinario
+cloze,"Il pancreas è diviso in {{c1::testa}}, {{c2::corpo}} e {{c3::coda}}.",La testa è accolta nella C duodenale.,anatomia;digerente;pancreas

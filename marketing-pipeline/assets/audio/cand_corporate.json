@@ -1,0 +1,13 @@
+{
+  "src": "assets/audio/cand_corporate.mp3",
+  "source_file": "jonasblakewood-corporate-bright-533851.mp3",
+  "duration": 45.818792,
+  "bpm": 96.8,
+  "offset": 1.230,
+  "snap": true,
+  "measured": {
+    "source_lufs": -8.94,
+    "source_true_peak": 0.89,
+    "bed_target_lufs": -20
+  }
+}

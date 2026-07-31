@@ -44,6 +44,7 @@ struct DeckRow: View {
         .accessibilityLabel(Text(summary.deck.name))
         .accessibilityValue(Text("deck.accessibility_value \(summary.dueCount) \(summary.newCount)"))
         .accessibilityHint(Text("deck.accessibility_hint"))
+        .accessibilityIdentifier("deck.row")
     }
 }
 

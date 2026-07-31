@@ -1,0 +1,13 @@
+{
+  "src": "assets/audio/cand_trap.mp3",
+  "source_file": "paoloargento-trap-in-south-city-268712.mp3",
+  "duration": 113.256000,
+  "bpm": 139.5,
+  "offset": 0.030,
+  "snap": true,
+  "measured": {
+    "source_lufs": -14.48,
+    "source_true_peak": 0.04,
+    "bed_target_lufs": -20
+  }
+}

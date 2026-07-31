@@ -1,0 +1,13 @@
+{
+  "src": "assets/audio/cand_leap.mp3",
+  "source_file": "paoloargento-a-leap-into-the-future-162674.mp3",
+  "duration": 66.899604,
+  "bpm": 83.3,
+  "offset": 0.040,
+  "snap": true,
+  "measured": {
+    "source_lufs": -9.19,
+    "source_true_peak": 1.40,
+    "bed_target_lufs": -20
+  }
+}

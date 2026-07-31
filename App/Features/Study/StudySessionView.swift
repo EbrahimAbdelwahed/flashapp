@@ -73,6 +73,7 @@ struct StudySessionView: View {
         .padding(.horizontal, Spacing.normal)
         .contentShape(Rectangle())
         .onTapGesture { if !model.isRevealed { model.reveal() } }
+        .accessibilityIdentifier("study.card")
     }
 
     private var revealButton: some View {
@@ -81,6 +82,7 @@ struct StudySessionView: View {
         }
         .padding(.horizontal, Spacing.normal)
         .keyboardShortcut(.space, modifiers: [])
+        .accessibilityIdentifier("study.reveal")
     }
 
     private var grades: some View {
@@ -98,12 +100,14 @@ struct StudySessionView: View {
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button("study.close") { dismiss() }
+                .accessibilityIdentifier("study.close")
         }
         ToolbarItem(placement: .primaryAction) {
             Button("study.undo", systemImage: "arrow.uturn.backward") {
                 Task { await model.undo() }
             }
             .disabled(!model.canUndo)
+            .accessibilityIdentifier("study.undo")
         }
     }
 }
@@ -130,5 +134,6 @@ struct SessionCompleteView: View {
         }
         .padding(Spacing.loose)
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("study.complete")
     }
 }

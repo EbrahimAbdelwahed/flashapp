@@ -22,6 +22,13 @@ struct LibraryView: View {
             }
         }
         .listStyle(.insetGrouped)
+        // On the List, not on the Section inside it. A `navigationDestination` declared
+        // within a lazy container is not registered with the enclosing NavigationStack, so
+        // the deck rows highlighted on tap and then did nothing — the Library could not
+        // open a deck at all.
+        .navigationDestination(for: UUID.self) { deckID in
+            DeckDetailView(library: model.library, deckID: deckID)
+        }
         .navigationTitle("tab.library")
         .searchable(text: $model.filters.text, prompt: Text("library.search_prompt"))
         .onChange(of: model.filters.text) { Task { await model.runSearch() } }
@@ -62,15 +69,13 @@ struct LibraryView: View {
                 NavigationLink(value: summary.deck.id) {
                     DeckSummaryLabel(summary: summary)
                 }
+                .accessibilityIdentifier("library.deck_row")
                 .swipeActions {
                     Button("common.delete", role: .destructive) {
                         Task { await model.trash(summary.deck) }
                     }
                 }
             }
-        }
-        .navigationDestination(for: UUID.self) { deckID in
-            DeckDetailView(library: model.library, deckID: deckID)
         }
     }
 

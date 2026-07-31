@@ -1,0 +1,27 @@
+{
+  "name": "flashup-marketing-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Phase B of the Flash Up marketing clip pipeline: assembles recorded clips into 9:16 vertical videos.",
+  "scripts": {
+    "studio": "remotion studio --port=3010 --no-open",
+    "render": "remotion render",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.500",
+    "@remotion/media": "4.0.500",
+    "@remotion/media-parser": "^4.0.500",
+    "@remotion/media-utils": "4.0.500",
+    "@remotion/zod-types": "4.0.500",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "4.0.500",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.3"
+  }
+}

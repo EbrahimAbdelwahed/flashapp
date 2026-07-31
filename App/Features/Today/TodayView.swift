@@ -66,12 +66,14 @@ struct TodayView: View {
                 systemImage: "clock.arrow.circlepath",
                 tint: .orange
             )
+            .accessibilityIdentifier("today.due")
             CountTile(
                 value: snapshot.newCount,
                 caption: "today.new",
                 systemImage: "sparkles",
                 tint: .blue
             )
+            .accessibilityIdentifier("today.new")
         }
     }
 
@@ -85,6 +87,7 @@ struct TodayView: View {
             ) {
                 studyingScope = .allDecks
             }
+            .accessibilityIdentifier("today.study_now")
         } else {
             CaughtUpCard(streakDays: snapshot.metrics.streakDays)
         }
