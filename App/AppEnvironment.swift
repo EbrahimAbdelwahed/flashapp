@@ -59,7 +59,7 @@ final class AppEnvironment {
             : StubReminderScheduler(grantsPermission: true)
         self.reminders = reminders ?? StubReminderScheduler.fromEnvironment() ?? liveReminders
         // A recording or UI-test run must not inherit attachments from a previous session.
-        self.mediaStore = mediaStore ?? (demoMode == nil ? FileMediaStore() : InMemoryMediaStore())
+        self.mediaStore = mediaStore ?? (demoModes == nil ? FileMediaStore() : InMemoryMediaStore())
     }
 
     /// The library the marketing pipeline records against.

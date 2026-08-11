@@ -44,26 +44,37 @@ struct MediaAttachmentView: View {
     @State private var didLoad = false
 
     var body: some View {
-        Group {
-            switch asset?.kind {
-            case .image:
-                image
-            case .audio:
-                AudioAttachmentButton(label: asset?.filename ?? "", data: data)
-            case nil:
-                // A reference whose blob is gone — a restored backup, which carries
-                // references but not bytes (ADR-004 §7). The card still works.
-                if didLoad { placeholder }
+        content
+            .task {
+                guard !didLoad else { return }
+                // Marked loaded even when there is no store: an attachment that cannot be
+                // resolved must show the placeholder, not silently disappear.
+                didLoad = true
+                guard let store else { return }
+                asset = await store.asset(for: id)
+                data = await store.data(for: id)
             }
-        }
-        .task {
-            guard !didLoad else { return }
-            // Marked loaded even when there is no store: an attachment that cannot be
-            // resolved must show the placeholder, not silently disappear.
-            didLoad = true
-            guard let store else { return }
-            asset = await store.asset(for: id)
-            data = await store.data(for: id)
+    }
+
+    /// Never resolves to an empty view. SwiftUI does not attach `.task` to a view that
+    /// renders nothing, so starting empty meant the attachment was never loaded at all —
+    /// the card simply dropped it in silence.
+    @ViewBuilder
+    private var content: some View {
+        switch asset?.kind {
+        case .image:
+            image
+        case .audio:
+            AudioAttachmentButton(label: asset?.filename ?? "", data: data)
+        case nil:
+            // Once loading has finished and nothing came back, the blob is gone — a restored
+            // backup carries references but not bytes (ADR-004 §7). The card still works.
+            if didLoad {
+                placeholder
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: Spacing.minimumTapTarget)
+            }
         }
     }
 
