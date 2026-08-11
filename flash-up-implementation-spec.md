@@ -1,4 +1,4 @@
-# Flash Up — Implementation Specification v1.0
+# FlashApp — Implementation Specification v1.0
 
 Status: implementation-ready specification derived from the approved architecture brief
 (`flash-up-architecture-brief.md`). The brief is the product source of truth; this document
@@ -708,7 +708,7 @@ Separate, immediate, bypasses trash (brief):
 - Per-deck export producing canonical CSV (source fields, tags joined by `;`),
   filename `<deckname-slug>.csv`, via ShareLink/fileExporter. Trashed notes excluded.
 
-## A10. Flash Up backup (versioned)
+## A10. FlashApp backup (versioned)
 
 Single JSON file, extension `.flashupbackup`, UTType exported by the app.
 
@@ -812,7 +812,7 @@ Single JSON file, extension `.flashupbackup`, UTType exported by the app.
 - Privacy policy (hosted URL) + App Privacy answers derive from implementation:
   data not collected by developer; iCloud storage is user's own. Completed in B9.3
   from verified behavior (brief §App Store presentation).
-- App Store Connect setup checklist (manual bead B0.5): name availability ("Flash Up"),
+- App Store Connect setup checklist (manual bead B0.5): name availability ("FlashApp"),
   bundle id `com.<team>.flashup`, price tier €1.99, category Education, 4+ rating
   questionnaire, Family Sharing toggle OFF if the option exists (verification task 1),
   IT+EN metadata, screenshots demonstrating ChatGPT→CSV→import→study.

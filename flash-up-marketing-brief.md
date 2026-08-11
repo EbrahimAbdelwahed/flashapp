@@ -1,4 +1,4 @@
-# Flash Up — Marketing Brief
+# FlashApp — Marketing Brief
 
 ## Purpose
 
@@ -8,7 +8,7 @@ which promises the copy may make. It is not a library of finished ads.
 
 ## Product in one sentence
 
-Flash Up is an iOS flashcard app that lets students import cards they already
+FlashApp is an iOS flashcard app that lets students import cards they already
 generated with ChatGPT, then start reviewing immediately without creating an
 account or paying a recurring subscription.
 
@@ -83,14 +83,18 @@ ChatGPT.
 
 ### Competitive frame
 
-Do not position Flash Up as “better than Anki.” Anki is powerful and respected
-by its users. The opponent is the combination of recurring subscriptions and
-unnecessary complexity.
+**Updated 2026-08-03:** FlashApp may name and attack Anki directly, including
+on price (e.g. contrasting FlashApp's one-time price against Anki's paid
+tiers). Do not claim Anki's power users are wrong to prefer it, and do not
+misrepresent what Anki costs or offers — the attack must stay honest. Anki is
+still powerful and respected by its advanced users; the point of contrast is
+that FlashApp does not require paying or configuring like Anki does, not that
+Anki is a worse product.
 
 ### Positioning statement
 
 For university students with an iPhone who want to try flashcards without
-adopting another complicated subscription service, Flash Up turns cards
+adopting another complicated subscription service, FlashApp turns cards
 generated with ChatGPT into a synchronized review session in seconds. Import
 once, pay once, and study.
 
@@ -107,7 +111,8 @@ Import the flashcards you already have and start studying immediately.
 - no recurring subscription for the core experience;
 - backup and synchronization across supported Apple devices;
 - spaced repetition without configuration overhead;
-- no advertising inside the app.
+- no advertising inside the app;
+- no limit on how many cards or decks can be imported (verified 2026-08-03).
 
 ### Message hierarchy
 
@@ -151,8 +156,10 @@ seconds.
 - Sound direct, calm, and student-friendly; avoid corporate or educational
   jargon.
 - Treat affordability as dignity and accessibility, not as “cheapness.”
-- Avoid attacking named competitors or claiming that serious users are wrong.
-- Avoid vague AI claims: ChatGPT generates the source material; Flash Up helps
+- Anki may be named and attacked directly, including on price (see
+  Competitive frame); do not claim its serious/power users are wrong to prefer
+  it, and do not attack other competitors by name.
+- Avoid vague AI claims: ChatGPT generates the source material; FlashApp helps
   import and review it.
 - Do not promise features, platforms, or automation that the product does not
   yet support.
@@ -178,7 +185,7 @@ Short screen recordings that demonstrate:
 
 1. generating or formatting flashcards in ChatGPT;
 2. exporting or preparing the CSV;
-3. importing it into Flash Up;
+3. importing it into FlashApp;
 4. beginning a review session.
 
 The product should be understood from the screen even before the viewer hears
@@ -208,7 +215,8 @@ Copy must not publish these claims until the implementation confirms them:
 
 ## Open strategic decisions
 
-- final product name and spelling;
+- ~~final product name and spelling~~ — resolved 2026-08-03: the product is
+  called **FlashApp**;
 - exact launch price and whether a trial is needed;
 - countries and languages for the first launch;
 - which university subjects should provide the first examples;

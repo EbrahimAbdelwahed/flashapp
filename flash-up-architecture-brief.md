@@ -1,4 +1,4 @@
-# Flash Up — Architecture and Product Constraints
+# FlashApp — Architecture and Product Constraints
 
 Status: approved product brief for specification work  
 Purpose: source of truth for Claude/Fable and implementation planning
@@ -16,7 +16,7 @@ release submitted to the App Store, followed by incremental updates.
 
 ## Product definition
 
-Flash Up is a low-friction flashcard application for students who already have
+FlashApp is a low-friction flashcard application for students who already have
 cards generated elsewhere, especially in ChatGPT. The core journey is:
 
 **ChatGPT → CSV → import → study**
@@ -50,7 +50,7 @@ by subscriptions or complicated flashcard software.
   and performance diagnostics.
 - **Required:** never collect the contents of users’ cards for analytics or
   support.
-- **Required:** working name is “Flash Up”; availability and final spelling must
+- **Required:** working name is “FlashApp”; availability and final spelling must
   be checked before submission.
 
 ## Platform scope
@@ -231,9 +231,9 @@ material and private learning progress.
 ### Export and recovery
 
 - **Required:** export an individual deck in the canonical CSV format.
-- **Required:** export a versioned Flash Up backup containing personal decks,
+- **Required:** export a versioned FlashApp backup containing personal decks,
   notes, FSRS state, review history, settings, and snapshots of shared content.
-- **Required:** restore a full Flash Up backup.
+- **Required:** restore a full FlashApp backup.
 - **Required:** restored shared snapshots become personal copies; backups do not
   recreate groups, participants, or permissions.
 - **Deferred:** Anki `.apkg` import and export.
@@ -444,7 +444,7 @@ These are validation tasks, not invitations to change the product:
    application.
 6. Define deterministic reconciliation of concurrent ReviewLogs and content
    edits.
-7. Define the versioned Flash Up backup schema and migration policy.
+7. Define the versioned FlashApp backup schema and migration policy.
 8. Confirm the final app name, bundle identifier, category, rating, and price
    tier before submission.
 
