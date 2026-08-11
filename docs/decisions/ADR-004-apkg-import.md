@@ -26,7 +26,7 @@ consequence the owner accepted, not a scope expansion by the implementer.
 
 ## 1. Decision: import only, never export
 
-Flash Up **reads** `.apkg`. It does not write it, now or as a follow-up.
+FlashApp **reads** `.apkg`. It does not write it, now or as a follow-up.
 
 Writing `.apkg` means generating note types, card templates and a scheduling state that
 Anki will accept, i.e. owning a compatibility surface against a moving target we do not
@@ -108,7 +108,7 @@ The dependency on zstd is declared on the `FlashUpData` target only. `FlashUpDom
 new dependency and keeps building for macOS, so the mapping and HTML logic — the part with
 the interesting edge cases — stays testable with `swift test`, no simulator.
 
-`ApkgCollection` and friends describe *Anki*, not Flash Up, so they are `FlashUpData` types.
+`ApkgCollection` and friends describe *Anki*, not FlashApp, so they are `FlashUpData` types.
 `FieldMapping` describes a *user decision* and is pure, so it is a `FlashUpDomain` type.
 
 ## 5. Decision: converge on the existing CSV pipeline, do not fork it
