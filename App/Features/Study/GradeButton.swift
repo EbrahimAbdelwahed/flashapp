@@ -60,10 +60,10 @@ struct GradeButton: View {
 
     private var tint: Color {
         switch grade {
-        case .again: .red
-        case .hard: .orange
-        case .good: .green
-        case .easy: .blue
+        case .again: Palette.destructive
+        case .hard: Palette.terracotta
+        case .good: Palette.sage
+        case .easy: Palette.slate
         }
     }
 

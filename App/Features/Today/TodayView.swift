@@ -20,6 +20,10 @@ struct TodayView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.loose) {
+                Text("tab.today")
+                    .font(.largeTitle.bold())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                 if let snapshot = model.snapshot {
                     counts(snapshot)
                     studyButton(snapshot)
@@ -31,13 +35,19 @@ struct TodayView: View {
             .padding(Spacing.normal)
             .animation(Motion.reveal(reduceMotion: reduceMotion), value: model.snapshot)
         }
-        .navigationTitle("tab.today")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+        .screenCanvas()
+        .safeAreaInset(edge: .top, spacing: 0) {
+            AppBrandHeader {
                 NavigationLink {
                     StatisticsView(library: model.library)
                 } label: {
-                    Label("today.statistics", systemImage: "chart.bar")
+                    Image(systemName: "chart.bar")
+                        .font(.headline)
+                        .frame(
+                            minWidth: Spacing.minimumTapTarget,
+                            minHeight: Spacing.minimumTapTarget
+                        )
+                        .glassSurface(.prominent, cornerRadius: Spacing.cardCornerRadius)
                 }
                 .accessibilityIdentifier("today.statistics")
             }
@@ -64,14 +74,14 @@ struct TodayView: View {
                 value: snapshot.dueCount,
                 caption: "today.due",
                 systemImage: "clock.arrow.circlepath",
-                tint: .orange
+                tint: Palette.due
             )
             .accessibilityIdentifier("today.due")
             CountTile(
                 value: snapshot.newCount,
                 caption: "today.new",
                 systemImage: "sparkles",
-                tint: .blue
+                tint: Palette.new
             )
             .accessibilityIdentifier("today.new")
         }
@@ -106,6 +116,7 @@ struct TodayView: View {
             }
         }
     }
+
 }
 
 /// `StudyScope` becomes presentable so the session can be driven straight from a tap.

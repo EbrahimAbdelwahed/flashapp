@@ -22,6 +22,7 @@ struct StatisticsView: View {
                     LabeledContent("stats.retention_7") { retention(metrics.retention7Days) }
                     LabeledContent("stats.retention_30") { retention(metrics.retention30Days) }
                 }
+                .paperRows()
 
                 Section("stats.history") {
                     Chart(metrics.dailyReviews) { day in
@@ -29,12 +30,13 @@ struct StatisticsView: View {
                             x: .value(String(localized: "stats.axis_day"), day.day, unit: .day),
                             y: .value(String(localized: "stats.axis_reviews"), day.count)
                         )
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Palette.new)
                     }
                     .frame(height: 180)
                     .accessibilityLabel("stats.history")
                     .accessibilityValue("stats.history_value \(metrics.dailyReviews.reduce(0) { $0 + $1.count })")
                 }
+                .paperRows()
             }
 
             Section("stats.per_deck") {
@@ -46,7 +48,9 @@ struct StatisticsView: View {
                     }
                 }
             }
+            .paperRows()
         }
+        .screenCanvas()
         .navigationTitle("stats.title")
         .task {
             metrics = await library.metrics(now: Date())

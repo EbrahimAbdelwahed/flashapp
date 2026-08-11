@@ -29,15 +29,26 @@ struct LibraryView: View {
         .navigationDestination(for: UUID.self) { deckID in
             DeckDetailView(library: model.library, deckID: deckID)
         }
-        .navigationTitle("tab.library")
-        .searchable(text: $model.filters.text, prompt: Text("library.search_prompt"))
-        .onChange(of: model.filters.text) { Task { await model.runSearch() } }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("library.new_deck", systemImage: "plus") { isCreatingDeck = true }
-                    .accessibilityIdentifier("library.new_deck")
+        .screenCanvas()
+        .safeAreaInset(edge: .top, spacing: 0) {
+            AppBrandHeader {
+                Button {
+                    isCreatingDeck = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.headline)
+                        .frame(
+                            minWidth: Spacing.minimumTapTarget,
+                            minHeight: Spacing.minimumTapTarget
+                        )
+                        .glassSurface(.prominent, cornerRadius: Spacing.cardCornerRadius)
+                }
+                .accessibilityLabel("library.new_deck")
+                .accessibilityIdentifier("library.new_deck")
             }
         }
+        .searchable(text: $model.filters.text, prompt: Text("library.search_prompt"))
+        .onChange(of: model.filters.text) { Task { await model.runSearch() } }
         .alert("library.new_deck", isPresented: $isCreatingDeck) {
             TextField("library.deck_name", text: $newDeckName)
             Button("common.cancel", role: .cancel) { newDeckName = "" }
@@ -77,6 +88,7 @@ struct LibraryView: View {
                 }
             }
         }
+        .paperRows()
     }
 
     private var toolsSection: some View {
@@ -95,6 +107,7 @@ struct LibraryView: View {
             }
             .accessibilityIdentifier("library.trash")
         }
+        .paperRows()
     }
 
     private var searchSection: some View {
@@ -114,6 +127,7 @@ struct LibraryView: View {
                 }
             }
         }
+        .paperRows()
     }
 }
 
@@ -147,6 +161,7 @@ struct NoteSummaryLabel: View {
                 if summary.isNew { Text("note.badge_new") }
                 if summary.dueCount > 0 { Text("note.badge_due \(summary.dueCount)") }
                 if summary.isSuspended { Text("note.badge_suspended") }
+                if summary.isBuried { Text("note.badge_buried") }
             }
             .font(.caption2)
             .foregroundStyle(.secondary)

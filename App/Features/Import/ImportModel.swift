@@ -56,6 +56,44 @@ final class ImportModel {
         }
     }
 
+    /// CSV straight off the clipboard — the other half of the prompt card.
+    ///
+    /// An assistant answers with text, not with a file. Without this the shortest real journey
+    /// (copy the prompt → ask ChatGPT → copy the answer) has to detour through saving a file
+    /// and finding it again in the document picker, which is four system screens for a step the
+    /// clipboard already did.
+    ///
+    /// The text arrives from a `PasteButton`: the user's tap on the system control *is* the
+    /// authorization, so nothing here reads `UIPasteboard` behind their back and iOS never
+    /// raises its "Allow Paste?" alert.
+    func loadPasted(_ text: String) async {
+        let csv = ImportModel.strippingCodeFence(text)
+        guard csv.isEmpty == false else {
+            errorMessage = String(localized: "import.error.empty_clipboard")
+            return
+        }
+        await parse(Data(csv.utf8), sourceName: String(localized: "import.paste_name"))
+    }
+
+    /// Drops the ``` fences a chat interface wraps a code block in.
+    ///
+    /// The assistant is asked for a code block because that is the one thing with a copy
+    /// button next to it. Copying with that button yields bare CSV, but selecting the block by
+    /// hand takes the fences too, and a stray ```` ```csv ```` on line one would be read as the
+    /// header row and fail the whole paste. The clipboard is a boundary, so it is cleaned here
+    /// rather than in `CSVParser`, which stays strict about what a CSV file is.
+    static func strippingCodeFence(_ text: String) -> String {
+        var lines = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: .newlines)
+        if lines.first?.trimmingCharacters(in: .whitespaces).hasPrefix("```") == true {
+            lines.removeFirst()
+        }
+        if lines.last?.trimmingCharacters(in: .whitespaces) == "```" {
+            lines.removeLast()
+        }
+        return lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// A built-in file so the flow can be tried (and tested) without a document picker.
     func loadSample() async {
         await parse(Data(ImportModel.sampleCSV.utf8), sourceName: String(localized: "import.sample_name"))

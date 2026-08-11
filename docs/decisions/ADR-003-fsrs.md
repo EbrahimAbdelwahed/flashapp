@@ -81,7 +81,7 @@ swap.
 | `.good` | 3 | `.good` | Good / Buono |
 | `.easy` | 4 | `.easy` | Easy / Facile |
 
-`Rating.manual` (raw 0) is deliberately unmapped: Flash Up never issues it, and the engine
+`Rating.manual` (raw 0) is deliberately unmapped: FlashApp never issues it, and the engine
 throws on it.
 
 | `ScheduleState` (domain) | raw | swift-fsrs `CardState` |

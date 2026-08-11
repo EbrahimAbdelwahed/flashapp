@@ -28,6 +28,7 @@ struct ImportFlowView: View {
                 case let .done(count): result(count)
                 }
             }
+            .screenCanvas()
             .navigationTitle("import.title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -50,6 +51,17 @@ struct ImportFlowView: View {
     private var chooser: some View {
         List {
             Section {
+                // First, because it is the end of the journey the prompt card below starts:
+                // the assistant replies with text, and text is already on the clipboard.
+                PasteButton(payloadType: String.self) { strings in
+                    guard let text = strings.first else { return }
+                    Task { await model.loadPasted(text) }
+                }
+                .labelStyle(.titleAndIcon)
+                .buttonBorderShape(.capsule)
+                .tint(Palette.terracotta)
+                .accessibilityIdentifier("import.paste")
+
                 Button {
                     model.isPickingFile = true
                 } label: {
@@ -68,10 +80,12 @@ struct ImportFlowView: View {
             } footer: {
                 Text("import.format_help")
             }
+            .paperRows()
 
             Section {
                 CSVPromptCard()
             }
+            .paperRows()
 
             Section("import.destination") {
                 Picker("import.destination", selection: $model.destination) {
@@ -88,11 +102,13 @@ struct ImportFlowView: View {
                         .accessibilityIdentifier("import.deck_name")
                 }
             }
+            .paperRows()
 
             if let error = model.errorMessage {
                 Section {
-                    Text(error).foregroundStyle(.red)
+                    Text(error).foregroundStyle(Palette.destructive)
                 }
+                .paperRows()
             }
         }
     }
@@ -100,10 +116,11 @@ struct ImportFlowView: View {
     private var preview: some View {
         List {
             Section("import.summary") {
-                CountRow(label: "import.will_import", value: model.plan.rowsToImport.count, tint: .green)
-                CountRow(label: "import.duplicates", value: model.plan.duplicates.count, tint: .orange)
-                CountRow(label: "import.rejected", value: model.plan.rejected.count, tint: .red)
+                CountRow(label: "import.will_import", value: model.plan.rowsToImport.count, tint: Palette.successText)
+                CountRow(label: "import.duplicates", value: model.plan.duplicates.count, tint: Palette.dueText)
+                CountRow(label: "import.rejected", value: model.plan.rejected.count, tint: Palette.destructive)
             }
+            .paperRows()
 
             if !model.plan.valid.isEmpty {
                 Section("import.preview_rows") {
@@ -114,6 +131,7 @@ struct ImportFlowView: View {
                         }
                     }
                 }
+                .paperRows()
             }
 
             if !model.plan.duplicates.isEmpty {
@@ -127,6 +145,7 @@ struct ImportFlowView: View {
                         }
                     }
                 }
+                .paperRows()
             }
 
             if !model.plan.rejected.isEmpty {
@@ -138,6 +157,7 @@ struct ImportFlowView: View {
                         }
                     }
                 }
+                .paperRows()
             }
 
             Section {
@@ -147,6 +167,7 @@ struct ImportFlowView: View {
                 .disabled(model.plan.isEmpty)
                 .accessibilityIdentifier("import.confirm")
             }
+            .paperRows()
         }
     }
 
@@ -154,7 +175,7 @@ struct ImportFlowView: View {
         VStack(spacing: Spacing.loose) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 56))
-                .foregroundStyle(.green)
+                .foregroundStyle(Palette.successText)
             Text("import.done.title")
                 .font(.title3.weight(.semibold))
             Text("import.done.count \(count)")

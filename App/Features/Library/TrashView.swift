@@ -16,6 +16,7 @@ struct TrashView: View {
                     message: "trash.empty.message",
                     systemImage: "trash"
                 )
+                .paperRows()
             }
             ForEach(notes) { note in
                 VStack(alignment: .leading, spacing: 4) {
@@ -32,11 +33,13 @@ struct TrashView: View {
                             await reload()
                         }
                     }
-                    .tint(.green)
+                    .tint(Palette.success)
                     .accessibilityIdentifier("trash.restore")
                 }
+                .paperRows()
             }
         }
+        .screenCanvas()
         .navigationTitle("library.trash_title")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -82,7 +85,7 @@ struct ExportSheet: View {
             VStack(spacing: Spacing.loose) {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 48))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Palette.newText)
                 Text("export.title")
                     .font(.title3.weight(.semibold))
                 Text("export.message \(deckName)")
@@ -101,6 +104,8 @@ struct ExportSheet: View {
                 Spacer()
             }
             .padding(Spacing.loose)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Palette.canvas.ignoresSafeArea())
             .navigationTitle("export.nav_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

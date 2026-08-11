@@ -5,7 +5,7 @@ Source task: `docs/tasks/flash-up-v1/fu-15-release.md`
 
 ## Reuse Trigger
 
-Use this worker when a bead has the same implementation shape as `fu-15-release Audit, validate, and submit Flash Up v1`.
+Use this worker when a bead has the same implementation shape as `fu-15-release Audit, validate, and submit FlashApp v1`.
 
 ## Mandate
 

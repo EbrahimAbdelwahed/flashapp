@@ -16,7 +16,7 @@ product
 
 ## Question
 
-Flash Up now targets a Liquid Glass interface. Native Liquid Glass runs on iOS 26 and later, while the approved brief pins the minimum to iOS/iPadOS 17. Which minimum deployment target does v1 ship with?
+FlashApp now targets a Liquid Glass interface. Native Liquid Glass runs on iOS 26 and later, while the approved brief pins the minimum to iOS/iPadOS 17. Which minimum deployment target does v1 ship with?
 
 ## Context
 

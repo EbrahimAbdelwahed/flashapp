@@ -1,4 +1,4 @@
-# Context Pack: Flash Up v1 implementation
+# Context Pack: FlashApp v1 implementation
 
 Date: 2026-07-28
 Run ID: `flash-up-v1`
@@ -15,7 +15,7 @@ This pack gives the orchestrator and future workers enough repository context to
 ## `flash-up-implementation-spec.md`
 
 ```text
-# Flash Up — Implementation Specification v1.0
+# FlashApp — Implementation Specification v1.0
 
 Status: implementation-ready specification derived from the approved architecture brief
 (`flash-up-architecture-brief.md`). The brief is the product source of truth; this document

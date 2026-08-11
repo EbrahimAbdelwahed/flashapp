@@ -1,4 +1,4 @@
-# Flash Up v1 — Batch implementation contract
+# FlashApp v1 — Batch implementation contract
 
 Status: Approved
 
@@ -15,7 +15,7 @@ machine-checkable contract; it does not amend either approved source.
 
 ## Goal
 
-Ship Flash Up v1: a paid, local-first, bilingual iOS/iPadOS spaced-repetition app with
+Ship FlashApp v1: a paid, local-first, bilingual iOS/iPadOS spaced-repetition app with
 private FSRS progress, Core Data plus CloudKit sync, import/export/backup, and optional
 collaborative groups.
 
@@ -58,7 +58,7 @@ without weakening the data-integrity, CloudKit, or release evidence required by 
 
 ## Task Beads
 
-- `fu-00-scaffold`: Scaffold Flash Up and its CI contract
+- `fu-00-scaffold`: Scaffold FlashApp and its CI contract
 - `fu-01-store-spike`: Prove the two-store CloudKit topology
 - `fu-02-sharing-spike`: Prove sharing, acceptance, and graph movement
 - `fu-03-fsrs-spike`: Pin and prove the FSRS adapter contract
@@ -73,4 +73,4 @@ without weakening the data-integrity, CloudKit, or release evidence required by 
 - `fu-12-group-move`: Manage group membership and move deck graphs
 - `fu-13-group-history`: Complete shared revision and ownership lifecycle
 - `fu-14-guidance-and-erasure`: Finish contextual guidance and user-data erasure
-- `fu-15-release`: Audit, validate, and submit Flash Up v1
+- `fu-15-release`: Audit, validate, and submit FlashApp v1

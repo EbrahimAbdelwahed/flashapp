@@ -10,8 +10,10 @@ import Foundation
 /// persistent repository lands, the interface layer is unchanged — only `AppEnvironment`
 /// picks a different implementation.
 public actor InMemoryLibrary: LibraryRepository {
-    private let scheduler: FSRSService
-    private var store: LibraryStore
+    // Internal rather than private so the `+Studying` and `+Demo` extensions in this module
+    // can reach them; still invisible outside `FlashUpData`.
+    let scheduler: FSRSService
+    var store: LibraryStore
     /// Fixed while sync is not wired; the interface is built against every state.
     private var status: SyncStatus
 
@@ -42,7 +44,7 @@ public actor InMemoryLibrary: LibraryRepository {
         let candidates = store.candidates(in: .allDecks)
         return TodaySnapshot(
             dueCount: QueueBuilder.dueCount(candidates: candidates, now: now),
-            newCount: QueueBuilder.newCount(candidates: candidates),
+            newCount: QueueBuilder.newCount(candidates: candidates, now: now),
             metrics: MetricsCalculator.metrics(logs: store.logs, now: now),
             decks: deckSummaries(now: now)
         )
@@ -96,63 +98,6 @@ public actor InMemoryLibrary: LibraryRepository {
 
     public func syncStatus() async -> SyncStatus {
         status
-    }
-
-    // MARK: - Studying
-
-    public func studyQueue(scope: StudyScope, now: Date) async -> [Card] {
-        QueueBuilder.build(
-            candidates: store.candidates(in: scope),
-            settings: store.settings,
-            progress: store.progress(in: scope, now: now),
-            now: now
-        )
-    }
-
-    public func cards(withIDs ids: [UUID]) async -> [Card] {
-        ids.compactMap { store.cards[$0] }
-    }
-
-    public func schedule(for cardID: UUID) async -> ReviewState? {
-        store.schedules[cardID]
-    }
-
-    public func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) async {
-        store.record(transition, for: cardID, durationMs: durationMs)
-    }
-
-    public func revokeLastAnswer(in scope: StudyScope) async {
-        store.revokeLastAnswer(in: scope, using: scheduler, now: Date())
-    }
-
-    public func setSuspended(_ suspended: Bool, cardID: UUID) async {
-        let now = Date()
-        if var state = store.schedules[cardID] {
-            state.suspendedAt = suspended ? now : nil
-            store.schedules[cardID] = state
-        } else if suspended {
-            // A never-studied card can still be suspended: it gets a schedule that only
-            // carries the suspension.
-            var state = ReviewState.unseen(dueAt: now)
-            state.suspendedAt = now
-            store.schedules[cardID] = state
-        }
-    }
-
-    public func resetCard(_ cardID: UUID) async {
-        let now = Date()
-        for index in store.logs.indices where store.logs[index].cardID == cardID {
-            store.logs[index].revokedAt = store.logs[index].revokedAt ?? now
-        }
-        store.schedules.removeValue(forKey: cardID)
-    }
-
-    public func storedSession() async -> SessionState? {
-        store.session
-    }
-
-    public func storeSession(_ state: SessionState?) async {
-        store.session = state
     }
 
     // MARK: - Writing
@@ -213,19 +158,58 @@ public actor InMemoryLibrary: LibraryRepository {
     private func deckSummaries(now: Date) -> [DeckSummary] {
         store.liveDecks.map { deck in
             let candidates = store.candidates(in: .deck(deck.id))
+            let upcoming = Self.upcomingCounts(candidates: candidates, now: now)
             return DeckSummary(
                 deck: deck,
                 dueCount: QueueBuilder.dueCount(candidates: candidates, now: now),
-                newCount: QueueBuilder.newCount(candidates: candidates),
+                newCount: QueueBuilder.newCount(candidates: candidates, now: now),
+                tomorrowCount: upcoming.tomorrow,
+                thisWeekCount: upcoming.thisWeek,
+                laterCount: upcoming.later,
+                suspendedCount: candidates.filter { $0.schedule?.suspendedAt != nil }.count,
                 totalCards: candidates.count
             )
         }
     }
 
+    /// Forecasts only cards that already have a review date. New cards stay visible under
+    /// Today's "New" count; suspended cards deliberately stay out of every to-do bucket.
+    static func upcomingCounts(candidates: [QueueCandidate], now: Date) -> (
+        tomorrow: Int,
+        thisWeek: Int,
+        later: Int
+    ) {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: now)
+        guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday),
+              let startOfDayAfterTomorrow = calendar.date(byAdding: .day, value: 2, to: startOfToday),
+              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday)
+        else {
+            return (0, 0, 0)
+        }
+
+        var tomorrow = 0
+        var thisWeek = 0
+        var later = 0
+
+        for candidate in candidates {
+            guard candidate.schedule?.suspendedAt == nil, let dueAt = candidate.schedule?.dueAt else { continue }
+            if dueAt >= startOfTomorrow, dueAt < startOfDayAfterTomorrow {
+                tomorrow += 1
+            } else if dueAt >= startOfDayAfterTomorrow, dueAt < endOfWeek {
+                thisWeek += 1
+            } else if dueAt >= endOfWeek {
+                later += 1
+            }
+        }
+
+        return (tomorrow, thisWeek, later)
+    }
+
     private func summaries(for notes: [Note], filters: SearchFilters, now: Date) -> [NoteSummary] {
         notes
             .filter { matches($0, filters: filters, now: now) }
-            .map(summary(for:))
+            .map { summary(for: $0, now: now) }
             .sorted { lhs, rhs in
                 switch filters.sorting {
                 case .updated: lhs.note.updatedAt > rhs.note.updatedAt
@@ -235,15 +219,18 @@ public actor InMemoryLibrary: LibraryRepository {
             }
     }
 
-    private func summary(for note: Note) -> NoteSummary {
+    private func summary(for note: Note, now: Date) -> NoteSummary {
         let cards = store.cards(forNote: note.id)
         let states = cards.map { store.schedules[$0.id] }
         return NoteSummary(
             note: note,
             cardCount: cards.count,
-            dueCount: states.filter { ($0?.dueAt).map { $0 <= Date() } ?? false }.count,
-            isNew: states.allSatisfy { $0 == nil },
-            isSuspended: !states.isEmpty && states.allSatisfy { $0?.suspendedAt != nil }
+            dueCount: states.filter { ($0?.dueAt).map { $0 <= now } ?? false }.count,
+            isNew: states.allSatisfy { $0?.isUnseen ?? true },
+            // "Any", not "all": the same question `matches` asks, so a filtered list never
+            // shows a row without the badge that put it there.
+            isSuspended: states.contains { $0?.isSuspended ?? false },
+            isBuried: states.contains { $0?.isBuried(at: now) ?? false }
         )
     }
 
@@ -263,11 +250,14 @@ public actor InMemoryLibrary: LibraryRepository {
             return store.cards(forNote: note.id).allSatisfy { store.schedules[$0.id] == nil }
         case .due:
             return store.cards(forNote: note.id).contains { card in
-                guard let state = store.schedules[card.id], state.suspendedAt == nil else { return false }
+                guard let state = store.schedules[card.id],
+                      !state.isSuspended, !state.isBuried(at: now) else { return false }
                 return state.dueAt <= now
             }
         case .suspended:
-            return store.cards(forNote: note.id).contains { store.schedules[$0.id]?.suspendedAt != nil }
+            return store.cards(forNote: note.id).contains { store.schedules[$0.id]?.isSuspended ?? false }
+        case .buried:
+            return store.cards(forNote: note.id).contains { store.schedules[$0.id]?.isBuried(at: now) ?? false }
         }
     }
 

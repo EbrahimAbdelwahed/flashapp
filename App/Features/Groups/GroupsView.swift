@@ -20,13 +20,18 @@ struct GroupsView: View {
                 .padding(.vertical, Spacing.tight)
                 .accessibilityElement(children: .combine)
             }
+            .paperRows()
 
             Section("groups.what_you_get") {
                 Label("groups.feature.share", systemImage: "square.and.arrow.up")
                 Label("groups.feature.private_progress", systemImage: "lock")
                 Label("groups.feature.history", systemImage: "clock.arrow.circlepath")
             }
+            .paperRows()
         }
-        .navigationTitle("tab.groups")
+        .screenCanvas()
+        .safeAreaInset(edge: .top, spacing: 0) {
+            AppBrandHeader()
+        }
     }
 }

@@ -1,4 +1,4 @@
-# Validation Report: Flash Up v1 implementation
+# Validation Report: FlashApp v1 implementation
 
 Date: 2026-07-28
 Run ID: `flash-up-v1`

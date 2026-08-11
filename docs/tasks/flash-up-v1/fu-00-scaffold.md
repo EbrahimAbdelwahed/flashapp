@@ -1,4 +1,4 @@
-# Task Bead: fu-00-scaffold Scaffold Flash Up and its CI contract
+# Task Bead: fu-00-scaffold Scaffold FlashApp and its CI contract
 
 Status: Done (2026-07-28) — report: `docs/worker-reports/flash-up-v1/fu-00-scaffold.md`
 Priority: P0

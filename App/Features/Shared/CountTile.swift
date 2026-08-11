@@ -41,7 +41,7 @@ struct CaughtUpCard: View {
         VStack(spacing: Spacing.tight) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.largeTitle)
-                .foregroundStyle(.green)
+                .foregroundStyle(Palette.success)
             Text("today.caught_up")
                 .font(.headline)
             if streakDays > 0 {

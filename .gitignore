@@ -18,6 +18,9 @@ agent-flywheel/.venv/
 agent-flywheel/.pytest_cache/
 agent-flywheel/.ruff_cache/
 agent-flywheel/.mypy_cache/
+
+# Raw app-usage footage: source material, not a versioned deliverable (~100MB+)
+assets/clips/
 agent-flywheel/dist/
 __pycache__/
 *.py[cod]

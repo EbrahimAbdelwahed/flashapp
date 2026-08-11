@@ -1,4 +1,4 @@
-# Flash Up v1 — Token-efficient batch graph
+# FlashApp v1 — Token-efficient batch graph
 
 Status: approved engineering specification converted into implementation batches on 2026-07-28.
 

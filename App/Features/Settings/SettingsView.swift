@@ -26,7 +26,10 @@ struct SettingsView: View {
             dataSection
             aboutSection
         }
-        .navigationTitle("tab.settings")
+        .screenCanvas()
+        .safeAreaInset(edge: .top, spacing: 0) {
+            AppBrandHeader()
+        }
         .task { await reload() }
         .onChange(of: settings) { previous, updated in
             // The appearance has to reach the root scene, which is what actually applies it.
@@ -82,6 +85,7 @@ struct SettingsView: View {
             }
             .accessibilityElement(children: .combine)
         }
+        .paperRows()
     }
 
     private var studySection: some View {
@@ -104,6 +108,7 @@ struct SettingsView: View {
         } footer: {
             Text("settings.study.help")
         }
+        .paperRows()
     }
 
     private var reminderSection: some View {
@@ -121,7 +126,7 @@ struct SettingsView: View {
             if isNotificationPermissionMissing {
                 Label("settings.reminder.blocked", systemImage: "exclamationmark.triangle")
                     .font(.footnote)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Palette.warning)
                     .accessibilityIdentifier("settings.reminder.blocked")
             }
 
@@ -147,6 +152,7 @@ struct SettingsView: View {
                 )
             }
         }
+        .paperRows()
     }
 
     private var appearanceSection: some View {
@@ -160,6 +166,7 @@ struct SettingsView: View {
             .labelsHidden()
             .accessibilityIdentifier("settings.appearance")
         }
+        .paperRows()
     }
 
     private var dataSection: some View {
@@ -197,6 +204,7 @@ struct SettingsView: View {
             }
             .accessibilityIdentifier("settings.erase")
         }
+        .paperRows()
     }
 
     private var aboutSection: some View {
@@ -215,6 +223,7 @@ struct SettingsView: View {
                 Text(AppInfo.versionString)
             }
         }
+        .paperRows()
     }
 
     // MARK: - Actions
@@ -274,9 +283,9 @@ struct SettingsView: View {
 
     private var statusTint: Color {
         switch status {
-        case .syncing, .upToDate: .green
+        case .syncing, .upToDate: Palette.successText
         case .offline, .accountUnavailable: .secondary
-        case .failed: .red
+        case .failed: Palette.destructive
         }
     }
 }

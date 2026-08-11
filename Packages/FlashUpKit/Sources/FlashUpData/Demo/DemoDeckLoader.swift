@@ -8,6 +8,13 @@ public enum DemoSeedError: Error, Equatable {
     case noUsableRows(rejected: Int)
 }
 
+/// One source file and its on-screen deck identity in a multi-deck demo.
+struct DemoDeckInput {
+    let csv: Data
+    let slug: String
+    let deckName: String
+}
+
 /// Turns a hand-authored deck CSV into a library that looks lived-in.
 ///
 /// The CSV goes through the same parser the shipping import uses, so a deck that seeds
@@ -46,34 +53,54 @@ enum DemoDeckLoader {
         now: Date,
         calendar: Calendar = Calendar(identifier: .gregorian)
     ) throws -> LibraryStore {
-        let outcome = try CSVParser.parse(csv)
-        guard outcome.rows.isEmpty == false else {
-            throw DemoSeedError.noUsableRows(rejected: outcome.rejected.count)
-        }
-
-        var store = LibraryStore()
-        let deck = Deck(
-            id: DeterministicID.uuid("deck", slug),
-            name: deckName,
-            createdAt: now.addingTimeInterval(-Double(deckAgeDays) * 86_400),
-            updatedAt: now,
-            isDemo: true
+        try store(
+            inputs: [DemoDeckInput(csv: csv, slug: slug, deckName: deckName)],
+            scheduler: scheduler,
+            now: now,
+            calendar: calendar
         )
-        store.decks[deck.id] = deck
+    }
 
-        for row in outcome.rows {
-            let draft = NoteDraft(
-                id: DeterministicID.uuid("note", slug, String(row.line), row.front),
-                deckID: deck.id,
-                type: row.type,
-                front: row.front,
-                back: row.back,
-                tags: row.tags
+    /// Loads several independently named CSV files into one believable demo library.
+    /// History is seeded after every deck is present so FSRS states vary across the whole
+    /// library instead of resetting identically per subject.
+    static func store(
+        inputs: [DemoDeckInput],
+        scheduler: FSRSService,
+        now: Date,
+        calendar: Calendar = Calendar(identifier: .gregorian)
+    ) throws -> LibraryStore {
+        var store = LibraryStore()
+        for input in inputs {
+            let outcome = try CSVParser.parse(input.csv)
+            guard outcome.rows.isEmpty == false else {
+                throw DemoSeedError.noUsableRows(rejected: outcome.rejected.count)
+            }
+
+            let deck = Deck(
+                id: DeterministicID.uuid("deck", input.slug),
+                name: input.deckName,
+                createdAt: now.addingTimeInterval(-Double(deckAgeDays) * 86_400),
+                updatedAt: now,
+                isDemo: true
             )
-            _ = store.save(draft, now: deck.createdAt)
+            store.decks[deck.id] = deck
+
+            for row in outcome.rows {
+                let draft = NoteDraft(
+                    id: DeterministicID.uuid("note", input.slug, String(row.line), row.front),
+                    deckID: deck.id,
+                    type: row.type,
+                    front: row.front,
+                    back: row.back,
+                    tags: row.tags
+                )
+                _ = store.save(draft, now: deck.createdAt)
+            }
+
+            stabiliseCardIdentity(in: &store, slug: input.slug, deckID: deck.id)
         }
 
-        stabiliseCardIdentity(in: &store, slug: slug)
         seedHistory(into: &store, scheduler: scheduler, now: now, calendar: calendar)
         return store
     }
@@ -81,10 +108,20 @@ enum DemoDeckLoader {
     /// Replaces the random card identifiers the reconciler allocates with content-derived
     /// ones. Card identity is `(note, template key)` conceptually; making that literal is
     /// what lets two runs of the pipeline produce the same queue order.
-    private static func stabiliseCardIdentity(in store: inout LibraryStore, slug: String) {
-        store.cards.removeAll()
+    private static func stabiliseCardIdentity(in store: inout LibraryStore, slug: String, deckID: UUID) {
+        // `store.save` generates production-style random card IDs. Replace only the cards
+        // just added for this deck: clearing the whole store would discard earlier demo
+        // subjects when a multi-deck library is being assembled.
+        let provisionalIDs = store.cards.values
+            .filter { $0.deckID == deckID }
+            .map(\.id)
+        for id in provisionalIDs {
+            store.cards.removeValue(forKey: id)
+        }
 
-        for note in store.notes.values.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
+        for note in store.notes.values
+            .filter({ $0.deckID == deckID })
+            .sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
             for template in CardGenerator.generate(note) {
                 let id = DeterministicID.uuid("card", slug, note.id.uuidString, template.templateKey)
                 store.cards[id] = Card(id: id, noteID: note.id, deckID: note.deckID, template: template)

@@ -5,14 +5,31 @@ public struct DeckSummary: Identifiable, Equatable, Sendable {
     public let deck: Deck
     public let dueCount: Int
     public let newCount: Int
+    public let tomorrowCount: Int
+    public let thisWeekCount: Int
+    public let laterCount: Int
+    public let suspendedCount: Int
     public let totalCards: Int
 
     public var id: UUID { deck.id }
 
-    public init(deck: Deck, dueCount: Int, newCount: Int, totalCards: Int) {
+    public init(
+        deck: Deck,
+        dueCount: Int,
+        newCount: Int,
+        tomorrowCount: Int = 0,
+        thisWeekCount: Int = 0,
+        laterCount: Int = 0,
+        suspendedCount: Int = 0,
+        totalCards: Int
+    ) {
         self.deck = deck
         self.dueCount = dueCount
         self.newCount = newCount
+        self.tomorrowCount = tomorrowCount
+        self.thisWeekCount = thisWeekCount
+        self.laterCount = laterCount
+        self.suspendedCount = suspendedCount
         self.totalCards = totalCards
     }
 }
@@ -68,9 +85,21 @@ public protocol LibraryRepository: Sendable {
     func schedule(for cardID: UUID) async -> ReviewState?
     func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) async
     func revokeLastAnswer(in scope: StudyScope) async
-    func setSuspended(_ suspended: Bool, cardID: UUID) async
+    /// Takes cards in or out of every queue indefinitely. Plural so a note's siblings are
+    /// suspended together in one write.
+    func setSuspended(_ suspended: Bool, cardIDs: [UUID]) async
+    /// Takes cards out of the queue until `until`, after which they return on their own.
+    /// `until` is the caller's to choose so the decision stays testable.
+    func setBuried(_ buried: Bool, cardIDs: [UUID], until: Date) async
+    /// Lifts both hiding flags from every card of a note, putting it back in the queues.
+    ///
+    /// One verb rather than two flag writes from the caller: from the Library the user is
+    /// resuming a note, and does not distinguish which of the two ways it came to be hidden.
+    func resumeNote(_ noteID: UUID) async
     /// Revokes every log for the card and drops its schedule, so it returns to "new".
     func resetCard(_ cardID: UUID) async
+    /// Schedule plus surviving history for one card, for the card info screen.
+    func cardInfo(_ cardID: UUID) async -> CardInfo?
     func storedSession() async -> SessionState?
     func storeSession(_ state: SessionState?) async
 

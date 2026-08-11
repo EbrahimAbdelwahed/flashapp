@@ -87,4 +87,49 @@ struct InMemoryLibraryTests {
         #expect(await library.schedule(for: card.id) == before)
         #expect(await library.todaySnapshot(now: now).metrics.studiedToday == 0)
     }
+
+    @Test("Scheduled cards are grouped for a deck forecast")
+    func forecastsScheduledCards() {
+        let calendar = Calendar.current
+        let now = Date(timeIntervalSince1970: 1_785_988_800)
+        let start = calendar.startOfDay(for: now)
+        let deckID = UUID()
+        let noteID = UUID()
+
+        func candidate(daysFromToday: Int, suspended: Bool = false) -> QueueCandidate {
+            let dueAt = calendar.date(byAdding: .day, value: daysFromToday, to: start)!
+            let card = Card(
+                noteID: noteID,
+                deckID: deckID,
+                template: CardTemplate(templateKey: UUID().uuidString, front: "Q", back: "A")
+            )
+            let schedule = ReviewState(
+                state: .review,
+                stability: 12,
+                difficulty: 5,
+                dueAt: dueAt,
+                lastReviewedAt: start,
+                reps: 4,
+                lapses: 0,
+                suspendedAt: suspended ? start : nil
+            )
+            return QueueCandidate(card: card, schedule: schedule, noteCreatedAt: start)
+        }
+
+        let counts = InMemoryLibrary.upcomingCounts(
+            candidates: [
+                candidate(daysFromToday: 1),
+                candidate(daysFromToday: 2),
+                candidate(daysFromToday: 6),
+                candidate(daysFromToday: 7),
+                candidate(daysFromToday: 1, suspended: true),
+                candidate(daysFromToday: 0)
+            ],
+            now: now
+        )
+
+        #expect(counts.tomorrow == 1)
+        #expect(counts.thisWeek == 2)
+        #expect(counts.later == 1)
+    }
 }
