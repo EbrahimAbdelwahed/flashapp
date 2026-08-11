@@ -40,6 +40,27 @@ public struct ImportPlan: Equatable, Sendable {
     }
 
     public var isEmpty: Bool { rowsToImport.isEmpty }
+
+    /// Swaps provisional attachment ids for the ids the media store assigned.
+    ///
+    /// Applied between storing the blobs and creating the notes: the store deduplicates by
+    /// content, so an attachment already on disk comes back with the id it already had,
+    /// not the one the mapper guessed (ADR-004 §6).
+    public func replacingMediaIDs(_ replacements: [UUID: UUID]) -> ImportPlan {
+        guard !replacements.isEmpty else { return self }
+        return ImportPlan(
+            valid: valid.map { $0.replacingMediaIDs(replacements) },
+            duplicates: duplicates.map {
+                DuplicateRow(
+                    row: $0.row.replacingMediaIDs(replacements),
+                    matchedNoteID: $0.matchedNoteID,
+                    isSelected: $0.isSelected
+                )
+            },
+            rejected: rejected,
+            ignoredColumns: ignoredColumns
+        )
+    }
 }
 
 /// Marks duplicates against the destination deck (spec §A9.2 step 2).

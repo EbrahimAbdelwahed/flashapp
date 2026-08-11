@@ -6,6 +6,7 @@ struct LibraryView: View {
     @State private var model: LibraryModel
     @State private var isCreatingDeck = false
     @State private var newDeckName = ""
+    @Environment(\.mediaStore) private var mediaStore
     @State private var importing = false
 
     init(library: any LibraryRepository) {
@@ -59,7 +60,9 @@ struct LibraryView: View {
             }
         }
         .sheet(isPresented: $importing) {
-            ImportFlowView(library: model.library) { Task { await model.refresh() } }
+            ImportFlowView(library: model.library, mediaStore: mediaStore) {
+                Task { await model.refresh() }
+            }
         }
         .task { await model.refresh() }
         .refreshable { await model.refresh() }
@@ -153,7 +156,7 @@ struct NoteSummaryLabel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(summary.note.front)
+            Text(summary.note.front.asNoteSummary)
                 .lineLimit(2)
             HStack(spacing: Spacing.tight) {
                 Text(summary.note.type.rawValue.capitalized)

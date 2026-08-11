@@ -20,7 +20,7 @@ struct TrashView: View {
             }
             ForEach(notes) { note in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(note.front).lineLimit(2)
+                    Text(note.front.asNoteSummary).lineLimit(2)
                     Text("trash.restorable")
                         .font(.caption2)
                         .foregroundStyle(.secondary)

@@ -1225,6 +1225,24 @@
         }
       }
     },
+    "import.apkg.reading": {
+      "comment": "Progress while an .apkg is being opened.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the Anki deck…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura del mazzo Anki…"
+          }
+        }
+      }
+    },
     "import.confirm": {
       "comment": "Commits the import.",
       "extractionState": "manual",
@@ -1369,6 +1387,78 @@
         }
       }
     },
+    "import.error.apkg_empty": {
+      "comment": "Error: the .apkg parsed but held nothing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Anki deck contains no notes."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo mazzo Anki non contiene note."
+          }
+        }
+      }
+    },
+    "import.error.apkg_too_large %lld": {
+      "comment": "Error: the .apkg exceeded the size cap.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deck is too large to import (limit %lld MB)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo mazzo è troppo grande da importare (limite %lld MB)."
+          }
+        }
+      }
+    },
+    "import.error.apkg_too_many_notes %lld": {
+      "comment": "Error: the .apkg exceeded the note cap.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deck has more than %lld notes. Split it in Anki and import the parts."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo mazzo ha più di %lld note. Dividilo in Anki e importa le parti."
+          }
+        }
+      }
+    },
+    "import.error.apkg_unreadable": {
+      "comment": "Error: the .apkg could not be opened.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is not a readable Anki deck. Try exporting it again from Anki."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo file non è un mazzo Anki leggibile. Prova a riesportarlo da Anki."
+          }
+        }
+      }
+    },
     "import.error.empty_clipboard": {
       "comment": "Clipboard held nothing usable.",
       "extractionState": "manual",
@@ -1502,13 +1592,229 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Columns: type, front, back, tags. Type is basic, reversed or cloze."
+            "value": "CSV with columns type, front, back, tags — or an Anki .apkg deck."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Colonne: type, front, back, tags. Il tipo è basic, reversed o cloze."
+            "value": "CSV con colonne type, front, back, tags — oppure un mazzo Anki .apkg."
+          }
+        }
+      }
+    },
+    "import.mapping.back_field": {
+      "comment": "Picker: which Anki field becomes the back.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retro"
+          }
+        }
+      }
+    },
+    "import.mapping.card_type": {
+      "comment": "Picker: which Flash Up note type the Anki note type becomes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card type"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipo di carta"
+          }
+        }
+      }
+    },
+    "import.mapping.continue": {
+      "comment": "Button from the mapping stage to the preview.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua"
+          }
+        }
+      }
+    },
+    "import.mapping.explanation": {
+      "comment": "Explains why the mapping screen exists.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anki decks store their own fields. Check what becomes the front and the back of each card."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I mazzi Anki hanno campi propri. Controlla cosa diventa il davanti e il retro di ogni carta."
+          }
+        }
+      }
+    },
+    "import.mapping.front_field": {
+      "comment": "Picker: which Anki field becomes the front.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Front"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davanti"
+          }
+        }
+      }
+    },
+    "import.mapping.ignored %@": {
+      "comment": "Lists the Anki fields this mapping leaves out.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not imported: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non importati: %@"
+          }
+        }
+      }
+    },
+    "import.mapping.include": {
+      "comment": "Toggle to include or skip a whole note type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import these notes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa queste note"
+          }
+        }
+      }
+    },
+    "import.mapping.no_back": {
+      "comment": "Back-field picker option meaning no back field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuno"
+          }
+        }
+      }
+    },
+    "import.mapping.note_count %lld": {
+      "comment": "How many notes use one Anki note type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld note"
+          }
+        }
+      }
+    },
+    "import.mapping.nothing_selected": {
+      "comment": "Shown when every note type has been switched off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on at least one note type to continue."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attiva almeno un tipo di nota per continuare."
+          }
+        }
+      }
+    },
+    "import.mapping.preview": {
+      "comment": "Header above the live preview of the first mapped note.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteprima"
+          }
+        }
+      }
+    },
+    "import.mapping.title": {
+      "comment": "Title of the field mapping stage.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match the fields"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbina i campi"
           }
         }
       }
@@ -1549,6 +1855,24 @@
         }
       }
     },
+    "import.note %lld": {
+      "comment": "Identifies a rejected .apkg note by index, as 'row' does for CSV.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note %lld"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota %lld"
+          }
+        }
+      }
+    },
     "import.paste_name": {
       "comment": "Source name for cards imported from the clipboard.",
       "extractionState": "manual",
@@ -1574,13 +1898,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose a CSV file"
+            "value": "Choose a file"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scegli un file CSV"
+            "value": "Scegli un file"
           }
         }
       }
@@ -1761,6 +2085,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "“%@” è troppo lungo (%lld caratteri)"
+          }
+        }
+      }
+    },
+    "import.reason.media %@": {
+      "comment": "Rejection: the note references media.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contains an attachment (%@), not yet supported"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contiene un allegato (%@), non ancora supportato"
           }
         }
       }
@@ -2114,13 +2456,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import from CSV"
+            "value": "Import a deck"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importa da CSV"
+            "value": "Importa un mazzo"
           }
         }
       }
@@ -2265,6 +2607,60 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cestino"
+          }
+        }
+      }
+    },
+    "media.play": {
+      "comment": "Button on a card that has an audio attachment.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play sound"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riproduci il suono"
+          }
+        }
+      }
+    },
+    "media.playing": {
+      "comment": "Audio button while the sound plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In riproduzione…"
+          }
+        }
+      }
+    },
+    "media.unavailable": {
+      "comment": "Placeholder when a referenced attachment's file is missing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachment unavailable"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allegato non disponibile"
           }
         }
       }
@@ -2859,6 +3255,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Crea backup"
+          }
+        }
+      }
+    },
+    "settings.backup.media_note": {
+      "comment": "Warns that backup excludes media blobs (ADR-004 §7).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups keep a record of your attachments but not the image and sound files themselves."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I backup conservano l'elenco degli allegati ma non i file di immagini e suoni."
           }
         }
       }

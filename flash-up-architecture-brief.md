@@ -131,10 +131,13 @@ material and private learning progress.
   are generated.
 - **Required:** supports plain text and Markdown in textual fields.
 - **Required:** stores the original source rather than only rendered output.
-- **Required:** launch content is text-only.
-- **Deferred:** images, audio, and other attachments.
-- **Required:** preserve an extension boundary that permits attachments later
-  without replacing note identity.
+- **Required:** authored content is text; attachments accompany it rather than
+  replacing it.
+- **Required:** support image and audio attachments, referenced from note text
+  and stored as content-addressed blobs (ADR-004 §6).
+- **Deferred:** video and other attachment kinds.
+- **Required:** attachments never replace note identity: a note keeps its uuid
+  and its fingerprint when attachments change.
 
 #### Note types
 
@@ -236,7 +239,9 @@ material and private learning progress.
 - **Required:** restore a full FlashApp backup.
 - **Required:** restored shared snapshots become personal copies; backups do not
   recreate groups, participants, or permissions.
-- **Deferred:** Anki `.apkg` import and export.
+- **Required:** import an Anki `.apkg`, both container generations, with the
+  field mapping confirmed by the user before anything is written (ADR-004).
+- **Deferred:** Anki `.apkg` export.
 
 ## Collaborative groups
 
@@ -452,11 +457,11 @@ These are validation tasks, not invitations to change the product:
 
 - Android application.
 - Dedicated macOS or Mac Catalyst target.
-- Media attachments.
+- Video attachments (images and audio are supported — ADR-004).
 - Nested decks.
 - Advanced group permission UI.
 - Custom visual themes.
-- Anki `.apkg` compatibility.
+- Anki `.apkg` **export** (import is supported — ADR-004).
 - Built-in AI generation, PDF import, and Study Agent integration.
 - Leaderboards and complex gamification.
 
