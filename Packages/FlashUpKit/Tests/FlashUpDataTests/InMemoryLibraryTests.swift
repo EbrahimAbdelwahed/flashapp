@@ -97,7 +97,7 @@ struct InMemoryLibraryTests {
         let noteID = UUID()
 
         func candidate(daysFromToday: Int, suspended: Bool = false) -> QueueCandidate {
-            let dueAt = calendar.date(byAdding: .day, value: daysFromToday, to: start)!
+            let dueAt = calendar.date(byAdding: .day, value: daysFromToday, to: start) ?? start
             let card = Card(
                 noteID: noteID,
                 deckID: deckID,
