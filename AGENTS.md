@@ -1,4 +1,4 @@
-# Flash Up — Agent Instructions
+# FlashApp — Agent Instructions
 
 ## Source of truth
 
@@ -19,7 +19,7 @@ approved spec -> batch bead -> worker brief -> scoped implementation -> review e
 
 Read the assigned batch bead before changing code. A batch may contain several original B-prefixed beads only where its acceptance criteria name the original coverage. Do not expand a batch across a CloudKit, FSRS, data-loss, or public-product decision: write an ADR and stop instead.
 
-## Flash Up non-negotiables
+## FlashApp non-negotiables
 
 - iOS/iPadOS 17+, SwiftUI, Core Data with `NSPersistentCloudKitContainer`; no SwiftData.
 - `FlashUpDomain` remains pure and portable; dependency direction is App -> Data -> Domain.

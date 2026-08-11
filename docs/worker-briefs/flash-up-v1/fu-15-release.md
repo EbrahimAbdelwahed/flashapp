@@ -4,7 +4,7 @@
 
 Implement `fu-15-release` from `docs/specs/flash-up-v1-batch-spec.md`.
 
-Task title: fu-15-release Audit, validate, and submit Flash Up v1
+Task title: fu-15-release Audit, validate, and submit FlashApp v1
 
 ## Read First
 

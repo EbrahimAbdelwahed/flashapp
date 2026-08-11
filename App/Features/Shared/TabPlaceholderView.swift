@@ -13,6 +13,7 @@ struct TabPlaceholderView: View {
         } description: {
             Text("shell.placeholder.description")
         }
+        .screenCanvas()
         .navigationTitle(tab.titleKey)
         .accessibilityIdentifier("\(tab.accessibilityIdentifier).placeholder")
     }

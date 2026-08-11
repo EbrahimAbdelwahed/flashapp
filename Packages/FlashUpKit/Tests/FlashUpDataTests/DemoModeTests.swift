@@ -47,6 +47,17 @@ struct DemoModeConfigurationTests {
         let root = URL(fileURLWithPath: "/tmp/container", isDirectory: true)
         #expect(mode.csvURL(documents: root).path == "/tmp/container/demo/anatomia.csv")
     }
+
+    @Test("A comma-separated deck list creates distinct demo deck configurations")
+    func readsMultipleDecks() throws {
+        let modes = try #require(DemoMode.allFromEnvironment([
+            "DEMO_MODE": "1",
+            "DEMO_DECKS": "istologia,biochimica"
+        ]))
+
+        #expect(modes.map(\.slug) == ["istologia", "biochimica"])
+        #expect(modes.map(\.deckName) == ["Istologia", "Biochimica"])
+    }
 }
 
 @Suite("Demo deck loading")
@@ -129,6 +140,26 @@ struct DemoDeckLoaderTests {
             now: now
         )
         #expect(Set(anatomy.notes.keys).isDisjoint(with: Set(biochemistry.notes.keys)))
+    }
+
+    @Test("Multiple demo sources retain separate decks and varied FSRS states")
+    func loadsMultipleDecksWithVariedSchedules() throws {
+        let now = Date(timeIntervalSince1970: 1_780_000_000)
+        let store = try DemoDeckLoader.store(
+            inputs: [
+                DemoDeckInput(csv: Data(Self.csv.utf8), slug: "istologia", deckName: "Istologia"),
+                DemoDeckInput(csv: Data(Self.csv.utf8), slug: "biochimica", deckName: "Biochimica")
+            ],
+            scheduler: SwiftFSRSAdapter(),
+            now: now
+        )
+
+        #expect(store.liveDecks.count == 2)
+        #expect(store.liveNotes().count == 16)
+        #expect(store.cards.count == 24)
+        #expect(store.schedules.count > 0)
+        #expect(store.schedules.count < store.cards.count)
+        #expect(Set(store.schedules.values.map(\.dueAt)).count > 1)
     }
 
     @Test("Seeded history gives the interface a streak and a due queue to show")

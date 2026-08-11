@@ -213,13 +213,52 @@ public actor InMemoryLibrary: LibraryRepository {
     private func deckSummaries(now: Date) -> [DeckSummary] {
         store.liveDecks.map { deck in
             let candidates = store.candidates(in: .deck(deck.id))
+            let upcoming = Self.upcomingCounts(candidates: candidates, now: now)
             return DeckSummary(
                 deck: deck,
                 dueCount: QueueBuilder.dueCount(candidates: candidates, now: now),
                 newCount: QueueBuilder.newCount(candidates: candidates),
+                tomorrowCount: upcoming.tomorrow,
+                thisWeekCount: upcoming.thisWeek,
+                laterCount: upcoming.later,
+                suspendedCount: candidates.filter { $0.schedule?.suspendedAt != nil }.count,
                 totalCards: candidates.count
             )
         }
+    }
+
+    /// Forecasts only cards that already have a review date. New cards stay visible under
+    /// Today's "New" count; suspended cards deliberately stay out of every to-do bucket.
+    static func upcomingCounts(candidates: [QueueCandidate], now: Date) -> (
+        tomorrow: Int,
+        thisWeek: Int,
+        later: Int
+    ) {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: now)
+        guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday),
+              let startOfDayAfterTomorrow = calendar.date(byAdding: .day, value: 2, to: startOfToday),
+              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday)
+        else {
+            return (0, 0, 0)
+        }
+
+        var tomorrow = 0
+        var thisWeek = 0
+        var later = 0
+
+        for candidate in candidates {
+            guard candidate.schedule?.suspendedAt == nil, let dueAt = candidate.schedule?.dueAt else { continue }
+            if dueAt >= startOfTomorrow, dueAt < startOfDayAfterTomorrow {
+                tomorrow += 1
+            } else if dueAt >= startOfDayAfterTomorrow, dueAt < endOfWeek {
+                thisWeek += 1
+            } else if dueAt >= endOfWeek {
+                later += 1
+            }
+        }
+
+        return (tomorrow, thisWeek, later)
     }
 
     private func summaries(for notes: [Note], filters: SearchFilters, now: Date) -> [NoteSummary] {

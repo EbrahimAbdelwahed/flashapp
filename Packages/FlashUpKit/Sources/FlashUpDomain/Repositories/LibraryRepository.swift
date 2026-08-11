@@ -5,14 +5,31 @@ public struct DeckSummary: Identifiable, Equatable, Sendable {
     public let deck: Deck
     public let dueCount: Int
     public let newCount: Int
+    public let tomorrowCount: Int
+    public let thisWeekCount: Int
+    public let laterCount: Int
+    public let suspendedCount: Int
     public let totalCards: Int
 
     public var id: UUID { deck.id }
 
-    public init(deck: Deck, dueCount: Int, newCount: Int, totalCards: Int) {
+    public init(
+        deck: Deck,
+        dueCount: Int,
+        newCount: Int,
+        tomorrowCount: Int = 0,
+        thisWeekCount: Int = 0,
+        laterCount: Int = 0,
+        suspendedCount: Int = 0,
+        totalCards: Int
+    ) {
         self.deck = deck
         self.dueCount = dueCount
         self.newCount = newCount
+        self.tomorrowCount = tomorrowCount
+        self.thisWeekCount = thisWeekCount
+        self.laterCount = laterCount
+        self.suspendedCount = suspendedCount
         self.totalCards = totalCards
     }
 }

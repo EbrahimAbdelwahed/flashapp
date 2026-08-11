@@ -25,10 +25,10 @@ struct DeckRow: View {
                 Spacer(minLength: Spacing.tight)
 
                 if summary.dueCount > 0 {
-                    CountBadge(value: summary.dueCount, tint: .orange)
+                    CountBadge(value: summary.dueCount, tint: Palette.dueText)
                 }
                 if summary.newCount > 0 {
-                    CountBadge(value: summary.newCount, tint: .blue)
+                    CountBadge(value: summary.newCount, tint: Palette.newText)
                 }
 
                 Image(systemName: "chevron.right")

@@ -29,6 +29,8 @@ struct StudySessionView: View {
                     session
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Palette.canvas.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
         }
@@ -67,7 +69,7 @@ struct StudySessionView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Opaque, not glass: study text must never fight a blurred background.
         .background(
-            Color(.secondarySystemGroupedBackground),
+            Palette.paper,
             in: RoundedRectangle(cornerRadius: Spacing.cardCornerRadius)
         )
         .padding(.horizontal, Spacing.normal)
@@ -121,7 +123,7 @@ struct SessionCompleteView: View {
         VStack(spacing: Spacing.loose) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.green)
+                .foregroundStyle(Palette.successText)
             Text("study.complete.title")
                 .font(.title2.weight(.semibold))
             Text("study.complete.count \(answered)")

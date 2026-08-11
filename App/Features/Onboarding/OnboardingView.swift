@@ -58,7 +58,7 @@ struct OnboardingView: View {
                     VStack(spacing: Spacing.loose) {
                         Image(systemName: item.systemImage)
                             .font(.system(size: 64))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Palette.terracotta)
                         Text(item.title)
                             .font(.title2.weight(.semibold))
                             .multilineTextAlignment(.center)
@@ -92,5 +92,6 @@ struct OnboardingView: View {
                 .accessibilityIdentifier("onboarding.skip")
         }
         .padding(.bottom, Spacing.loose)
+        .background(Palette.canvas.ignoresSafeArea())
     }
 }

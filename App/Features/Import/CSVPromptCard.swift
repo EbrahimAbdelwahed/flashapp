@@ -22,7 +22,7 @@ struct CSVPromptCard: View {
                 .font(.caption2.monospaced())
                 .padding(Spacing.tight)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 8))
+                .background(Palette.terracotta.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 .textSelection(.enabled)
                 .accessibilityIdentifier("import.prompt.text")
 

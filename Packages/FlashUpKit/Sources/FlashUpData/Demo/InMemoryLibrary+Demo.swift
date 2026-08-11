@@ -12,15 +12,26 @@ public extension InMemoryLibrary {
         scheduler: FSRSService = SwiftFSRSAdapter(),
         now: Date = Date()
     ) throws -> InMemoryLibrary {
-        let url = mode.csvURL(documents: documents)
-        guard let csv = try? Data(contentsOf: url) else {
-            throw DemoSeedError.fileUnreadable(path: url.path)
+        try demo([mode], documents: documents, scheduler: scheduler, now: now)
+    }
+
+    /// Builds a multi-deck demo while keeping every deck on the same real CSV import path.
+    static func demo(
+        _ modes: [DemoMode],
+        documents: URL,
+        scheduler: FSRSService = SwiftFSRSAdapter(),
+        now: Date = Date()
+    ) throws -> InMemoryLibrary {
+        let inputs = try modes.map { mode in
+            let url = mode.csvURL(documents: documents)
+            guard let csv = try? Data(contentsOf: url) else {
+                throw DemoSeedError.fileUnreadable(path: url.path)
+            }
+            return DemoDeckInput(csv: csv, slug: mode.slug, deckName: mode.deckName)
         }
 
         let store = try DemoDeckLoader.store(
-            csv: csv,
-            slug: mode.slug,
-            deckName: mode.deckName,
+            inputs: inputs,
             scheduler: scheduler,
             now: now
         )

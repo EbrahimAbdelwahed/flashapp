@@ -23,13 +23,16 @@ struct HelpView: View {
                     }
                 }
             }
+            .paperRows()
 
             Section("help.support") {
                 Link(destination: URL(string: "mailto:support@flashup.app?subject=Flash%20Up") ?? URL(filePath: "/")) {
                     Label("help.contact", systemImage: "envelope")
                 }
             }
+            .paperRows()
         }
+        .screenCanvas()
         .navigationTitle("settings.help")
     }
 }
@@ -41,13 +44,16 @@ struct PrivacyView: View {
             Section {
                 Text("privacy.summary")
             }
+            .paperRows()
             Section("privacy.what_we_store") {
                 Label("privacy.point.local", systemImage: "iphone")
                 Label("privacy.point.icloud", systemImage: "icloud")
                 Label("privacy.point.no_tracking", systemImage: "eye.slash")
                 Label("privacy.point.no_account", systemImage: "person.crop.circle.badge.xmark")
             }
+            .paperRows()
         }
+        .screenCanvas()
         .navigationTitle("settings.privacy")
     }
 }

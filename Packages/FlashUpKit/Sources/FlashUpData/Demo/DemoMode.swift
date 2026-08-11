@@ -12,6 +12,9 @@ public struct DemoMode: Equatable, Sendable {
     public static let modeKey = "DEMO_MODE"
     public static let deckKey = "DEMO_DECK"
     public static let deckNameKey = "DEMO_DECK_NAME"
+    /// Comma-separated deck slugs for a library demo with more than one subject.
+    /// Each slug resolves to `<Documents>/demo/<slug>.csv`.
+    public static let decksKey = "DEMO_DECKS"
 
     /// Filename stem of the deck CSV. Constrained to a bare identifier so an environment
     /// variable can never point the loader outside the app container.
@@ -35,6 +38,28 @@ public struct DemoMode: Equatable, Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nilWhenEmpty
         return DemoMode(slug: slug, deckName: declared ?? slug.capitalized)
+    }
+
+    /// Reads either a single named deck (the original recording contract) or a compact
+    /// comma-separated list. A malformed list fails as a whole: a demo must never quietly
+    /// omit one subject and leave the recording misleading.
+    public static func allFromEnvironment(
+        _ environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [DemoMode]? {
+        guard environment[modeKey] == "1" else { return nil }
+
+        guard let declared = environment[decksKey]?
+            .split(separator: ",")
+            .map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }),
+            declared.isEmpty == false
+        else {
+            return fromEnvironment(environment).map { [$0] }
+        }
+
+        guard Set(declared).count == declared.count else { return nil }
+        let modes = declared.map { DemoMode(slug: String($0), deckName: String($0).capitalized) }
+        guard modes.allSatisfy({ isBareIdentifier($0.slug) }) else { return nil }
+        return modes
     }
 
     /// `<container>/Documents/demo/<slug>.csv` — where `scripts/seed.sh` drops the deck.

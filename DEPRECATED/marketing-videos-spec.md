@@ -75,30 +75,38 @@ than bounces.
 §1.16 — is about what happens inside it, and it matters just as much. A perfect canvas
 around a screen full of dummy data is still a tutorial.**
 
-## 1.2 Colour tokens (provisional — single source of truth)
+## 1.2 Colour tokens (single source of truth)
 
-No brand identity exists yet. The palette below is a deliberate starting point: warm
-accent on deep ink, chosen because the study-app category is saturated with blue and
-violet. Define these as exported constants in **one** file and reference them everywhere.
-Changing the brand later must be a one-file edit.
+Superseded 2026-07-31. The earlier block here was warm accent on deep ink, chosen while no
+brand identity existed. One now does: the app icon, and behind it
+[`App/Design/Palette.swift`](App/Design/Palette.swift), whose every value is either sampled
+from the icon or mixed into the same family. The film takes its colour from there rather
+than inventing a second palette — an ad in different colours from the product it shows is
+the failure §1.1 is about. Define these as exported constants in **one** file and reference
+them everywhere.
 
 ```ts
-// remotion/src/theme.ts
+// remotion/src/theme.ts — mirrors App/Design/Palette.swift, do not drift
 export const theme = {
-  ink900:   '#070910',  // deepest background
-  ink800:   '#0A0D14',  // canvas base
-  ink600:   '#16203A',  // cool bloom
-  ember700: '#3A1F12',  // warm bloom
-  ember500: '#FF8A3D',  // primary accent — CTA, ripple, key words
-  ember300: '#FFB784',  // accent, secondary
-  paper:    '#F7F4EF',  // primary text — NOT pure white, warm off-white
-  muted:    '#9AA3B2',  // secondary text
+  ground900:  '#1B1611',  // deepest background — Palette.canvas, dark, top
+  ground800:  '#2A2018',  // canvas base — Palette.canvas, dark, bottom
+  cream100:   '#F7EDE0',  // banner and end-card ground — Palette.canvas, light, top
+  cream200:   '#F3E5D4',  // banner ground, foot of the gradient
+  paper:      '#FCF6EE',  // primary text on ground, card surfaces — Palette.paper
+  terracotta: '#B6734F',  // primary accent — the icon's own stroke
+  terracottaText: '#8E5335', // the same hue, dark enough to sit under type on cream
+  sage:       '#6E7F5E',  // "done", caught up
+  slate:      '#5E7280',  // new, quiet, cool
+  muted:      '#8A7A6B',  // secondary text — warm grey, never neutral
 } as const;
 ```
 
-**The app UI runs in light mode** for all recordings. A bright screen against a dark
-canvas makes the device read as a light source. This is the single biggest lever in the
-whole look.
+**The app UI runs in light mode** for all recordings, and the segments that carry a device
+sit on `ground900/800`. A bright screen against a dark ground makes the device read as a
+light source, which is the single biggest lever in the whole look — and the reason the warm
+cream is confined to banners, interstitials and the end card. Alternating the two is the
+film's rhythm; flooding everything with cream costs the glow and flattens every shot that
+matters.
 
 ## 1.3 Typography
 

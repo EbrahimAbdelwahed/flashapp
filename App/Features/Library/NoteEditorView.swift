@@ -39,12 +39,14 @@ struct NoteEditorView: View {
                 } footer: {
                     Text(typeHelp(draft.type))
                 }
+                .paperRows()
 
                 Section("editor.front") {
                     TextEditor(text: $draft.front)
                         .frame(minHeight: 90)
                         .accessibilityIdentifier("editor.front")
                 }
+                .paperRows()
 
                 Section("editor.back") {
                     TextEditor(text: Binding(
@@ -54,14 +56,17 @@ struct NoteEditorView: View {
                     .frame(minHeight: 70)
                     .accessibilityIdentifier("editor.back")
                 }
+                .paperRows()
 
                 Section("editor.tags") {
                     TextField("editor.tags_placeholder", text: $tagText)
                         .accessibilityIdentifier("editor.tags")
                 }
+                .paperRows()
 
                 cardPreview
             }
+            .screenCanvas()
             .navigationTitle(note == nil ? "editor.new_title" : "editor.edit_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -99,6 +104,7 @@ struct NoteEditorView: View {
                 .accessibilityElement(children: .combine)
             }
         }
+        .paperRows()
     }
 
     private var previewNote: Note {

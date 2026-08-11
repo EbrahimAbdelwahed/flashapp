@@ -1,4 +1,4 @@
-# Task Bead: fu-15-release Audit, validate, and submit Flash Up v1
+# Task Bead: fu-15-release Audit, validate, and submit FlashApp v1
 
 Status: Open
 Priority: P0

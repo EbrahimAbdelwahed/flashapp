@@ -1,4 +1,4 @@
-# Flash Up — UX principles
+# FlashApp — UX principles
 
 Status: binding for every UI batch (`fu-08` through `fu-14`), set by the product owner on
 2026-07-28. This document amends nothing in the architecture brief; it adds the design
@@ -35,6 +35,22 @@ every UI batch:
   never rendered over a blurred background.
 - Never hard-code the tint of a glass surface. Let the material derive from the content
   behind it so light and dark modes both come out right.
+
+### 1a. Colour comes from the icon, through the backdrop
+
+Amended 2026-07-31 by the product owner: the app icon is the brand, and the interface has
+to belong to it.
+
+- `App/Design/Palette.swift` is the only place a colour is named. Its terracotta is sampled
+  from the icon's stroke and its canvas from the icon's background. **No feature view may
+  write a system colour** (`.blue`, `.orange`, `.green`, `.red`) or a raw hex value.
+- Views ask for a role — `due`, `new`, `success`, `destructive` — never for a shade. Roles
+  are what let the palette move in one place.
+- The app's warmth reaches the glass through the **backdrop**, never through a tint on the
+  surface: `screenCanvas()` on the scrolling root of every screen, which is what §1's rule
+  above requires. A screen that omits it is the one screen that still looks like stock iOS.
+- Each hue has a `…Text` variant that clears WCAG AA 4.5:1 on the canvas. Under type, use
+  that one; the plain variant is for fills, strokes and glyphs only.
 
 ## 2. Zero learning curve
 

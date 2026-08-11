@@ -1,4 +1,4 @@
-# Flash Up — Pre-launch Marketing Brief for Fable
+# FlashApp — Pre-launch Marketing Brief for Fable
 
 ## Purpose
 

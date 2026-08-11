@@ -325,6 +325,150 @@
         }
       }
     },
+    "deck.schedule": {
+      "comment": "Section heading for a deck's scheduled study cards.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To do"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da fare"
+          }
+        }
+      }
+    },
+    "deck.schedule.count %lld": {
+      "comment": "Number of cards in one scheduled-study bucket.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cards"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld schede"
+          }
+        }
+      }
+    },
+    "deck.schedule.later": {
+      "comment": "Cards scheduled after the next seven days.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Più avanti"
+          }
+        }
+      }
+    },
+    "deck.schedule.suspended": {
+      "comment": "Cards the user has temporarily suspended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In pausa"
+          }
+        }
+      }
+    },
+    "deck.schedule.this_week": {
+      "comment": "Cards scheduled after tomorrow and within the next seven days.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questa settimana"
+          }
+        }
+      }
+    },
+    "deck.schedule.today": {
+      "comment": "Cards ready to study today.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oggi"
+          }
+        }
+      }
+    },
+    "deck.schedule.today.detail %lld %lld": {
+      "comment": "Breakdown of due and new cards ready today.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld to review · %lld new"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld da ripassare · %lld nuove"
+          }
+        }
+      }
+    },
+    "deck.schedule.tomorrow": {
+      "comment": "Cards scheduled for the next calendar day.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domani"
+          }
+        }
+      }
+    },
     "deck.study": {
       "comment": "Studies this deck.",
       "extractionState": "manual",
@@ -512,13 +656,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The notes in “%@” in the same format Flash Up imports."
+            "value": "The notes in “%@” in the same format FlashApp imports."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le note di “%@” nello stesso formato che Flash Up importa."
+            "value": "Le note di “%@” nello stesso formato che FlashApp importa."
           }
         }
       }
@@ -1225,6 +1369,24 @@
         }
       }
     },
+    "import.error.empty_clipboard": {
+      "comment": "Clipboard held nothing usable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The clipboard is empty. Copy the assistant's answer and try again."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gli appunti sono vuoti. Copia la risposta dell'assistente e riprova."
+          }
+        }
+      }
+    },
     "import.error.encoding": {
       "comment": "Wrong encoding.",
       "extractionState": "manual",
@@ -1387,6 +1549,24 @@
         }
       }
     },
+    "import.paste_name": {
+      "comment": "Source name for cards imported from the clipboard.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appunti"
+          }
+        }
+      }
+    },
     "import.pick_file": {
       "comment": "Opens the file picker.",
       "extractionState": "manual",
@@ -1424,19 +1604,19 @@
       }
     },
     "import.prompt.body": {
-      "comment": "The prompt the user copies. Keep the CSV header and cloze syntax verbatim.",
+      "comment": "The prompt the user copies. It asks for CSV in one code block, excludes course-organizational content, and keeps the CSV header and cloze syntax verbatim.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You are helping me make flashcards. Answer with ONLY a CSV file, no commentary.\n\nColumns, in this exact order, with this exact header row:\ntype,front,back,tags\n\nRules:\n- type is basic, reversed or cloze.\n- basic: front is the question, back is the answer.\n- reversed: use it for translations and pairs; it makes two cards automatically.\n- cloze: put the hidden words in the front as {{c1::word}}. Use c1, c2, c3 for different blanks in the same sentence. Leave back empty, or use it for a short note.\n- tags: separated by semicolons, e.g. anatomy;heart\n- Wrap any field containing a comma in double quotes.\n- Keep each front under 200 characters.\n\nNow make cards from this material:"
+            "value": "You are helping me make flashcards. Answer with ONLY the CSV, inside one code block — no commentary before or after it, no attached file.\n\nColumns, in this exact order, with this exact header row:\ntype,front,back,tags\n\nSelection rules:\n- Create cards only from subject matter that is useful to learn and review.\n- DO NOT create cards from course-organizational information, including instructors, exam format, credits, schedules, classrooms, contacts, administrative instructions, or general course announcements.\n- If a passage contains only organizational information, skip it.\n\nCSV rules:\n- type is basic, reversed or cloze.\n- basic: front is the question, back is the answer.\n- reversed: use it for translations and pairs; it makes two cards automatically.\n- cloze: put the hidden words in the front as {{c1::word}}. Use c1, c2, c3 for different blanks in the same sentence. Leave back empty, or use it for a short note.\n- tags: separated by semicolons, e.g. anatomy;heart\n- Wrap any field containing a comma in double quotes.\n- Keep each front under 200 characters.\n\nNow create the CSV from this material:"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mi stai aiutando a creare delle flashcard. Rispondi SOLO con un file CSV, senza commenti.\n\nColonne, in questo ordine esatto, con questa riga di intestazione esatta:\ntype,front,back,tags\n\nRegole:\n- type è basic, reversed o cloze.\n- basic: front è la domanda, back è la risposta.\n- reversed: usalo per traduzioni e coppie; crea due schede automaticamente.\n- cloze: metti le parole da nascondere nel front come {{c1::parola}}. Usa c1, c2, c3 per buchi diversi nella stessa frase. Lascia back vuoto, oppure usalo per una nota breve.\n- tags: separati da punto e virgola, es. anatomia;cuore\n- Metti tra virgolette doppie ogni campo che contiene una virgola.\n- Tieni ogni front sotto i 200 caratteri.\n\nOra crea le schede da questo materiale:"
+            "value": "Mi stai aiutando a creare delle flashcard. Rispondi SOLO con il CSV, dentro un unico blocco di codice — nessun commento prima o dopo, nessun file allegato.\n\nColonne, in questo ordine esatto, con questa riga di intestazione esatta:\ntype,front,back,tags\n\nRegole di selezione:\n- Crea schede solo sui contenuti della materia utili da apprendere e ripassare.\n- NON creare schede sulle informazioni organizzative del corso, inclusi docenti, modalità d'esame, CFU, orari, aule, contatti, istruzioni amministrative o comunicazioni generali sul corso.\n- Se un passaggio contiene solo informazioni organizzative, ignoralo.\n\nRegole CSV:\n- type è basic, reversed o cloze.\n- basic: front è la domanda, back è la risposta.\n- reversed: usalo per traduzioni e coppie; crea due schede automaticamente.\n- cloze: metti le parole da nascondere nel front come {{c1::parola}}. Usa c1, c2, c3 per buchi diversi nella stessa frase. Lascia back vuoto, oppure usalo per una nota breve.\n- tags: separati da punto e virgola, es. anatomia;cuore\n- Metti tra virgolette doppie ogni campo che contiene una virgola.\n- Tieni ogni front sotto i 200 caratteri.\n\nOra crea il CSV da questo materiale:"
           }
         }
       }
@@ -1484,13 +1664,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy this, paste it into ChatGPT with your notes, and save the answer as a .csv file."
+            "value": "Copy this and paste it into ChatGPT with your notes. Then copy its answer and paste it back here."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copialo, incollalo in ChatGPT insieme ai tuoi appunti e salva la risposta come file .csv."
+            "value": "Copialo e incollalo in ChatGPT insieme ai tuoi appunti. Poi copia la sua risposta e incollala qui."
           }
         }
       }
@@ -1502,13 +1682,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ask an AI to prepare the file"
+            "value": "Ask an AI to write the cards"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fai preparare il file a una IA"
+            "value": "Fai scrivere le schede a una IA"
           }
         }
       }
@@ -2510,13 +2690,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flash Up has no account, no tracking and no analytics. Your cards never reach our servers, because there are none."
+            "value": "FlashApp has no account, no tracking and no analytics. Your cards never reach our servers, because there are none."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flash Up non ha account, tracciamento o analitiche. Le tue schede non arrivano ai nostri server, perché non esistono."
+            "value": "FlashApp non ha account, tracciamento o analitiche. Le tue schede non arrivano ai nostri server, perché non esistono."
           }
         }
       }
@@ -2870,13 +3050,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "iOS notifications are off for Flash Up. Turn them on in iOS Settings to get this reminder."
+            "value": "iOS notifications are off for FlashApp. Turn them on in iOS Settings to get this reminder."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le notifiche di iOS sono disattivate per Flash Up. Attivale in Impostazioni per ricevere il promemoria."
+            "value": "Le notifiche di iOS sono disattivate per FlashApp. Attivale in Impostazioni per ricevere il promemoria."
           }
         }
       }
@@ -3014,13 +3194,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How many cards a day Flash Up puts in front of you."
+            "value": "How many cards a day FlashApp puts in front of you."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quante schede al giorno Flash Up ti propone."
+            "value": "Quante schede al giorno FlashApp ti propone."
           }
         }
       }

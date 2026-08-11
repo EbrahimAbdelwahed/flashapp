@@ -1,4 +1,4 @@
-# Flash Up — Worklog
+# FlashApp — Worklog
 
 One entry per completed batch bead (spec §0.4.7): bead ID, what was built, deviations
 with justification, follow-ups discovered.
@@ -294,3 +294,153 @@ Covers source bead B0.1.
   stack.
 - A GitHub Actions workflow calling `ci/test.sh` — deliberately out of scope for B0.1,
   which only requires the local wrappers.
+
+---
+
+## Demo multi-deck seeding — 2026-07-31
+
+### Built
+
+- `DEMO_DECKS` accepts a comma-separated list of safe deck slugs while retaining the
+  existing single-deck `DEMO_DECK` contract.
+- The demo loader now combines several separately parsed CSV files into distinct decks,
+  then seeds one shared, deterministic FSRS history so new, due, and longer-interval cards
+  coexist across subjects.
+
+### Verification
+
+- `swift test --filter DemoMode`: 18 tests passed, including the new multi-deck and varied
+  FSRS-state coverage.
+- iPhone 17 simulator: launched with complete local study exports as two decks — Istologia
+  (56 cards) and Biochimica (19 cards). The Today screen showed 30 due and 15 new cards.
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **`.
+
+### Data handling
+
+The source study exports and generated CSV files were copied only into the local simulator
+container. They are not repository assets and were not added to version control.
+
+---
+
+## Deck detail schedule forecast — 2026-07-31
+
+### Built
+
+- Each deck detail now begins with a **Da fare** section: **Oggi** retains the current
+  review/new presentation, while scheduled review cards are grouped into **Domani** and
+  **Questa settimana**.
+- **Più avanti** appears only when cards are scheduled after the seven-day window, so no
+  card silently disappears from the deck total. **In pausa** appears only when the deck has
+  suspended cards and remains outside every study bucket.
+- The forecast uses existing FSRS due dates; it does not place future cards in today’s study
+  queue. Copy is localized in English and Italian and the summary is exposed as one combined
+  accessibility element per row.
+
+### Verification
+
+- `swift test`: 114 tests in 10 suites passed, including forecast boundary and suspension
+  coverage.
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- Reinstalled and launched the local Istologia and Biochimica demo decks in the simulator.
+
+---
+
+## Today brand header — 2026-07-31
+
+### Built
+
+- The Today screen has a persistent top-left FlashApp brand mark using the shipped app-icon
+  artwork, with the screen title directly below it and Statistics retained at the right.
+- Added a dedicated image-set for in-app rendering; an `AppIcon.appiconset` cannot be loaded
+  through SwiftUI's `Image` API as a named asset.
+
+### Verification
+
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- Visually checked the installed Italian demo: the icon and “FlashApp” label render in the
+  top-left header, and the Statistics control remains reachable on the right.
+
+---
+
+## FlashApp signature canvas — 2026-07-31
+
+### Built
+
+- The Today wordmark is now the larger serif **FlashApp**, without a space.
+- `screenCanvas()` carries a low-contrast cropped monogram signature at its lower edge. It
+  derives its linework from the existing logo asset and is decorative only, so it never
+  competes with controls or becomes part of VoiceOver navigation.
+
+### Verification
+
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- Visually checked in the installed Italian demo with Istologia and Biochimica loaded.
+
+---
+
+## Signature prominence for launch framing — 2026-07-31
+
+### Built
+
+- Enlarged the canvas monogram, increased its contrast slightly, and lifted it into the
+  middle of the screen so it reads within the upper two-thirds of launch footage.
+
+### Verification
+
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- Visually checked in the installed Italian demo.
+
+---
+
+## FlashApp monogram lockup — 2026-07-31
+
+### Built
+
+- Increased the in-header app monogram to 34 points, approximately 20% taller than the
+  `FlashApp` wordmark's cap height, while preserving its centred baseline relationship.
+
+### Verification
+
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- Visually checked in the installed Italian demo.
+
+---
+
+## Shared FlashApp root header — 2026-07-31
+
+### Built
+
+- Replaced the Today-only lockup with one shared `AppBrandHeader` used by Oggi, Libreria,
+  Gruppi and Impostazioni.
+- Increased the monogram to a Dynamic-Type-scaled 42-point frame so its visible linework
+  clearly overshoots the `FlashApp` cap height above and below.
+- Library's add action now occupies the same trailing header position as Today statistics.
+
+### Verification
+
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- `ShellUITests.testBrandHeaderAppearsOnEveryTab`: passed, exercising all four root tabs.
+- Visually checked the installed Italian demo on the Groups tab with the shared header and
+  enlarged lockup rendered above the real content.
+
+---
+
+## B4.3 — Import prompt content filter — 2026-07-31
+
+### Built
+
+- Extended the localized ChatGPT CSV prompt with a selection rule that creates cards only
+  from study-worthy subject matter.
+- The prompt now explicitly skips course-organizational content such as instructors, exam
+  format, credits, schedules, classrooms, contacts, administrative instructions and general
+  announcements.
+- Preserved the intended clipboard journey: the assistant returns CSV text in one code block
+  with no attached file.
+
+### Verification
+
+- `jq empty App/Resources/Localizable.xcstrings`: passed.
+- `git diff --check`: passed.
+- `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
+- `ImportUITests.testImportOffersACopyablePromptForChatGPT`: passed, covering the exact CSV
+  header, organizational-content exclusion, code-block response and no-attachment contract.

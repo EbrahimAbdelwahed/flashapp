@@ -4,7 +4,7 @@
 
 Implement `fu-00-scaffold` from `docs/specs/flash-up-v1-batch-spec.md`.
 
-Task title: fu-00-scaffold Scaffold Flash Up and its CI contract
+Task title: fu-00-scaffold Scaffold FlashApp and its CI contract
 
 ## Read First
 

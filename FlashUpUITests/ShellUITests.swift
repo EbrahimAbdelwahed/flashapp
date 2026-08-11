@@ -36,4 +36,18 @@ final class ShellUITests: XCTestCase {
             XCTAssertTrue(tab.isSelected, "Tab at index \(index) did not become selected")
         }
     }
+
+    func testBrandHeaderAppearsOnEveryTab() {
+        let app = launchPastOnboarding()
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10), "The app did not present a tab bar")
+
+        for index in 0..<tabBar.buttons.count {
+            tabBar.buttons.element(boundBy: index).tap()
+            XCTAssertTrue(
+                app.descendants(matching: .any)["app.brand"].waitForExistence(timeout: 5),
+                "The FlashApp brand header is missing from tab \(index)"
+            )
+        }
+    }
 }

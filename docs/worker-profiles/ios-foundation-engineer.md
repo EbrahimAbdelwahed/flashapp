@@ -5,7 +5,7 @@ Source task: `docs/tasks/flash-up-v1/fu-00-scaffold.md`
 
 ## Reuse Trigger
 
-Use this worker when a bead has the same implementation shape as `fu-00-scaffold Scaffold Flash Up and its CI contract`.
+Use this worker when a bead has the same implementation shape as `fu-00-scaffold Scaffold FlashApp and its CI contract`.
 
 ## Mandate
 

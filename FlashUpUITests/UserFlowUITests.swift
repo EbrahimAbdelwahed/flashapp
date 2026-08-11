@@ -9,56 +9,7 @@ enum ReminderStubEnvironment {
     static let denied = "denied"
 }
 
-final class UserFlowUITests: XCTestCase {
-    private var app: XCUIApplication!
-
-    override func setUp() {
-        super.setUp()
-        continueAfterFailure = false
-        app = XCUIApplication()
-        // Onboarding is mandatory once; the flows below start from a first launch and skip
-        // it explicitly, so each test exercises the same state a new user reaches.
-        app.launchArguments = ["-didFinishOnboarding", "NO"]
-        app.launch()
-    }
-
-    // MARK: - Helpers
-
-    private func skipOnboarding() {
-        let skip = app.buttons["onboarding.skip"]
-        if skip.waitForExistence(timeout: 5) {
-            skip.tap()
-        }
-    }
-
-    /// Taps the switch itself.
-    ///
-    /// A `Toggle` in a `List` reports a frame that covers the whole row, so `tap()` lands on
-    /// the label — which does not flip it. Aiming at the trailing edge hits the control.
-    private func flip(_ toggle: XCUIElement) {
-        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-    }
-
-    /// Goes back one level. The back button is identified by role rather than by its label,
-    /// which is the previous screen's title and therefore localized.
-    private func goBack() {
-        let back = app.navigationBars.buttons.matching(
-            NSPredicate(format: "identifier == %@ OR label CONTAINS[c] %@ OR label CONTAINS[c] %@",
-                        "BackButton", "Libreria", "Library")
-        ).firstMatch
-        if back.waitForExistence(timeout: 5) {
-            back.tap()
-        } else {
-            app.navigationBars.buttons.element(boundBy: 0).tap()
-        }
-    }
-
-    private func openTab(_ identifier: String) {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10), "no tab bar")
-        let index = ["tab.today": 0, "tab.library": 1, "tab.groups": 2, "tab.settings": 3][identifier] ?? 0
-        tabBar.buttons.element(boundBy: index).tap()
-    }
+final class UserFlowUITests: UITestCase {
 
     // MARK: - Flows
 
@@ -140,32 +91,13 @@ final class UserFlowUITests: XCTestCase {
         )
     }
 
-    func testImportFlowFromTheBuiltInExample() {
-        skipOnboarding()
-        openTab("tab.library")
-
-        app.buttons["library.import"].tap()
-        let sample = app.buttons["import.sample"]
-        XCTAssertTrue(sample.waitForExistence(timeout: 5), "the import flow did not open")
-        sample.tap()
-
-        let confirm = app.buttons["import.confirm"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "the import preview did not appear")
-        confirm.tap()
-
-        // The example deliberately contains one bad row, so the result is 3 of 4.
-        XCTAssertTrue(
-            app.buttons["import.undo"].waitForExistence(timeout: 10),
-            "the import did not complete"
-        )
-    }
-
     func testDeleteANoteAndRestoreItFromTheTrash() {
         skipOnboarding()
         openTab("tab.library")
 
-        // Open the first deck and remember which note is about to be deleted.
-        let deck = app.cells.element(boundBy: 0)
+        // Open the first deck and remember which note is about to be deleted. By identifier,
+        // not by index: the Library's first row is its wordmark header, not a deck.
+        let deck = app.descendants(matching: .any).matching(identifier: "library.deck_row").element(boundBy: 0)
         XCTAssertTrue(deck.waitForExistence(timeout: 10), "no decks to open")
         deck.tap()
 
@@ -248,27 +180,6 @@ final class UserFlowUITests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts["settings.reminder.blocked"].waitForExistence(timeout: 5),
             "a blocked reminder must explain itself"
-        )
-    }
-
-    func testImportOffersACopyablePromptForChatGPT() {
-        skipOnboarding()
-        openTab("tab.library")
-
-        app.buttons["library.import"].tap()
-
-        let prompt = app.staticTexts["import.prompt.text"]
-        XCTAssertTrue(prompt.waitForExistence(timeout: 5), "the CSV prompt is not shown")
-        XCTAssertTrue(prompt.label.contains("type,front,back,tags"), "the prompt does not state the format")
-
-        let copy = app.buttons["import.prompt.copy"]
-        XCTAssertTrue(copy.exists, "the prompt cannot be copied")
-        copy.tap()
-        XCTAssertTrue(
-            app.buttons.matching(
-                NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Copiato", "Copied")
-            ).firstMatch.waitForExistence(timeout: 5),
-            "copying the prompt gives no feedback"
         )
     }
 

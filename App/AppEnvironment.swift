@@ -42,11 +42,11 @@ final class AppEnvironment {
     init(library: (any LibraryRepository)? = nil, reminders: (any ReminderScheduling)? = nil) {
         let logger = Logger(subsystem: Self.loggingSubsystem, category: "app")
         self.logger = logger
-        let demoMode = DemoMode.fromEnvironment()
-        self.library = library ?? demoMode.flatMap { Self.demoLibrary($0, logger: logger) } ?? InMemoryLibrary()
+        let demoModes = DemoMode.allFromEnvironment()
+        self.library = library ?? demoModes.flatMap { Self.demoLibrary($0, logger: logger) } ?? InMemoryLibrary()
         // A recording session must never schedule a real notification: a banner dropping
         // into frame ruins a take that is otherwise finished (spec §3.1).
-        let liveReminders: any ReminderScheduling = demoMode == nil
+        let liveReminders: any ReminderScheduling = demoModes == nil
             ? ReminderScheduler()
             : StubReminderScheduler(grantsPermission: true)
         self.reminders = reminders ?? StubReminderScheduler.fromEnvironment() ?? liveReminders
@@ -58,19 +58,20 @@ final class AppEnvironment {
     /// deck cannot be loaded an empty library is returned rather than the ordinary demo
     /// seed: a flow must fail on its first assertion instead of quietly recording the wrong
     /// deck, which only becomes visible once the footage is on the timeline.
-    private static func demoLibrary(_ mode: DemoMode, logger: Logger) -> any LibraryRepository {
+    private static func demoLibrary(_ modes: [DemoMode], logger: Logger) -> (any LibraryRepository)? {
         guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             logger.fault("Demo mode requested but the Documents directory is unavailable")
-            return InMemoryLibrary(seeded: false)
+            return nil
         }
 
         do {
-            return try InMemoryLibrary.demo(mode, documents: documents)
+            return try InMemoryLibrary.demo(modes, documents: documents)
         } catch {
             // Deck names are pipeline configuration, not card text, so logging the slug is
             // within the privacy rule that keeps user content out of diagnostics.
-            logger.fault("Demo deck '\(mode.slug, privacy: .public)' failed to seed: \(error)")
-            return InMemoryLibrary(seeded: false)
+            let slugs = modes.map(\.slug).joined(separator: ",")
+            logger.fault("Demo decks '\(slugs, privacy: .public)' failed to seed: \(error)")
+            return nil
         }
     }
 }
