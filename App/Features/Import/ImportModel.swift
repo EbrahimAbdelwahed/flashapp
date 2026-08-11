@@ -1,13 +1,18 @@
+import FlashUpData
 import FlashUpDomain
 import Foundation
 import Observation
 
-/// Drives the import flow (spec §A9.2).
+/// Drives the import flow (spec §A9.2, §A9.5).
 @Observable
 @MainActor
 final class ImportModel {
     enum Stage: Equatable {
         case choosing
+        /// `.apkg` only. An Anki deck has its own note types and fields, and which field
+        /// becomes the front is a decision only the user can make, so it is never silent.
+        /// CSV goes straight from `.choosing` to `.preview`, exactly as before.
+        case mapping
         case preview
         case done(Int)
     }
@@ -18,6 +23,7 @@ final class ImportModel {
     }
 
     private let library: any LibraryRepository
+    private let mediaStore: (any MediaStore)?
 
     private(set) var stage: Stage = .choosing
     private(set) var decks: [DeckSummary] = []
@@ -29,8 +35,27 @@ final class ImportModel {
     var isPickingFile = false
     private var sourceName = ""
 
-    init(library: any LibraryRepository) {
+    /// One mapping per Anki note type, pre-filled with a proposal the user can change.
+    var mappings: [FieldMapping] = []
+    /// Whether the file in hand is an Anki deck. Only affects wording: a rejected `.apkg`
+    /// entry is a note, not a line in a file, and pointing the user at "row 7" of a binary
+    /// archive would be useless.
+    private(set) var isApkg = false
+    /// The Anki notes waiting for those mappings to be confirmed.
+    private var sourceNotes: [SourceNote] = []
+    /// Kept open until the import commits: attachment bytes are pulled out one at a time,
+    /// so a deck with 200 MB of pictures is never resident all at once.
+    private var archive: ApkgArchive?
+    private var mediaPlan = MediaPlan()
+    /// Attachments that could not be extracted. Their notes still import; the reference
+    /// renders as a placeholder.
+    private(set) var failedMediaCount = 0
+
+    var canContinueFromMapping: Bool { mappings.contains(where: \.isEnabled) }
+
+    init(library: any LibraryRepository, mediaStore: (any MediaStore)? = nil) {
         self.library = library
+        self.mediaStore = mediaStore
     }
 
     func prepare() async {
@@ -50,7 +75,13 @@ final class ImportModel {
                 errorMessage = String(localized: "import.error.unreadable")
                 return
             }
-            await parse(data, sourceName: url.lastPathComponent)
+            // The extension is the only thing distinguishing the two formats here; an
+            // `.apkg` is a ZIP, so sniffing bytes would just find "zip".
+            if url.pathExtension.lowercased() == "apkg" {
+                await loadApkg(data, sourceName: url.lastPathComponent)
+            } else {
+                await parse(data, sourceName: url.lastPathComponent)
+            }
         case let .failure(error):
             errorMessage = error.localizedDescription
         }
@@ -113,7 +144,12 @@ final class ImportModel {
             wasNew = false
         }
 
-        let batch = await library.commitImport(plan, into: deckID, sourceName: sourceName, wasNewDeck: wasNew)
+        // Attachments first, then the notes: the store assigns the real ids, and the rows
+        // still carry the provisional ones the mapper invented (ADR-004 §6).
+        let committed = await storingMedia(plan)
+        let batch = await library.commitImport(
+            committed, into: deckID, sourceName: sourceName, wasNewDeck: wasNew
+        )
         lastBatchID = batch.id
         stage = .done(batch.createdNoteIDs.count)
     }
@@ -124,23 +160,109 @@ final class ImportModel {
         stage = .done(0)
     }
 
+    // MARK: - Anki
+
+    /// Opens the archive and stops at the mapping stage. Nothing is planned or written until
+    /// the user has seen and accepted how the fields line up.
+    func loadApkg(_ data: Data, sourceName: String) async {
+        self.sourceName = sourceName
+        isApkg = true
+
+        do {
+            // Parsing a large deck is real work, so it happens off the main actor — and the
+            // archive is opened once and kept, not reopened for the attachments later.
+            let opened = try await Task.detached(priority: .userInitiated) {
+                let archive = try ApkgArchive(data: data)
+                return (archive, try archive.readCollection())
+            }.value
+            let collection = opened.1
+
+            guard !collection.notes.isEmpty else {
+                errorMessage = String(localized: "import.error.apkg_empty")
+                return
+            }
+
+            archive = opened.0
+            // Only attachments Flash Up can carry get an id; a note referencing anything
+            // else is refused in the preview, with the filename shown.
+            mediaPlan = mediaStore == nil
+                ? MediaPlan()
+                : MediaPlan(availableFilenames: collection.mediaFilenames)
+            sourceNotes = collection.sourceNotes()
+            mappings = FieldMappingDefaults.propose(for: collection.noteTypeDescriptors())
+            errorMessage = nil
+            stage = .mapping
+        } catch let error as ApkgError {
+            errorMessage = Self.message(for: error)
+        } catch {
+            errorMessage = String(localized: "import.error.apkg_unreadable")
+        }
+    }
+
+    /// Applies the confirmed mappings and moves to the shared preview. From here on the
+    /// `.apkg` path is the CSV path (ADR-004 §5).
+    func confirmMapping() async {
+        let outcome = ApkgRowMapper.map(notes: sourceNotes, mappings: mappings, media: mediaPlan)
+        plan = ImportPlanner.plan(outcome, existingHashes: await existingHashes())
+        stage = .preview
+    }
+
+    /// Stores the attachments this import actually uses and rewrites the plan to point at
+    /// them. A blob that cannot be extracted is counted and skipped, never fatal.
+    private func storingMedia(_ plan: ImportPlan) async -> ImportPlan {
+        guard let archive, let mediaStore, !mediaPlan.isEmpty else { return plan }
+
+        let result = await ApkgMediaImporter.importMedia(
+            for: plan.rowsToImport, from: archive, plan: mediaPlan, into: mediaStore
+        )
+        failedMediaCount = result.failedFilenames.count
+        return plan.replacingMediaIDs(result.replacements)
+    }
+
+    /// The first note each mapping would produce, so the mapping screen can show the effect
+    /// of a change instead of describing it.
+    func previewRow(for mapping: FieldMapping) -> ParsedRow? {
+        let notes = sourceNotes.filter { $0.noteTypeID == mapping.noteTypeID }
+        var enabled = mapping
+        enabled.isEnabled = true
+        return ApkgRowMapper.map(notes: notes, mappings: [enabled], media: mediaPlan).rows.first
+    }
+
     private func parse(_ data: Data, sourceName: String) async {
         self.sourceName = sourceName
+        isApkg = false
         do {
             let outcome = try CSVParser.parse(data)
-            let existing: [UUID: String]
-            if case let .existing(deckID) = destination {
-                existing = await library.contentHashes(in: deckID)
-            } else {
-                existing = [:]
-            }
-            plan = ImportPlanner.plan(outcome, existingHashes: existing)
+            plan = ImportPlanner.plan(outcome, existingHashes: await existingHashes())
             errorMessage = nil
             stage = .preview
         } catch let error as CSVParseError {
             errorMessage = Self.message(for: error)
         } catch {
             errorMessage = String(localized: "import.error.unreadable")
+        }
+    }
+
+    /// Duplicates are only meaningful against a destination that already exists.
+    private func existingHashes() async -> [UUID: String] {
+        guard case let .existing(deckID) = destination else { return [:] }
+        return await library.contentHashes(in: deckID)
+    }
+
+    /// Actionable, localized, and never a raw parser error (spec §0.2). The `.apkg` reader's
+    /// structural failures are deliberately collapsed into a single suggestion the user can
+    /// act on, rather than exposing ZIP and SQLite vocabulary.
+    private static func message(for error: ApkgError) -> String {
+        switch error {
+        case let .fileTooLarge(_, limit):
+            String(localized: "import.error.apkg_too_large \(limit / 1_048_576)")
+        case let .expandedTooLarge(_, limit):
+            String(localized: "import.error.apkg_too_large \(limit / 1_048_576)")
+        case let .tooManyNotes(_, limit):
+            String(localized: "import.error.apkg_too_many_notes \(limit)")
+        case .noCollection, .notAZipArchive, .unsupportedZipFormat, .unsupportedCompression,
+             .missingEntry, .corruptedData, .unsupportedSchema, .databaseUnreadable:
+            String(localized: "import.error.apkg_unreadable")
         }
     }
 

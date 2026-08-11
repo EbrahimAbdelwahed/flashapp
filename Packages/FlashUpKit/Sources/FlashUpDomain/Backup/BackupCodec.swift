@@ -6,7 +6,9 @@ import Foundation
 /// files, so it must be describable and testable without any storage layer.
 public struct BackupDocument: Equatable, Codable, Sendable {
     public static let formatName = "flashup-backup"
-    public static let currentVersion = 1
+    /// Version 2 adds attachment references and the `MediaAsset` records describing them
+    /// (ADR-004 §7). Version 1 documents still decode: the new fields default to empty.
+    public static let currentVersion = 2
 
     public var format: String
     public var formatVersion: Int
@@ -16,6 +18,11 @@ public struct BackupDocument: Equatable, Codable, Sendable {
     public var decks: [BackupDeck]
     public var schedules: [BackupSchedule]
     public var reviewLogs: [BackupReviewLog]
+    /// Attachment records. **The bytes are deliberately not here**: a media-heavy collection
+    /// would produce hundreds of megabytes of base64 in one JSON file, slow to write and
+    /// prone to failing on the devices that need a backup most. A restore whose blob is
+    /// missing renders a placeholder rather than losing the note (ADR-004 §7).
+    public var media: [MediaAsset]
 
     public init(
         format: String = BackupDocument.formatName,
@@ -25,7 +32,8 @@ public struct BackupDocument: Equatable, Codable, Sendable {
         settings: StudySettings,
         decks: [BackupDeck],
         schedules: [BackupSchedule],
-        reviewLogs: [BackupReviewLog]
+        reviewLogs: [BackupReviewLog],
+        media: [MediaAsset] = []
     ) {
         self.format = format
         self.formatVersion = formatVersion
@@ -35,6 +43,36 @@ public struct BackupDocument: Equatable, Codable, Sendable {
         self.decks = decks
         self.schedules = schedules
         self.reviewLogs = reviewLogs
+        self.media = media
+    }
+
+    /// Every attachment the exported notes point at.
+    ///
+    /// The library does not know about the media store — it holds ids, not blobs — so the
+    /// composition root fills `media` in from this set. That keeps the two subsystems
+    /// independent instead of making the repository depend on storage it does not own.
+    public var referencedMediaIDs: Set<UUID> {
+        Set(decks.flatMap { $0.notes.flatMap(\.mediaIDs) })
+    }
+
+    public func addingMedia(_ assets: [MediaAsset]) -> BackupDocument {
+        var copy = self
+        copy.media = assets
+        return copy
+    }
+
+    /// Hand-rolled so a version 1 document, which has no `media` key, still decodes.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        format = try container.decode(String.self, forKey: .format)
+        formatVersion = try container.decode(Int.self, forKey: .formatVersion)
+        appVersion = try container.decode(String.self, forKey: .appVersion)
+        exportedAt = try container.decode(Date.self, forKey: .exportedAt)
+        settings = try container.decode(StudySettings.self, forKey: .settings)
+        decks = try container.decode([BackupDeck].self, forKey: .decks)
+        schedules = try container.decode([BackupSchedule].self, forKey: .schedules)
+        reviewLogs = try container.decode([BackupReviewLog].self, forKey: .reviewLogs)
+        media = try container.decodeIfPresent([MediaAsset].self, forKey: .media) ?? []
     }
 }
 
@@ -69,6 +107,8 @@ public struct BackupNote: Equatable, Codable, Sendable {
     public var createdAt: Date
     public var updatedAt: Date
     public var cards: [BackupCard]
+    /// Attachments referenced from `front`/`back`. Absent in version 1 documents.
+    public var mediaIDs: [UUID]
 
     public init(
         uuid: UUID,
@@ -78,7 +118,8 @@ public struct BackupNote: Equatable, Codable, Sendable {
         tags: [String],
         createdAt: Date,
         updatedAt: Date,
-        cards: [BackupCard]
+        cards: [BackupCard],
+        mediaIDs: [UUID] = []
     ) {
         self.uuid = uuid
         self.type = type
@@ -88,6 +129,20 @@ public struct BackupNote: Equatable, Codable, Sendable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.cards = cards
+        self.mediaIDs = mediaIDs
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        uuid = try container.decode(UUID.self, forKey: .uuid)
+        type = try container.decode(NoteType.self, forKey: .type)
+        front = try container.decode(String.self, forKey: .front)
+        back = try container.decodeIfPresent(String.self, forKey: .back)
+        tags = try container.decode([String].self, forKey: .tags)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        cards = try container.decode([BackupCard].self, forKey: .cards)
+        mediaIDs = try container.decodeIfPresent([UUID].self, forKey: .mediaIDs) ?? []
     }
 }
 

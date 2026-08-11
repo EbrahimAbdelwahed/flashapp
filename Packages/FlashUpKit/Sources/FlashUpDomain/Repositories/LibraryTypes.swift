@@ -8,6 +8,9 @@ public struct NoteDraft: Equatable, Sendable {
     public var front: String
     public var back: String?
     public var tags: [String]
+    /// Attachments referenced from `front`/`back`. Defaulted so every existing caller —
+    /// the editor, the CSV importer, demo seeding — compiles unchanged (ADR-004 §6).
+    public var mediaIDs: [UUID]
 
     public init(
         id: UUID? = nil,
@@ -15,7 +18,8 @@ public struct NoteDraft: Equatable, Sendable {
         type: NoteType,
         front: String,
         back: String? = nil,
-        tags: [String] = []
+        tags: [String] = [],
+        mediaIDs: [UUID] = []
     ) {
         self.id = id
         self.deckID = deckID
@@ -23,6 +27,7 @@ public struct NoteDraft: Equatable, Sendable {
         self.front = front
         self.back = back
         self.tags = tags
+        self.mediaIDs = mediaIDs
     }
 
     public init(note: Note) {
@@ -32,7 +37,8 @@ public struct NoteDraft: Equatable, Sendable {
             type: note.type,
             front: note.front,
             back: note.back,
-            tags: note.tags
+            tags: note.tags,
+            mediaIDs: note.mediaIDs
         )
     }
 
