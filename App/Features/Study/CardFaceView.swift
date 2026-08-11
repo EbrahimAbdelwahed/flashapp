@@ -10,21 +10,24 @@ struct CardFaceView: View {
     let card: Card
     let isRevealed: Bool
 
+    @Environment(\.mediaStore) private var mediaStore
+
     var body: some View {
         VStack(spacing: Spacing.loose) {
             if let cloze = card.cloze {
+                // The sentence keeps its in-place blank; only the attachments are appended,
+                // because concatenated `Text` cannot hold an image.
                 clozeSentence(cloze)
+                ForEach(MediaReference.ids(in: cloze.source), id: \.self) { id in
+                    MediaAttachmentView(id: id, store: mediaStore)
+                }
             } else {
                 frontBack
             }
 
             if isRevealed, let extra = card.extra, !extra.isEmpty {
                 Divider()
-                Text(extra)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                RichCardText(text: extra, font: .subheadline, color: .secondary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -33,7 +36,8 @@ struct CardFaceView: View {
     // MARK: - Cloze
 
     private func clozeSentence(_ cloze: ClozeContext) -> some View {
-        let segments = ClozeParser.segments(cloze.source, group: cloze.group, revealed: isRevealed)
+        let source = MediaReference.stripping(cloze.source)
+        let segments = ClozeParser.segments(source, group: cloze.group, revealed: isRevealed)
 
         return segments
             .enumerated()
@@ -61,18 +65,11 @@ struct CardFaceView: View {
 
     private var frontBack: some View {
         VStack(spacing: Spacing.loose) {
-            Text(card.front)
-                .font(.title2)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+            RichCardText(text: card.front, font: .title2)
 
             if isRevealed {
                 Divider()
-                Text(card.back)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                RichCardText(text: card.back, font: .title3, color: .secondary)
             }
         }
     }

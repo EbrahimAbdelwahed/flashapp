@@ -708,6 +708,37 @@ Separate, immediate, bypasses trash (brief):
 - Per-deck export producing canonical CSV (source fields, tags joined by `;`),
   filename `<deckname-slug>.csv`, via ShareLink/fileExporter. Trashed notes excluded.
 
+### A9.5 Anki `.apkg` import (ADR-004)
+Import only; FlashApp never writes `.apkg`.
+
+- Container: ZIP. Both generations required — legacy (`collection.anki2` /
+  `collection.anki21`, plain SQLite, deflate entries, JSON `media` index) and modern
+  (`collection.anki21b`, zstd-compressed, stored entries, protobuf `media` index).
+- Database: both schema 11 (note types and decks as JSON in `col.models` / `col.decks`)
+  and schema 18 (`notetypes` / `fields` / `templates` / `decks` tables); discriminated
+  on `col.ver`. Fields split on `0x1F`; tags split on whitespace; deck via `cards.did`.
+- Field text is HTML → converted to FlashApp Markdown (`<br>`/`</div>`/`</p>` → newline,
+  `<b>`/`<i>` → `**`/`*`, entities decoded, other tags dropped). Anki cloze syntax
+  `{{cN::…}}` passes through unchanged — it is already what `ClozeParser` accepts.
+- Mapping is **user-confirmed, never silent**: one mapping per Anki note type
+  (target type, front field, back field, include/exclude), pre-filled with a proposed
+  default (cloze if the note type is cloze or a field carries a valid deletion; reversed
+  if it has ≥2 templates; otherwise basic). Unmapped fields are reported as ignored,
+  reusing the A9.1 ignored-column notice.
+- Output is a `CSVParseOutcome`, so A9.2 steps 2–5 (plan, preview, commit, undo) are
+  shared verbatim with CSV. `ParsedRow.line` carries the 1-based note index.
+- Media: `<img src>` and `[sound:…]` become `flashup-media://<uuid>` references in the
+  note text; blobs are content-addressed under `Application Support/Media/`.
+  Accepted `png/jpg/jpeg/gif/webp/heic` and `mp3/m4a/wav/ogg`; anything else rejects the
+  row with a visible reason. A blob that fails to extract does not fail the import.
+- Hard caps (`ApkgLimits`, injectable like `CSVLimits`): 10 000 notes, max file bytes,
+  **max decompressed bytes**, max media count, max bytes per media. Every decompression
+  path is capped and every ZIP offset bounds-checked: an `.apkg` is untrusted input and
+  both deflate and zstd expand.
+- Errors name the note index, never note content (§A2).
+- Entry point: `.fileImporter` with an imported UTType `org.ankiweb.apkg`
+  (conforms to `public.zip-archive`, extension `apkg`), declared in `Info.plist`.
+
 ## A10. FlashApp backup (versioned)
 
 Single JSON file, extension `.flashupbackup`, UTType exported by the app.

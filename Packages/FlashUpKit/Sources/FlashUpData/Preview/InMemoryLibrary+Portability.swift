@@ -19,7 +19,8 @@ extension InMemoryLibrary {
                     type: row.type,
                     front: row.front,
                     back: row.back,
-                    tags: row.tags
+                    tags: row.tags,
+                    mediaIDs: row.mediaIDs
                 )
                 if let note = store.save(draft, now: now) {
                     createdIDs.append(note.id)
@@ -82,7 +83,8 @@ extension InMemoryLibrary {
                             updatedAt: note.updatedAt,
                             cards: store.cards(forNote: note.id).map {
                                 BackupCard(uuid: $0.id, templateKey: $0.templateKey)
-                            }
+                            },
+                            mediaIDs: note.mediaIDs
                         )
                     }
                 )
@@ -130,28 +132,11 @@ extension InMemoryLibrary {
                 }
 
                 for backupNote in backupDeck.notes {
-                    guard store.notes[backupNote.uuid] == nil else {
+                    if Self.restoreNote(backupNote, into: backupDeck.uuid, store: &store) {
+                        notesAdded += 1
+                    } else {
                         notesSkipped += 1
-                        continue
                     }
-                    let note = Note(
-                        id: backupNote.uuid,
-                        deckID: backupDeck.uuid,
-                        type: backupNote.type,
-                        front: backupNote.front,
-                        back: backupNote.back,
-                        tags: backupNote.tags,
-                        createdAt: backupNote.createdAt,
-                        updatedAt: backupNote.updatedAt
-                    )
-                    store.notes[note.id] = note
-                    store.contentHashes[note.id] = ContentFingerprint.hash(
-                        type: note.type,
-                        front: note.front,
-                        back: note.back
-                    )
-                    store.reconcileCards(for: note)
-                    notesAdded += 1
                 }
             }
 
@@ -164,6 +149,38 @@ extension InMemoryLibrary {
             notesSkipped: notesSkipped,
             logsAdded: logsAdded
         )
+    }
+
+    /// Adds one note, or reports that its uuid was already present. Returns `true` when the
+    /// note was created.
+    private static func restoreNote(
+        _ backupNote: BackupNote,
+        into deckID: UUID,
+        store: inout LibraryStore
+    ) -> Bool {
+        guard store.notes[backupNote.uuid] == nil else { return false }
+
+        let note = Note(
+            id: backupNote.uuid,
+            deckID: deckID,
+            type: backupNote.type,
+            front: backupNote.front,
+            back: backupNote.back,
+            tags: backupNote.tags,
+            // Attachment ids come back even when their bytes did not: the backup carries
+            // references, not blobs, and a missing one renders as a placeholder (ADR-004 §7).
+            mediaIDs: backupNote.mediaIDs,
+            createdAt: backupNote.createdAt,
+            updatedAt: backupNote.updatedAt
+        )
+        store.notes[note.id] = note
+        store.contentHashes[note.id] = ContentFingerprint.hash(
+            type: note.type,
+            front: note.front,
+            back: note.back
+        )
+        store.reconcileCards(for: note)
+        return true
     }
 
     /// Schedules restore only when absent and logs merge append-only by uuid, so a restore
