@@ -11,6 +11,10 @@ struct StudySessionView: View {
     let scope: StudyScope
 
     @State private var model: StudySessionModel
+    @State private var editingNote: Note?
+    @State private var cardInfo: CardInfo?
+    @State private var isConfirmingReset = false
+    @State private var isConfirmingDelete = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -33,8 +37,53 @@ struct StudySessionView: View {
             .background(Palette.canvas.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
+            .sheet(item: $editingNote) { note in
+                NoteEditorView(library: library, deckID: note.deckID, note: note) {
+                    Task { await model.refreshAfterEdit() }
+                }
+            }
+            .sheet(item: $cardInfo) { info in
+                CardInfoView(info: info) { cardInfo = nil }
+            }
+            .confirmationDialog(
+                "study.action.reset.confirm",
+                isPresented: $isConfirmingReset,
+                titleVisibility: .visible
+            ) {
+                Button("study.action.reset", role: .destructive) {
+                    Task { await model.resetCurrentCard() }
+                }
+                Button("common.cancel", role: .cancel) {}
+            } message: {
+                Text("study.action.reset.message")
+            }
+            .confirmationDialog(
+                "study.action.delete.confirm",
+                isPresented: $isConfirmingDelete,
+                titleVisibility: .visible
+            ) {
+                Button("study.action.delete", role: .destructive) {
+                    Task { await model.deleteCurrentNote() }
+                }
+                Button("common.cancel", role: .cancel) {}
+            } message: {
+                Text("study.action.delete.message")
+            }
         }
         .task { await model.start() }
+    }
+
+    /// The card tools, wired once and handed to both the toolbar and the long-press menu.
+    private var cardActions: CardActionsMenu {
+        CardActionsMenu(
+            hasSiblings: model.hasSiblings,
+            onEdit: { Task { editingNote = await model.currentNote() } },
+            onInfo: { Task { cardInfo = await model.currentCardInfo() } },
+            onBury: { target in Task { await model.bury(target) } },
+            onSuspend: { target in Task { await model.suspend(target) } },
+            onReset: { isConfirmingReset = true },
+            onDelete: { isConfirmingDelete = true }
+        )
     }
 
     // MARK: - Session
@@ -75,6 +124,7 @@ struct StudySessionView: View {
         .padding(.horizontal, Spacing.normal)
         .contentShape(Rectangle())
         .onTapGesture { if !model.isRevealed { model.reveal() } }
+        .contextMenu { cardActions }
         .accessibilityIdentifier("study.card")
     }
 
@@ -104,12 +154,22 @@ struct StudySessionView: View {
             Button("study.close") { dismiss() }
                 .accessibilityIdentifier("study.close")
         }
-        ToolbarItem(placement: .primaryAction) {
+        // Undo stays a single tap: it is the high-frequency action and does not belong
+        // behind a menu. The rest live together under one affordance.
+        ToolbarItemGroup(placement: .primaryAction) {
             Button("study.undo", systemImage: "arrow.uturn.backward") {
                 Task { await model.undo() }
             }
             .disabled(!model.canUndo)
             .accessibilityIdentifier("study.undo")
+
+            Menu {
+                cardActions
+            } label: {
+                Label("common.more", systemImage: "ellipsis.circle")
+            }
+            .disabled(model.isFinished)
+            .accessibilityIdentifier("study.actions")
         }
     }
 }

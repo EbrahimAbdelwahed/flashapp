@@ -307,6 +307,42 @@
         }
       }
     },
+    "deck.filter_empty.message": {
+      "comment": "Explains that the deck is not empty, the filter is.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No note in this deck is in that state right now."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna nota di questo mazzo si trova in questo stato al momento."
+          }
+        }
+      }
+    },
+    "deck.filter_empty.title": {
+      "comment": "Shown when a filter matches nothing, as opposed to an empty deck.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing here"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niente qui"
+          }
+        }
+      }
+    },
     "deck.notes %lld": {
       "comment": "Notes section header.",
       "extractionState": "manual",
@@ -735,6 +771,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tutte"
+          }
+        }
+      }
+    },
+    "filter.buried": {
+      "comment": "Filter showing notes with buried cards.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buried"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sepolte"
           }
         }
       }
@@ -2269,6 +2323,24 @@
         }
       }
     },
+    "note.badge_buried": {
+      "comment": "Badge on a note row that has buried cards.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "buried"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sepolta"
+          }
+        }
+      }
+    },
     "note.badge_due %lld": {
       "comment": "Badge for due cards.",
       "extractionState": "manual",
@@ -2337,6 +2409,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld schede"
+          }
+        }
+      }
+    },
+    "note.resume": {
+      "comment": "Swipe action that lifts suspension and burial from a note.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riattiva"
           }
         }
       }
@@ -3493,6 +3583,222 @@
         }
       }
     },
+    "study.action.bury_card": {
+      "comment": "Hides this card until tomorrow.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bury card"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seppellisci scheda"
+          }
+        }
+      }
+    },
+    "study.action.bury_note": {
+      "comment": "Hides every card of this note until tomorrow.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bury note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seppellisci nota"
+          }
+        }
+      }
+    },
+    "study.action.delete": {
+      "comment": "Moves the whole note to the Trash.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina nota"
+          }
+        }
+      }
+    },
+    "study.action.delete.confirm": {
+      "comment": "Title of the delete confirmation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this note?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminare questa nota?"
+          }
+        }
+      }
+    },
+    "study.action.delete.message": {
+      "comment": "Reassures that deletion is recoverable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The note and all its cards move to the Trash, where you can restore them."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La nota e tutte le sue schede vanno nel Cestino, da dove puoi ripristinarle."
+          }
+        }
+      }
+    },
+    "study.action.edit": {
+      "comment": "Opens the note behind the card on screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica nota"
+          }
+        }
+      }
+    },
+    "study.action.info": {
+      "comment": "Shows what the scheduler knows about this card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card info"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info scheda"
+          }
+        }
+      }
+    },
+    "study.action.reset": {
+      "comment": "Sends the card back to new, discarding its progress.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset progress"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azzera progressi"
+          }
+        }
+      }
+    },
+    "study.action.reset.confirm": {
+      "comment": "Title of the reset confirmation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset this card?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azzerare questa scheda?"
+          }
+        }
+      }
+    },
+    "study.action.reset.message": {
+      "comment": "Explains what resetting costs.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Its review history is discarded and the card is scheduled as new again."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La cronologia dei ripassi viene scartata e la scheda torna a essere nuova."
+          }
+        }
+      }
+    },
+    "study.action.suspend_card": {
+      "comment": "Takes this card out of every queue until it is resumed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspend card"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sospendi scheda"
+          }
+        }
+      }
+    },
+    "study.action.suspend_note": {
+      "comment": "Takes every card of this note out of every queue.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspend note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sospendi nota"
+          }
+        }
+      }
+    },
     "study.close": {
       "comment": "Leaves the study session.",
       "extractionState": "manual",
@@ -3561,6 +3867,330 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sessione completata"
+          }
+        }
+      }
+    },
+    "study.info.buried %@": {
+      "comment": "Badge shown when the card is buried, with the date it returns.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buried until %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sepolta fino al %@"
+          }
+        }
+      }
+    },
+    "study.info.done": {
+      "comment": "Closes the card info sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fine"
+          }
+        }
+      }
+    },
+    "study.info.due": {
+      "comment": "Row label for the next review.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next review"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prossimo ripasso"
+          }
+        }
+      }
+    },
+    "study.info.due.now": {
+      "comment": "Shown when the card is due right now.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adesso"
+          }
+        }
+      }
+    },
+    "study.info.history": {
+      "comment": "Section header for the list of past answers.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cronologia"
+          }
+        }
+      }
+    },
+    "study.info.history.empty": {
+      "comment": "Shown when the card has no answers yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reviews yet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun ripasso finora."
+          }
+        }
+      }
+    },
+    "study.info.lapses": {
+      "comment": "Row label for how many times the card was forgotten.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lapses"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimenticanze"
+          }
+        }
+      }
+    },
+    "study.info.last_review": {
+      "comment": "Row label for when the card was last answered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last review"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultimo ripasso"
+          }
+        }
+      }
+    },
+    "study.info.never": {
+      "comment": "Shown when the card has never been answered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mai"
+          }
+        }
+      }
+    },
+    "study.info.reps": {
+      "comment": "Row label for how many times the card was answered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviews"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripassi"
+          }
+        }
+      }
+    },
+    "study.info.schedule": {
+      "comment": "Section header for the scheduling figures.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schedule"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programmazione"
+          }
+        }
+      }
+    },
+    "study.info.state": {
+      "comment": "Section header and row label for the card's lifecycle state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "State"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stato"
+          }
+        }
+      }
+    },
+    "study.info.state.learning": {
+      "comment": "The card is being learned for the first time.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learning"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In apprendimento"
+          }
+        }
+      }
+    },
+    "study.info.state.new": {
+      "comment": "The card has never been answered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova"
+          }
+        }
+      }
+    },
+    "study.info.state.relearning": {
+      "comment": "The card lapsed and is being relearned.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relearning"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da riapprendere"
+          }
+        }
+      }
+    },
+    "study.info.state.review": {
+      "comment": "The card is in normal review.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In ripasso"
+          }
+        }
+      }
+    },
+    "study.info.suspended": {
+      "comment": "Badge shown when the card is suspended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sospesa"
+          }
+        }
+      }
+    },
+    "study.info.title": {
+      "comment": "Title of the card info sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card info"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info scheda"
           }
         }
       }

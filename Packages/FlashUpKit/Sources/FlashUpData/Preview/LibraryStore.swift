@@ -150,9 +150,7 @@ struct LibraryStore: Sendable {
 
     mutating func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) {
         guard let card = cards[cardID] else { return }
-        var updated = transition.updated
-        updated.suspendedAt = schedules[cardID]?.suspendedAt
-        schedules[cardID] = updated
+        schedules[cardID] = transition.updated.carryingUserFlags(from: schedules[cardID])
         logs.append(
             ReviewLog(transition: transition, cardID: cardID, deckID: card.deckID, durationMs: durationMs)
         )
@@ -174,7 +172,7 @@ struct LibraryStore: Sendable {
     }
 
     mutating func rebuildSchedule(for cardID: UUID, using scheduler: FSRSService) {
-        let suspendedAt = schedules[cardID]?.suspendedAt
+        let flags = schedules[cardID]
         let cardLogs = logs(forCard: cardID)
         // Replay starts from the card's first surviving answer, so a rebuilt schedule
         // matches the one the original sequence produced.
@@ -185,11 +183,30 @@ struct LibraryStore: Sendable {
             initialDueAt: firstAnswer
         )
 
-        if var state = replayed {
-            state.suspendedAt = suspendedAt
-            schedules[cardID] = state
+        if let state = replayed {
+            schedules[cardID] = state.carryingUserFlags(from: flags)
         } else {
-            schedules.removeValue(forKey: cardID)
+            setScheduleWithoutHistory(for: cardID, flags: flags, dueAt: firstAnswer)
         }
+    }
+
+    /// Reset: revoke every log and send the card back to new (spec §A6.3). Suspension and
+    /// burial are not history, so they survive it.
+    mutating func resetCard(_ cardID: UUID, now: Date) {
+        for index in logs.indices where logs[index].cardID == cardID {
+            logs[index].revokedAt = logs[index].revokedAt ?? now
+        }
+        setScheduleWithoutHistory(for: cardID, flags: schedules[cardID], dueAt: now)
+    }
+
+    /// Drops a card's schedule now that it has no surviving answers — unless the user has
+    /// hidden it, in which case a flag-only placeholder has to outlive the history. Losing
+    /// the flag here would silently un-suspend a card the moment its last answer was undone.
+    private mutating func setScheduleWithoutHistory(for cardID: UUID, flags: ReviewState?, dueAt: Date) {
+        guard let flags, flags.carriesUserFlag else {
+            schedules.removeValue(forKey: cardID)
+            return
+        }
+        schedules[cardID] = ReviewState.unseen(dueAt: dueAt).carryingUserFlags(from: flags)
     }
 }

@@ -161,6 +161,7 @@ struct NoteSummaryLabel: View {
                 if summary.isNew { Text("note.badge_new") }
                 if summary.dueCount > 0 { Text("note.badge_due \(summary.dueCount)") }
                 if summary.isSuspended { Text("note.badge_suspended") }
+                if summary.isBuried { Text("note.badge_buried") }
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
