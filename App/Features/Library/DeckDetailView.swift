@@ -133,7 +133,7 @@ struct DeckDetailView: View {
 private struct DeckScheduleRow: View {
     let title: LocalizedStringKey
     let count: Int
-    var detail: LocalizedStringKey? = nil
+    var detail: LocalizedStringKey?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
