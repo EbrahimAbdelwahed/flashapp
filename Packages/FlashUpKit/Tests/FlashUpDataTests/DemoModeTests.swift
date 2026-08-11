@@ -206,7 +206,9 @@ struct DemoDeckLoaderTests {
             .deletingLastPathComponent()  // Packages
             .deletingLastPathComponent()  // repository root
         let deck = repository
-            .appendingPathComponent("marketing-pipeline/assets/decks/anatomia.csv")
+            // The marketing pipeline moved under DEPRECATED/ when the app was restyled; the
+            // deck itself is still the one the demo seeds from.
+            .appendingPathComponent("DEPRECATED/marketing-pipeline/assets/decks/anatomia.csv")
 
         let csv = try Data(contentsOf: deck)
         let outcome = try CSVParser.parse(csv)
