@@ -174,18 +174,20 @@ public actor InMemoryLibrary: LibraryRepository {
 
     /// Forecasts only cards that already have a review date. New cards stay visible under
     /// Today's "New" count; suspended cards deliberately stay out of every to-do bucket.
-    static func upcomingCounts(candidates: [QueueCandidate], now: Date) -> (
-        tomorrow: Int,
-        thisWeek: Int,
-        later: Int
-    ) {
+    struct UpcomingCounts: Equatable, Sendable {
+        let tomorrow: Int
+        let thisWeek: Int
+        let later: Int
+    }
+
+    static func upcomingCounts(candidates: [QueueCandidate], now: Date) -> UpcomingCounts {
         let calendar = Calendar.current
         let startOfToday = calendar.startOfDay(for: now)
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday),
               let startOfDayAfterTomorrow = calendar.date(byAdding: .day, value: 2, to: startOfToday),
               let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday)
         else {
-            return (0, 0, 0)
+            return UpcomingCounts(tomorrow: 0, thisWeek: 0, later: 0)
         }
 
         var tomorrow = 0
@@ -203,7 +205,7 @@ public actor InMemoryLibrary: LibraryRepository {
             }
         }
 
-        return (tomorrow, thisWeek, later)
+        return UpcomingCounts(tomorrow: tomorrow, thisWeek: thisWeek, later: later)
     }
 
     private func summaries(for notes: [Note], filters: SearchFilters, now: Date) -> [NoteSummary] {
