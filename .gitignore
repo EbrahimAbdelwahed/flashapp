@@ -21,6 +21,7 @@ agent-flywheel/.mypy_cache/
 
 # Raw app-usage footage: source material, not a versioned deliverable (~100MB+)
 assets/clips/
+assets/vid/
 agent-flywheel/dist/
 __pycache__/
 *.py[cod]
