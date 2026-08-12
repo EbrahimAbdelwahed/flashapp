@@ -32,7 +32,7 @@ enum Palette {
                 // red channel is visible: at OLED black the app loses its colour entirely
                 // and reads as a different product again after dark.
                 Color(light: 0xF7EDE0, dark: 0x1B1611),
-                Color(light: 0xF3E5D4, dark: 0x2A2018),
+                Color(light: 0xF3E5D4, dark: 0x2A2018)
             ],
             startPoint: .top,
             endPoint: .bottom

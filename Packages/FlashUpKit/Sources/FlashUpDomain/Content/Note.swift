@@ -9,6 +9,10 @@ public struct Note: Identifiable, Equatable, Sendable {
     /// Optional for cloze notes, where it holds an extra explanation.
     public var back: String?
     public var tags: [String]
+    /// Attachments this note references from its text (ADR-004 §6). The default keeps every
+    /// existing call site source-compatible; the references themselves live inside
+    /// `front`/`back` as `flashup-media://` markup, so card generation needs no changes.
+    public var mediaIDs: [UUID]
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -19,6 +23,7 @@ public struct Note: Identifiable, Equatable, Sendable {
         front: String,
         back: String? = nil,
         tags: [String] = [],
+        mediaIDs: [UUID] = [],
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -28,6 +33,7 @@ public struct Note: Identifiable, Equatable, Sendable {
         self.front = front
         self.back = back
         self.tags = tags
+        self.mediaIDs = mediaIDs
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

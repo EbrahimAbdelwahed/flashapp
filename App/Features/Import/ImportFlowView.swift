@@ -13,10 +13,14 @@ struct ImportFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: ImportModel
 
-    init(library: any LibraryRepository, onFinish: @escaping () -> Void = {}) {
+    init(
+        library: any LibraryRepository,
+        mediaStore: (any MediaStore)? = nil,
+        onFinish: @escaping () -> Void = {}
+    ) {
         self.library = library
         self.onFinish = onFinish
-        _model = State(initialValue: ImportModel(library: library))
+        _model = State(initialValue: ImportModel(library: library, mediaStore: mediaStore))
     }
 
     var body: some View {
@@ -24,12 +28,13 @@ struct ImportFlowView: View {
             Group {
                 switch model.stage {
                 case .choosing: chooser
+                case .mapping: FieldMappingView(model: model)
                 case .preview: preview
                 case let .done(count): result(count)
                 }
             }
             .screenCanvas()
-            .navigationTitle("import.title")
+            .navigationTitle(model.stage == .mapping ? "import.mapping.title" : "import.title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -40,7 +45,10 @@ struct ImportFlowView: View {
                 }
             }
         }
-        .fileImporter(isPresented: $model.isPickingFile, allowedContentTypes: [.commaSeparatedText, .text]) { result in
+        .fileImporter(
+            isPresented: $model.isPickingFile,
+            allowedContentTypes: [.commaSeparatedText, .text, .ankiPackage]
+        ) { result in
             Task { await model.load(result) }
         }
         .task { await model.prepare() }
@@ -82,25 +90,16 @@ struct ImportFlowView: View {
             }
             .paperRows()
 
-            Section {
-                CSVPromptCard()
+            // Above the prompt card: the deck is a decision about the user's own library,
+            // the prompt is a tool. It can still be changed on the preview, right before
+            // anything is written.
+            Section("import.destination") {
+                destinationPicker
             }
             .paperRows()
 
-            Section("import.destination") {
-                Picker("import.destination", selection: $model.destination) {
-                    Text("import.new_deck").tag(ImportModel.Destination.newDeck)
-                    ForEach(model.decks) { summary in
-                        Text(summary.deck.name).tag(ImportModel.Destination.existing(summary.deck.id))
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-
-                if model.destination == .newDeck {
-                    TextField("import.new_deck_name", text: $model.newDeckName)
-                        .accessibilityIdentifier("import.deck_name")
-                }
+            Section {
+                CSVPromptCard()
             }
             .paperRows()
 
@@ -126,8 +125,9 @@ struct ImportFlowView: View {
                 Section("import.preview_rows") {
                     ForEach(model.plan.valid.prefix(5), id: \.line) { row in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(row.front).lineLimit(1)
-                            Text(row.back ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Text(row.front.asNoteSummary).lineLimit(1)
+                            Text((row.back ?? "").asNoteSummary)
+                                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                     }
                 }
@@ -141,7 +141,7 @@ struct ImportFlowView: View {
                             get: { model.plan.duplicates[index].isSelected },
                             set: { model.plan.duplicates[index].isSelected = $0 }
                         )) {
-                            Text(duplicate.row.front).lineLimit(1)
+                            Text(duplicate.row.front.asNoteSummary).lineLimit(1)
                         }
                     }
                 }
@@ -152,12 +152,27 @@ struct ImportFlowView: View {
                 Section("import.rejected_section") {
                     ForEach(Array(model.plan.rejected.enumerated()), id: \.offset) { _, rejection in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("import.row \(rejection.line)").font(.caption.weight(.semibold))
+                            Text(model.isApkg
+                                ? "import.note \(rejection.line)"
+                                : "import.row \(rejection.line)")
+                                .font(.caption.weight(.semibold))
                             Text(reason(rejection.reason)).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
                 .paperRows()
+            }
+
+            // Repeated here on purpose: last chance to change it, next to the button that
+            // writes, so the deck is never decided by a default the user scrolled past.
+            Section("import.destination") {
+                destinationPicker
+            }
+            .paperRows()
+            // Duplicates are counted against the destination deck, so the plan has to be
+            // rebuilt when the destination changes or the counts above would be stale.
+            .onChange(of: model.destination) {
+                Task { await model.replan() }
             }
 
             Section {
@@ -168,6 +183,25 @@ struct ImportFlowView: View {
                 .accessibilityIdentifier("import.confirm")
             }
             .paperRows()
+        }
+    }
+
+    /// Shared by the chooser and the preview: one selection, shown wherever the user is
+    /// likely to want it.
+    @ViewBuilder
+    private var destinationPicker: some View {
+        Picker("import.destination", selection: $model.destination) {
+            Text("import.new_deck").tag(ImportModel.Destination.newDeck)
+            ForEach(model.decks) { summary in
+                Text(summary.deck.name).tag(ImportModel.Destination.existing(summary.deck.id))
+            }
+        }
+        .pickerStyle(.inline)
+        .labelsHidden()
+
+        if model.destination == .newDeck {
+            TextField("import.new_deck_name", text: $model.newDeckName)
+                .accessibilityIdentifier("import.deck_name")
         }
     }
 
@@ -203,6 +237,7 @@ struct ImportFlowView: View {
         case .missingBack: "import.reason.back"
         case .noClozeDeletion: "import.reason.cloze"
         case let .fieldTooLong(column, characters): "import.reason.long \(column) \(characters)"
+        case let .unsupportedMedia(filename): "import.reason.media \(filename)"
         }
     }
 }

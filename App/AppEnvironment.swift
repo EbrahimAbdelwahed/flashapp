@@ -20,6 +20,10 @@ final class AppEnvironment {
     let logger: Logger
     let library: any LibraryRepository
     let reminders: any ReminderScheduling
+    /// Attachment blobs (ADR-004 §6). Held here for the same reason as the library: the
+    /// choice of implementation belongs to the composition root, and views only see the
+    /// protocol — injected through the environment so `CardFaceView` can render a picture.
+    let mediaStore: any MediaStore
 
     /// The chosen appearance lives here because two screens need it: Settings writes it and
     /// the root scene applies it. Holding it in either one alone means the other never hears
@@ -39,7 +43,11 @@ final class AppEnvironment {
         appearance = await library.settings().appearance
     }
 
-    init(library: (any LibraryRepository)? = nil, reminders: (any ReminderScheduling)? = nil) {
+    init(
+        library: (any LibraryRepository)? = nil,
+        reminders: (any ReminderScheduling)? = nil,
+        mediaStore: (any MediaStore)? = nil
+    ) {
         let logger = Logger(subsystem: Self.loggingSubsystem, category: "app")
         self.logger = logger
         let demoModes = DemoMode.allFromEnvironment()
@@ -50,6 +58,8 @@ final class AppEnvironment {
             ? ReminderScheduler()
             : StubReminderScheduler(grantsPermission: true)
         self.reminders = reminders ?? StubReminderScheduler.fromEnvironment() ?? liveReminders
+        // A recording or UI-test run must not inherit attachments from a previous session.
+        self.mediaStore = mediaStore ?? (demoModes == nil ? FileMediaStore() : InMemoryMediaStore())
     }
 
     /// The library the marketing pipeline records against.

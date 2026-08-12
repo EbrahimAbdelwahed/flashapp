@@ -20,6 +20,9 @@ struct FlashUpApp: App {
                 }
             }
             .environment(environment)
+            // Card rendering needs the blobs, and it is several views deep: passing the
+            // store down by hand would thread it through every screen in between.
+            .environment(\.mediaStore, environment.mediaStore)
             .preferredColorScheme(environment.colorScheme)
             .task { await environment.loadAppearance() }
         }

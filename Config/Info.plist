@@ -35,6 +35,28 @@
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<!-- Anki owns this type; we only declare it so the document picker can offer
+			     .apkg files, which have no system type (spec §A9.5). -->
+			<key>UTTypeIdentifier</key>
+			<string>org.ankiweb.apkg</string>
+			<key>UTTypeDescription</key>
+			<string>Anki Deck Package</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>apkg</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
