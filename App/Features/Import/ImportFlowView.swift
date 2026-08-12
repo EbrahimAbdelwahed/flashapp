@@ -95,23 +95,6 @@ struct ImportFlowView: View {
             }
             .paperRows()
 
-            Section("import.destination") {
-                Picker("import.destination", selection: $model.destination) {
-                    Text("import.new_deck").tag(ImportModel.Destination.newDeck)
-                    ForEach(model.decks) { summary in
-                        Text(summary.deck.name).tag(ImportModel.Destination.existing(summary.deck.id))
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-
-                if model.destination == .newDeck {
-                    TextField("import.new_deck_name", text: $model.newDeckName)
-                        .accessibilityIdentifier("import.deck_name")
-                }
-            }
-            .paperRows()
-
             if let error = model.errorMessage {
                 Section {
                     Text(error).foregroundStyle(Palette.destructive)
@@ -170,6 +153,31 @@ struct ImportFlowView: View {
                     }
                 }
                 .paperRows()
+            }
+
+            // Last thing before anything is written, and next to the button that writes it.
+            // On the first screen it sat below the file picker, so choosing a file jumped
+            // straight past it and the deck was decided by default.
+            Section("import.destination") {
+                Picker("import.destination", selection: $model.destination) {
+                    Text("import.new_deck").tag(ImportModel.Destination.newDeck)
+                    ForEach(model.decks) { summary in
+                        Text(summary.deck.name).tag(ImportModel.Destination.existing(summary.deck.id))
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+
+                if model.destination == .newDeck {
+                    TextField("import.new_deck_name", text: $model.newDeckName)
+                        .accessibilityIdentifier("import.deck_name")
+                }
+            }
+            .paperRows()
+            // Duplicates are counted against the destination deck, so the plan has to be
+            // rebuilt when the destination changes or the counts above would be stale.
+            .onChange(of: model.destination) {
+                Task { await model.replan() }
             }
 
             Section {
