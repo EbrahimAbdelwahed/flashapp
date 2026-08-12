@@ -8,23 +8,49 @@ import SwiftUI
 /// not buried in Help.
 struct CSVPromptCard: View {
     @State private var didCopy = false
+    /// Collapsed by default: the prompt is long, and nobody has to read it to use it —
+    /// copying is enough. Expanding is for the curious and for selecting a piece by hand.
+    @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.tight) {
-            Label("import.prompt.title", systemImage: "sparkles")
-                .font(.subheadline.weight(.semibold))
+            // A plain Button rather than a DisclosureGroup: the whole header is then one
+            // hit target with one identity, instead of a container whose real toggle is a
+            // child that neither VoiceOver nor a UI test can address by name.
+            Button {
+                withAnimation(Motion.snappy) { isExpanded.toggle() }
+            } label: {
+                HStack(alignment: .top, spacing: Spacing.tight) {
+                    VStack(alignment: .leading, spacing: Spacing.tight) {
+                        Label("import.prompt.title", systemImage: "sparkles")
+                            .font(.subheadline.weight(.semibold))
 
-            Text("import.prompt.explanation")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                        Text("import.prompt.explanation")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
-            Text(CSVPromptCard.promptText)
-                .font(.caption2.monospaced())
-                .padding(Spacing.tight)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Palette.terracotta.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                .textSelection(.enabled)
-                .accessibilityIdentifier("import.prompt.text")
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.down")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("import.prompt.disclosure")
+
+            if isExpanded {
+                Text(CSVPromptCard.promptText)
+                    .font(.caption2.monospaced())
+                    .padding(Spacing.tight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Palette.terracotta.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("import.prompt.text")
+            }
 
             Button {
                 UIPasteboard.general.string = CSVPromptCard.promptText

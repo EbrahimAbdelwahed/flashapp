@@ -24,13 +24,38 @@ public struct ParsedRow: Equatable, Sendable {
     /// Always non-empty when present; `nil` for a cloze row that carried no back.
     public let back: String?
     public let tags: [String]
+    /// Attachments referenced from `front`/`back`. Empty for every CSV row — the default
+    /// keeps the CSV parser and its tests compiling unchanged.
+    public let mediaIDs: [UUID]
 
-    public init(line: Int, type: NoteType, front: String, back: String?, tags: [String]) {
+    public init(
+        line: Int,
+        type: NoteType,
+        front: String,
+        back: String?,
+        tags: [String],
+        mediaIDs: [UUID] = []
+    ) {
         self.line = line
         self.type = type
         self.front = front
         self.back = back
         self.tags = tags
+        self.mediaIDs = mediaIDs
+    }
+
+    /// A copy with its text and ids remapped — used to swap provisional attachment ids for
+    /// the real ones after the blobs have been stored (`MediaPlan.rewrite`).
+    public func replacingMediaIDs(_ replacements: [UUID: UUID]) -> ParsedRow {
+        guard !replacements.isEmpty else { return self }
+        return ParsedRow(
+            line: line,
+            type: type,
+            front: MediaPlan.rewrite(front, replacing: replacements),
+            back: back.map { MediaPlan.rewrite($0, replacing: replacements) },
+            tags: tags,
+            mediaIDs: mediaIDs.map { replacements[$0] ?? $0 }
+        )
     }
 }
 
@@ -47,6 +72,9 @@ public struct RowRejection: Equatable, Sendable {
         case noClozeDeletion
         /// A single field exceeded `CSVLimits.maxFieldCharacters`.
         case fieldTooLong(column: String, characters: Int)
+        /// An `.apkg` note referenced an attachment Flash Up cannot carry. The associated
+        /// value is the filename, which names a file rather than card content.
+        case unsupportedMedia(String)
     }
 
     public let line: Int

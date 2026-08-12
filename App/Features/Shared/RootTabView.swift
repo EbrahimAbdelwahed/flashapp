@@ -38,6 +38,14 @@ struct RootTabView: View {
     @State private var selection: RootTab = .today
 
     var body: some View {
+        tabs
+            // Injected here as well as at the app root: card rendering and the import sheet
+            // both live under the tabs, and this is the closest ancestor that owns the
+            // store, so nothing depends on how the root scene happens to be composed.
+            .environment(\.mediaStore, environment.mediaStore)
+    }
+
+    private var tabs: some View {
         TabView(selection: $selection) {
             ForEach(RootTab.allCases) { tab in
                 NavigationStack {

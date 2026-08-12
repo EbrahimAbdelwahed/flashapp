@@ -100,6 +100,7 @@ struct LibraryStore: Sendable {
             updated.front = draft.front
             updated.back = draft.back
             updated.tags = tags
+            updated.mediaIDs = draft.mediaIDs
             updated.updatedAt = now
             note = updated
         } else {
@@ -110,6 +111,7 @@ struct LibraryStore: Sendable {
                 front: draft.front,
                 back: draft.back,
                 tags: tags,
+                mediaIDs: draft.mediaIDs,
                 createdAt: now,
                 updatedAt: now
             )
