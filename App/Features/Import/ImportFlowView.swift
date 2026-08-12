@@ -174,15 +174,22 @@ struct ImportFlowView: View {
             .onChange(of: model.destination) {
                 Task { await model.replan() }
             }
-
-            Section {
-                Button("import.confirm") {
-                    Task { await model.commit() }
-                }
-                .disabled(model.plan.isEmpty)
-                .accessibilityIdentifier("import.confirm")
+        }
+        // Pinned rather than the last row of the list: the destination picker above it is as
+        // tall as the user has decks, so as a row the button that writes could sit a whole
+        // screen below the fold — present, but out of sight and never rendered.
+        .safeAreaInset(edge: .bottom) {
+            PrimaryActionButton(
+                title: "import.confirm",
+                subtitle: nil,
+                systemImage: "square.and.arrow.down"
+            ) {
+                Task { await model.commit() }
             }
-            .paperRows()
+            .disabled(model.plan.isEmpty)
+            .accessibilityIdentifier("import.confirm")
+            .padding(.horizontal, Spacing.loose)
+            .padding(.bottom, Spacing.normal)
         }
     }
 

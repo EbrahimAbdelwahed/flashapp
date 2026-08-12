@@ -37,17 +37,30 @@ struct FieldMappingView: View {
                 }
             }
 
-            Section {
-                Button("import.mapping.continue") {
+        }
+        // Pinned, not the last row: an Anki deck brings one section per note type, so as a
+        // row the way forward would sit however far down the deck happens to be long.
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: Spacing.tight) {
+                if !model.canContinueFromMapping {
+                    Text("import.mapping.nothing_selected")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                PrimaryActionButton(
+                    title: "import.mapping.continue",
+                    subtitle: nil,
+                    systemImage: "arrow.right"
+                ) {
                     Task { await model.confirmMapping() }
                 }
                 .disabled(!model.canContinueFromMapping)
                 .accessibilityIdentifier("import.mapping.continue")
-            } footer: {
-                if !model.canContinueFromMapping {
-                    Text("import.mapping.nothing_selected")
-                }
             }
+            .padding(.horizontal, Spacing.loose)
+            .padding(.bottom, Spacing.normal)
         }
     }
 

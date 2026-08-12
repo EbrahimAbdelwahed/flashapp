@@ -40,7 +40,9 @@ final class ImportUITests: UITestCase {
 
         let paste = pasteButton()
         XCTAssertTrue(paste.waitForExistence(timeout: 5), "the import flow offers no way to paste")
-        paste.tap()
+        // `PasteButton` reports a frame wider than the control it draws, so a plain tap can
+        // land beside it. Aiming at the middle of the capsule hits the button itself.
+        paste.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5)).tap()
 
         let confirm = app.buttons["import.confirm"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "the pasted CSV produced no preview")
@@ -58,8 +60,14 @@ final class ImportUITests: UITestCase {
 
         app.buttons["library.import"].tap()
 
+        // The prompt is collapsed by default — copying it is the point, reading it is
+        // optional — so the text only has to be there once the card is opened.
+        let disclosure = app.descendants(matching: .any)["import.prompt.disclosure"].firstMatch
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 5), "the prompt card is not shown")
+        disclosure.tap()
+
         let prompt = app.staticTexts["import.prompt.text"]
-        XCTAssertTrue(prompt.waitForExistence(timeout: 5), "the CSV prompt is not shown")
+        XCTAssertTrue(prompt.waitForExistence(timeout: 5), "opening the card does not reveal the prompt")
         XCTAssertTrue(prompt.label.contains("type,front,back,tags"), "the prompt does not state the format")
         XCTAssertTrue(
             prompt.label.localizedCaseInsensitiveContains("organizational")

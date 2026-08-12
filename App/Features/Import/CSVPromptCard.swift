@@ -14,26 +14,43 @@ struct CSVPromptCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.tight) {
-            DisclosureGroup(isExpanded: $isExpanded.animation(Motion.snappy)) {
+            // A plain Button rather than a DisclosureGroup: the whole header is then one
+            // hit target with one identity, instead of a container whose real toggle is a
+            // child that neither VoiceOver nor a UI test can address by name.
+            Button {
+                withAnimation(Motion.snappy) { isExpanded.toggle() }
+            } label: {
+                HStack(alignment: .top, spacing: Spacing.tight) {
+                    VStack(alignment: .leading, spacing: Spacing.tight) {
+                        Label("import.prompt.title", systemImage: "sparkles")
+                            .font(.subheadline.weight(.semibold))
+
+                        Text("import.prompt.explanation")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.down")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("import.prompt.disclosure")
+
+            if isExpanded {
                 Text(CSVPromptCard.promptText)
                     .font(.caption2.monospaced())
                     .padding(Spacing.tight)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Palette.terracotta.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                     .textSelection(.enabled)
-                    .padding(.top, Spacing.tight)
                     .accessibilityIdentifier("import.prompt.text")
-            } label: {
-                VStack(alignment: .leading, spacing: Spacing.tight) {
-                    Label("import.prompt.title", systemImage: "sparkles")
-                        .font(.subheadline.weight(.semibold))
-
-                    Text("import.prompt.explanation")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
-            .accessibilityIdentifier("import.prompt.disclosure")
 
             Button {
                 UIPasteboard.general.string = CSVPromptCard.promptText
