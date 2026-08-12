@@ -13,8 +13,16 @@ public struct QueueCandidate: Equatable, Sendable {
         self.noteCreatedAt = noteCreatedAt
     }
 
-    var isNew: Bool { schedule == nil }
-    var isSuspended: Bool { schedule?.suspendedAt != nil }
+    /// A card with no schedule is new, and so is one whose schedule exists only to carry a
+    /// suspension or a burial the user applied before ever studying it.
+    var isNew: Bool { schedule?.isUnseen ?? true }
+    var isSuspended: Bool { schedule?.isSuspended ?? false }
+
+    /// Buried cards leave the queue until their date passes; nothing has to unbury them.
+    func isBuried(at now: Date) -> Bool { schedule?.isBuried(at: now) ?? false }
+
+    /// Out of every queue right now, whichever of the two user choices put it there.
+    func isHidden(at now: Date) -> Bool { isSuspended || isBuried(at: now) }
 }
 
 /// Builds the study queue (spec §A6.5).
@@ -40,24 +48,33 @@ public enum QueueBuilder {
         now: Date,
         calendar: Calendar = .current
     ) -> [Card] {
-        let eligible = candidates.filter { !$0.isSuspended }
+        let eligible = candidates.filter { !$0.isHidden(at: now) }
         let endOfToday = calendar.startOfDay(for: now).addingTimeInterval(86_400)
 
         let due = eligible
             .compactMap { candidate -> (Card, Date)? in
-                guard let schedule = candidate.schedule, schedule.dueAt < endOfToday else { return nil }
+                // New cards belong to the second pass even when a placeholder schedule
+                // gives them a date in the past.
+                guard !candidate.isNew, let schedule = candidate.schedule,
+                      schedule.dueAt < endOfToday else { return nil }
                 return (candidate.card, schedule.dueAt)
             }
-            .sorted { $0.1 < $1.1 }
+            .sorted { lhs, rhs in
+                lhs.1 == rhs.1 ? isBefore(lhs.0, rhs.0) : lhs.1 < rhs.1
+            }
             .prefix(max(settings.reviewsPerDay - progress.reviewsDoneToday, 0))
             .map(\.0)
 
         let fresh = eligible
             .filter(\.isNew)
             .sorted { lhs, rhs in
-                lhs.noteCreatedAt == rhs.noteCreatedAt
-                    ? lhs.card.templateKey < rhs.card.templateKey
-                    : lhs.noteCreatedAt < rhs.noteCreatedAt
+                guard lhs.noteCreatedAt == rhs.noteCreatedAt else {
+                    return lhs.noteCreatedAt < rhs.noteCreatedAt
+                }
+                guard lhs.card.templateKey == rhs.card.templateKey else {
+                    return lhs.card.templateKey < rhs.card.templateKey
+                }
+                return isBefore(lhs.card, rhs.card)
             }
             .prefix(max(settings.newPerDay - progress.newIntroducedToday, 0))
             .map(\.card)
@@ -65,15 +82,26 @@ public enum QueueBuilder {
         return due + fresh
     }
 
+    /// Last-resort tie-break, so the order is total rather than merely mostly-decided.
+    ///
+    /// `sorted` is not stable in Swift and the candidates arrive from a dictionary, so two
+    /// cards sharing a due date came out in a different order on every launch — and, once
+    /// the two schedules are in play, on different devices. Ordering by uuid is the same
+    /// device-independent rule `ScheduleReplayer` uses to make replay reproducible.
+    private static func isBefore(_ lhs: Card, _ rhs: Card) -> Bool {
+        lhs.id.uuidString < rhs.id.uuidString
+    }
+
     /// Cards due right now — the number Today shows.
     public static func dueCount(candidates: [QueueCandidate], now: Date) -> Int {
         candidates.filter { candidate in
-            guard !candidate.isSuspended, let schedule = candidate.schedule else { return false }
+            guard !candidate.isHidden(at: now), !candidate.isNew,
+                  let schedule = candidate.schedule else { return false }
             return schedule.dueAt <= now
         }.count
     }
 
-    public static func newCount(candidates: [QueueCandidate]) -> Int {
-        candidates.filter { !$0.isSuspended && $0.isNew }.count
+    public static func newCount(candidates: [QueueCandidate], now: Date) -> Int {
+        candidates.filter { !$0.isHidden(at: now) && $0.isNew }.count
     }
 }

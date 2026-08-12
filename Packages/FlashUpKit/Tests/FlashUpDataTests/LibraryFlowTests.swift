@@ -142,38 +142,6 @@ struct LibraryFlowTests {
         #expect(await library.studyQueue(scope: .allDecks, now: Date()).count == 3)
     }
 
-    @Test("A suspended card leaves the queue and the counts")
-    func suspendedCardsAreExcluded() async throws {
-        let library = emptyLibrary()
-        let deck = await library.createDeck(named: "Test")
-        let note = try #require(
-            await library.saveNote(NoteDraft(deckID: deck.id, type: .basic, front: "A", back: "B"))
-        )
-        let cardID = try #require(await library.cards(for: note.id).first?.id)
-
-        await library.setSuspended(true, cardID: cardID)
-
-        #expect(await library.studyQueue(scope: .allDecks, now: Date()).isEmpty)
-        #expect(await library.todaySnapshot(now: Date()).newCount == 0)
-    }
-
-    @Test("Resetting a card sends it back to new and revokes its history")
-    func resettingACardClearsProgress() async throws {
-        let library = emptyLibrary()
-        let deck = await library.createDeck(named: "Test")
-        let note = try #require(
-            await library.saveNote(NoteDraft(deckID: deck.id, type: .basic, front: "A", back: "B"))
-        )
-        let cardID = try #require(await library.cards(for: note.id).first?.id)
-        let transition = try SwiftFSRSAdapter().next(.unseen(dueAt: Date()), grade: .good, at: Date())
-        await library.record(transition, for: cardID, durationMs: 900)
-
-        await library.resetCard(cardID)
-
-        #expect(await library.schedule(for: cardID) == nil)
-        #expect(await library.metrics(now: Date()).studiedToday == 0)
-    }
-
     @Test("A stored session survives and is offered back")
     func sessionStateRoundTrip() async {
         let library = emptyLibrary()

@@ -43,23 +43,35 @@ struct DeckDetailView: View {
             }
 
             Section {
+                // A menu, not segments: five states do not fit across an iPhone, and the
+                // two that matter here are the ones a user reaches for rarely and on
+                // purpose.
                 Picker("filter.state", selection: $filters.state) {
                     ForEach(SearchFilters.State.allCases, id: \.self) { state in
                         Text(stateTitle(state)).tag(state)
                     }
                 }
-                .pickerStyle(.segmented)
                 .accessibilityIdentifier("deck.filter")
             }
             .paperRows()
 
             Section("deck.notes \(notes.count)") {
                 if notes.isEmpty {
-                    EmptyStateRow(
-                        title: "deck.empty.title",
-                        message: "deck.empty.message",
-                        systemImage: "square.and.pencil"
-                    )
+                    // An empty filter is not an empty deck: inviting the user to write their
+                    // first note when they have simply filtered to Suspended would be a lie.
+                    if filters.state == .any {
+                        EmptyStateRow(
+                            title: "deck.empty.title",
+                            message: "deck.empty.message",
+                            systemImage: "square.and.pencil"
+                        )
+                    } else {
+                        EmptyStateRow(
+                            title: "deck.filter_empty.title",
+                            message: "deck.filter_empty.message",
+                            systemImage: "line.3.horizontal.decrease.circle"
+                        )
+                    }
                 }
                 ForEach(notes) { summary in
                     Button {
@@ -77,6 +89,21 @@ struct DeckDetailView: View {
                             }
                         }
                         .accessibilityIdentifier("note.delete")
+                    }
+                    // Offered only where there is something to lift, so the gesture never
+                    // rewards a swipe with nothing. This is the way out of a suspension:
+                    // filter to Suspended, swipe, and the note is back in the queue.
+                    .swipeActions(edge: .leading) {
+                        if summary.isHidden {
+                            Button("note.resume", systemImage: "play.circle") {
+                                Task {
+                                    await library.resumeNote(summary.note.id)
+                                    await reload()
+                                }
+                            }
+                            .tint(Palette.success)
+                            .accessibilityIdentifier("note.resume")
+                        }
                     }
                 }
             }
@@ -126,6 +153,7 @@ struct DeckDetailView: View {
         case .new: "filter.new"
         case .due: "filter.due"
         case .suspended: "filter.suspended"
+        case .buried: "filter.buried"
         }
     }
 }

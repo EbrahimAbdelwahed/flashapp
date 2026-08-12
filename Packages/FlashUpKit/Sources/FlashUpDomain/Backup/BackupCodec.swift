@@ -165,6 +165,8 @@ public struct BackupSchedule: Equatable, Codable, Sendable {
     public var reps: Int
     public var lapses: Int
     public var suspendedAt: Date?
+    /// Optional, so backups written before burying existed still decode.
+    public var buriedUntil: Date?
     public var lastReviewedAt: Date?
 
     public init(cardUUID: UUID, state: ReviewState) {
@@ -176,6 +178,7 @@ public struct BackupSchedule: Equatable, Codable, Sendable {
         self.reps = state.reps
         self.lapses = state.lapses
         self.suspendedAt = state.suspendedAt
+        self.buriedUntil = state.buriedUntil
         self.lastReviewedAt = state.lastReviewedAt
     }
 
@@ -189,7 +192,8 @@ public struct BackupSchedule: Equatable, Codable, Sendable {
             lastReviewedAt: lastReviewedAt,
             reps: reps,
             lapses: lapses,
-            suspendedAt: suspendedAt
+            suspendedAt: suspendedAt,
+            buriedUntil: buriedUntil
         )
     }
 }

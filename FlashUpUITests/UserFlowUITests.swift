@@ -11,6 +11,16 @@ enum ReminderStubEnvironment {
 
 final class UserFlowUITests: UITestCase {
 
+    /// Opens a study session from Today. Matched on the label in both shipped languages,
+    /// because the button's identifier changes with the deck it offers.
+    private func startStudying(file: StaticString = #filePath, line: UInt = #line) {
+        let start = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Studia", "Study")
+        ).firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 10), "no study action on Today", file: file, line: line)
+        start.tap()
+    }
+
     // MARK: - Flows
 
     func testOnboardingLeadsIntoTheApp() {
@@ -26,11 +36,7 @@ final class UserFlowUITests: UITestCase {
     func testStudyFlowAnswersACardAndUndoesIt() {
         skipOnboarding()
 
-        let studyNow = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Studia")).firstMatch
-        let fallback = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Study")).firstMatch
-        let start = studyNow.exists ? studyNow : fallback
-        XCTAssertTrue(start.waitForExistence(timeout: 10), "no study action on Today")
-        start.tap()
+        startStudying()
 
         let reveal = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Mostra", "Show")
@@ -51,6 +57,108 @@ final class UserFlowUITests: UITestCase {
         ).firstMatch
         XCTAssertTrue(undo.exists, "undo is not available after answering")
         XCTAssertTrue(undo.isEnabled, "undo should be enabled after an answer")
+    }
+
+    /// Suspending is the one card action that removes a card without a confirmation, so it
+    /// has to be the one the generalized undo can take back.
+    func testSuspendingACardRemovesItAndUndoBringsItBack() {
+        skipOnboarding()
+        startStudying()
+
+        XCTAssertTrue(app.buttons["study.reveal"].waitForExistence(timeout: 10), "the session did not open")
+        let card = app.descendants(matching: .any).matching(identifier: "study.card").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "the card is not on screen")
+        let firstPrompt = card.staticTexts.firstMatch.label
+
+        app.buttons["study.actions"].tap()
+        let suspend = app.buttons["study.action.suspend_card"]
+        XCTAssertTrue(suspend.waitForExistence(timeout: 5), "the card actions menu did not open")
+        suspend.tap()
+
+        // The card is gone and undo has picked the action up.
+        let undo = app.buttons["study.undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5), "undo is missing from the toolbar")
+        XCTAssertTrue(undo.isEnabled, "suspending should be undoable")
+        XCTAssertNotEqual(card.staticTexts.firstMatch.label, firstPrompt, "the suspended card is still showing")
+
+        undo.tap()
+
+        XCTAssertEqual(
+            card.staticTexts.firstMatch.label,
+            firstPrompt,
+            "undo did not put the suspended card back"
+        )
+        XCTAssertFalse(undo.isEnabled, "undo is a single step and should be spent")
+    }
+
+    /// The round trip the reviewer's Suspend depends on: hide a card mid-session, then find
+    /// it in the Library and put it back. Without the second half, suspending is a one-way
+    /// door.
+    func testASuspendedNoteIsFoundInTheLibraryAndResumed() {
+        skipOnboarding()
+        openTab("tab.library")
+
+        // Study *this* deck rather than everything: the all-decks queue breaks ties between
+        // equal due dates unstably, so which deck the first card belongs to varies between
+        // launches — and this test has to filter the deck that actually holds it.
+        let deck = app.descendants(matching: .any).matching(identifier: "library.deck_row").element(boundBy: 0)
+        XCTAssertTrue(deck.waitForExistence(timeout: 10), "no decks to open")
+        deck.tap()
+
+        app.buttons["deck.menu"].tap()
+        let study = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Studia", "Study")
+        ).firstMatch
+        XCTAssertTrue(study.waitForExistence(timeout: 5), "the deck menu has no study action")
+        study.tap()
+
+        XCTAssertTrue(app.buttons["study.reveal"].waitForExistence(timeout: 10), "the session did not open")
+        app.buttons["study.actions"].tap()
+        let suspend = app.buttons["study.action.suspend_card"]
+        XCTAssertTrue(suspend.waitForExistence(timeout: 5), "the card actions menu did not open")
+        suspend.tap()
+        app.buttons["study.close"].tap()
+
+        // Filter to Suspended through the state picker.
+        let filter = app.buttons["deck.filter"]
+        XCTAssertTrue(filter.waitForExistence(timeout: 5), "the state filter is missing")
+        filter.tap()
+        let suspendedOption = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Sospese", "Suspended")
+        ).firstMatch
+        XCTAssertTrue(suspendedOption.waitForExistence(timeout: 5), "the filter menu did not open")
+        suspendedOption.tap()
+
+        // The suspended note is listed, and a leading swipe offers the way back.
+        let note = app.descendants(matching: .any).matching(identifier: "note.row").element(boundBy: 0)
+        XCTAssertTrue(note.waitForExistence(timeout: 5), "the suspended note is not listed under the filter")
+        note.swipeRight()
+
+        let resume = app.buttons["note.resume"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 5), "swiping did not reveal Resume")
+        resume.tap()
+
+        XCTAssertFalse(
+            note.waitForExistence(timeout: 3),
+            "the resumed note should have left the Suspended filter"
+        )
+    }
+
+    func testCardInfoOpensFromTheActionsMenu() {
+        skipOnboarding()
+        startStudying()
+
+        XCTAssertTrue(app.buttons["study.reveal"].waitForExistence(timeout: 10), "the session did not open")
+
+        app.buttons["study.actions"].tap()
+        let info = app.buttons["study.action.info"]
+        XCTAssertTrue(info.waitForExistence(timeout: 5), "the card actions menu did not open")
+        info.tap()
+
+        XCTAssertTrue(
+            app.otherElements["study.info"].waitForExistence(timeout: 5),
+            "the card info sheet did not open"
+        )
     }
 
     func testCreateDeckAndNoteFlow() {

@@ -58,7 +58,7 @@ public struct NoteDraft: Equatable, Sendable {
 /// Library filters (spec §A11.5).
 public struct SearchFilters: Equatable, Sendable {
     public enum State: String, CaseIterable, Sendable {
-        case any, new, due, suspended
+        case any, new, due, suspended, buried
     }
 
     public enum Sorting: String, CaseIterable, Sendable {
@@ -90,17 +90,57 @@ public struct NoteSummary: Identifiable, Equatable, Sendable {
     public let cardCount: Int
     public let dueCount: Int
     public let isNew: Bool
+    /// True when *any* of the note's cards is suspended, which is deliberately the same
+    /// question the `.suspended` filter asks. A note with one card hidden and one not still
+    /// has something to resume, and a badge that appeared only once every card was hidden
+    /// would leave rows in the filtered list wearing no badge at all.
     public let isSuspended: Bool
+    /// True when any of the note's cards is buried right now.
+    public let isBuried: Bool
 
     public var id: UUID { note.id }
 
-    public init(note: Note, cardCount: Int, dueCount: Int, isNew: Bool, isSuspended: Bool) {
+    /// Whether the row has anything for the resume action to lift.
+    public var isHidden: Bool { isSuspended || isBuried }
+
+    public init(
+        note: Note,
+        cardCount: Int,
+        dueCount: Int,
+        isNew: Bool,
+        isSuspended: Bool,
+        isBuried: Bool = false
+    ) {
         self.note = note
         self.cardCount = cardCount
         self.dueCount = dueCount
         self.isNew = isNew
         self.isSuspended = isSuspended
+        self.isBuried = isBuried
     }
+}
+
+/// Everything the card info sheet shows, in one read.
+///
+/// Deliberately carries the raw `ReviewState` rather than pre-formatted strings: what a card
+/// info screen chooses to show is an interface decision, and the FSRS internals
+/// (stability, difficulty) are in here without any obligation to display them.
+public struct CardInfo: Identifiable, Equatable, Sendable {
+    public var id: UUID { card.id }
+    public let card: Card
+    public let schedule: ReviewState?
+    /// The card's surviving answers, newest first. Revoked logs are already filtered out.
+    public let logs: [ReviewLog]
+
+    public init(card: Card, schedule: ReviewState?, logs: [ReviewLog]) {
+        self.card = card
+        self.schedule = schedule
+        self.logs = logs
+    }
+
+    public var isNew: Bool { schedule?.isUnseen ?? true }
+    public var isSuspended: Bool { schedule?.isSuspended ?? false }
+    public func isBuried(at now: Date) -> Bool { schedule?.isBuried(at: now) ?? false }
 }
 
 /// One import, kept so it can be undone (spec §A9.2 step 5).

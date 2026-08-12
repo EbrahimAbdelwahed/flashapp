@@ -28,6 +28,10 @@ public struct ReviewState: Equatable, Sendable {
     /// (spec §A6.3). Suspension is a user choice, not a scheduling outcome, so the engine
     /// never reads or writes it.
     public var suspendedAt: Date?
+    /// Set while the card is buried: it leaves the queue until this moment passes, then
+    /// returns on its own. Like suspension it is a user choice the engine never reads, and
+    /// because the expiry is evaluated at read time no unbury pass ever has to run.
+    public var buriedUntil: Date?
 
     public init(
         state: ScheduleState,
@@ -37,7 +41,8 @@ public struct ReviewState: Equatable, Sendable {
         lastReviewedAt: Date?,
         reps: Int,
         lapses: Int,
-        suspendedAt: Date? = nil
+        suspendedAt: Date? = nil,
+        buriedUntil: Date? = nil
     ) {
         self.state = state
         self.stability = stability
@@ -47,6 +52,39 @@ public struct ReviewState: Equatable, Sendable {
         self.reps = reps
         self.lapses = lapses
         self.suspendedAt = suspendedAt
+        self.buriedUntil = buriedUntil
+    }
+
+    /// Whether the card is out of the queue because it was buried, at the given moment.
+    public func isBuried(at now: Date) -> Bool {
+        buriedUntil.map { $0 > now } ?? false
+    }
+
+    public var isSuspended: Bool { suspendedAt != nil }
+
+    /// True while the card has never actually been answered.
+    ///
+    /// Having a schedule is not the same as having been studied: suspending or burying a
+    /// card the user has never seen has to be recorded somewhere, and that somewhere is a
+    /// schedule carrying nothing but the flag. Anything that asks "is this card new?" has to
+    /// ask this and not merely whether a schedule exists, or those placeholders would show
+    /// up as reviews that are already overdue.
+    public var isUnseen: Bool { state == .new && reps == 0 && lastReviewedAt == nil }
+
+    /// Whether the user has hidden this card, by either means.
+    public var carriesUserFlag: Bool { suspendedAt != nil || buriedUntil != nil }
+
+    /// Returns this state carrying `other`'s suspension and burial.
+    ///
+    /// The scheduler produces states that know nothing about those two flags, so every write
+    /// that replaces a schedule — recording an answer, replaying after an undo — has to move
+    /// them across. Doing it here rather than at each call site is what stops the next flag
+    /// from being silently dropped by one of them.
+    public func carryingUserFlags(from other: ReviewState?) -> ReviewState {
+        var copy = self
+        copy.suspendedAt = other?.suspendedAt
+        copy.buriedUntil = other?.buriedUntil
+        return copy
     }
 
     /// The state of a card that has never been answered. A card with no `CDSchedule` row
@@ -60,7 +98,8 @@ public struct ReviewState: Equatable, Sendable {
             lastReviewedAt: nil,
             reps: 0,
             lapses: 0,
-            suspendedAt: nil
+            suspendedAt: nil,
+            buriedUntil: nil
         )
     }
 }
