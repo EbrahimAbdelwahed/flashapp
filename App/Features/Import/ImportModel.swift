@@ -47,6 +47,9 @@ final class ImportModel {
     /// so a deck with 200 MB of pictures is never resident all at once.
     private var archive: ApkgArchive?
     private var mediaPlan = MediaPlan()
+    /// The parsed rows, kept so the plan can be rebuilt against a different deck: the user
+    /// picks the destination on the preview screen, and duplicates are counted per deck.
+    private var outcome: CSVParseOutcome?
     /// Attachments that could not be extracted. Their notes still import; the reference
     /// renders as a placeholder.
     private(set) var failedMediaCount = 0
@@ -202,9 +205,17 @@ final class ImportModel {
     /// Applies the confirmed mappings and moves to the shared preview. From here on the
     /// `.apkg` path is the CSV path (ADR-004 §5).
     func confirmMapping() async {
-        let outcome = ApkgRowMapper.map(notes: sourceNotes, mappings: mappings, media: mediaPlan)
-        plan = ImportPlanner.plan(outcome, existingHashes: await existingHashes())
+        outcome = ApkgRowMapper.map(notes: sourceNotes, mappings: mappings, media: mediaPlan)
+        await replan()
         stage = .preview
+    }
+
+    /// Rebuilds the plan against the current destination. Called when the destination
+    /// changes on the preview screen, so the duplicate count always describes the deck the
+    /// notes are actually going into.
+    func replan() async {
+        guard let outcome else { return }
+        plan = ImportPlanner.plan(outcome, existingHashes: await existingHashes())
     }
 
     /// Stores the attachments this import actually uses and rewrites the plan to point at
@@ -232,8 +243,8 @@ final class ImportModel {
         self.sourceName = sourceName
         isApkg = false
         do {
-            let outcome = try CSVParser.parse(data)
-            plan = ImportPlanner.plan(outcome, existingHashes: await existingHashes())
+            outcome = try CSVParser.parse(data)
+            await replan()
             errorMessage = nil
             stage = .preview
         } catch let error as CSVParseError {
