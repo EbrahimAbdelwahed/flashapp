@@ -8,23 +8,32 @@ import SwiftUI
 /// not buried in Help.
 struct CSVPromptCard: View {
     @State private var didCopy = false
+    /// Collapsed by default: the prompt is long, and nobody has to read it to use it —
+    /// copying is enough. Expanding is for the curious and for selecting a piece by hand.
+    @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.tight) {
-            Label("import.prompt.title", systemImage: "sparkles")
-                .font(.subheadline.weight(.semibold))
+            DisclosureGroup(isExpanded: $isExpanded.animation(Motion.snappy)) {
+                Text(CSVPromptCard.promptText)
+                    .font(.caption2.monospaced())
+                    .padding(Spacing.tight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Palette.terracotta.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                    .textSelection(.enabled)
+                    .padding(.top, Spacing.tight)
+                    .accessibilityIdentifier("import.prompt.text")
+            } label: {
+                VStack(alignment: .leading, spacing: Spacing.tight) {
+                    Label("import.prompt.title", systemImage: "sparkles")
+                        .font(.subheadline.weight(.semibold))
 
-            Text("import.prompt.explanation")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(CSVPromptCard.promptText)
-                .font(.caption2.monospaced())
-                .padding(Spacing.tight)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Palette.terracotta.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                .textSelection(.enabled)
-                .accessibilityIdentifier("import.prompt.text")
+                    Text("import.prompt.explanation")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("import.prompt.disclosure")
 
             Button {
                 UIPasteboard.general.string = CSVPromptCard.promptText

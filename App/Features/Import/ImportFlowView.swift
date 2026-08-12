@@ -90,6 +90,14 @@ struct ImportFlowView: View {
             }
             .paperRows()
 
+            // Above the prompt card: the deck is a decision about the user's own library,
+            // the prompt is a tool. It can still be changed on the preview, right before
+            // anything is written.
+            Section("import.destination") {
+                destinationPicker
+            }
+            .paperRows()
+
             Section {
                 CSVPromptCard()
             }
@@ -155,23 +163,10 @@ struct ImportFlowView: View {
                 .paperRows()
             }
 
-            // Last thing before anything is written, and next to the button that writes it.
-            // On the first screen it sat below the file picker, so choosing a file jumped
-            // straight past it and the deck was decided by default.
+            // Repeated here on purpose: last chance to change it, next to the button that
+            // writes, so the deck is never decided by a default the user scrolled past.
             Section("import.destination") {
-                Picker("import.destination", selection: $model.destination) {
-                    Text("import.new_deck").tag(ImportModel.Destination.newDeck)
-                    ForEach(model.decks) { summary in
-                        Text(summary.deck.name).tag(ImportModel.Destination.existing(summary.deck.id))
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-
-                if model.destination == .newDeck {
-                    TextField("import.new_deck_name", text: $model.newDeckName)
-                        .accessibilityIdentifier("import.deck_name")
-                }
+                destinationPicker
             }
             .paperRows()
             // Duplicates are counted against the destination deck, so the plan has to be
@@ -188,6 +183,25 @@ struct ImportFlowView: View {
                 .accessibilityIdentifier("import.confirm")
             }
             .paperRows()
+        }
+    }
+
+    /// Shared by the chooser and the preview: one selection, shown wherever the user is
+    /// likely to want it.
+    @ViewBuilder
+    private var destinationPicker: some View {
+        Picker("import.destination", selection: $model.destination) {
+            Text("import.new_deck").tag(ImportModel.Destination.newDeck)
+            ForEach(model.decks) { summary in
+                Text(summary.deck.name).tag(ImportModel.Destination.existing(summary.deck.id))
+            }
+        }
+        .pickerStyle(.inline)
+        .labelsHidden()
+
+        if model.destination == .newDeck {
+            TextField("import.new_deck_name", text: $model.newDeckName)
+                .accessibilityIdentifier("import.deck_name")
         }
     }
 
