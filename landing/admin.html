@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>FlashApp — iscritti</title>
+<link rel="icon" href="assets/favicon.png">
+<style>
+:root{
+  --cream:#FBF3EA; --paper:#FFFAF4; --terra:#B96A44; --terra-deep:#9C5433;
+  --ink:#191310; --ink-2:#4A3B31; --muted:#867263; --line:rgba(25,19,16,.11);
+  --sans:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55}
+.wrap{width:min(1000px, 100% - 2.5rem); margin:0 auto; padding:2.5rem 0 4rem}
+h1{font-size:1.5rem; margin:0; letter-spacing:-.01em}
+p{margin:0}
+button{font:inherit; cursor:pointer}
+
+.btn{
+  display:inline-flex; align-items:center; gap:.5rem; font-weight:600; font-size:.95rem;
+  padding:.6rem 1.1rem; border-radius:999px; border:1px solid transparent;
+  background:var(--terra); color:#fff;
+}
+.btn:hover{background:var(--terra-deep)}
+.btn.ghost{background:transparent; color:var(--ink-2); border-color:var(--line)}
+.btn.ghost:hover{background:rgba(185,106,68,.08)}
+:where(a,button,input):focus-visible{outline:2.5px solid var(--terra); outline-offset:3px}
+
+/* login ------------------------------------------------------------- */
+.gate{max-width:380px; margin:14vh auto; padding:1.75rem; background:var(--paper);
+      border:1px solid var(--line); border-radius:18px}
+.gate img{width:44px; height:44px; border-radius:11px; margin-bottom:1rem}
+.gate h1{font-size:1.2rem}
+.gate p{color:var(--muted); font-size:.9rem; margin-top:.3rem}
+input[type=password]{
+  width:100%; font:inherit; padding:.75rem .9rem; margin-top:1.25rem;
+  border-radius:11px; border:1px solid var(--line); background:#fff; color:var(--ink);
+}
+input[type=password]:focus{outline:none; border-color:var(--terra); box-shadow:0 0 0 3.5px rgba(185,106,68,.16)}
+.gate .btn{width:100%; justify-content:center; margin-top:.85rem; padding-block:.75rem}
+.msg{margin-top:.8rem; font-size:.88rem; color:#9A3226; min-height:1.2em}
+
+/* dashboard --------------------------------------------------------- */
+.top{display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between}
+.actions{display:flex; gap:.6rem}
+.stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:.85rem; margin-top:1.75rem}
+.stat{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:1rem 1.15rem}
+.stat b{display:block; font-size:1.85rem; line-height:1.1; font-variant-numeric:tabular-nums}
+.stat span{font-size:.85rem; color:var(--muted)}
+.stat.tot b{color:var(--terra)}
+
+.tablewrap{margin-top:1.5rem; overflow-x:auto; background:var(--paper);
+           border:1px solid var(--line); border-radius:14px}
+table{width:100%; border-collapse:collapse; font-size:.92rem; min-width:620px}
+th,td{text-align:left; padding:.7rem 1rem; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600}
+tr:last-child td{border-bottom:none}
+td.email{font-family:ui-monospace, SFMono-Regular, Menlo, monospace; white-space:normal; word-break:break-all}
+.pill{display:inline-block; padding:.15rem .6rem; border-radius:999px; font-size:.8rem;
+      background:rgba(185,106,68,.12); color:var(--terra-deep); font-weight:600}
+.empty{padding:2.5rem 1rem; text-align:center; color:var(--muted)}
+[hidden]{display:none !important}
+</style>
+<script src="assets/admin.js"></script>
+</head>
+<body>
+
+<!-- LOGIN — visibile di default: se /api/list non risponde si vede comunque
+     il form, mai una pagina bianca. Sparisce solo a dati caricati. -->
+<section class="gate" id="gate">
+  <img src="assets/logo.webp" alt="" width="44" height="44">
+  <h1>Iscritti FlashApp</h1>
+  <p>Area riservata.</p>
+  <form id="loginform">
+    <input type="password" id="password" autocomplete="current-password"
+           placeholder="Password" required aria-label="Password">
+    <button class="btn" type="submit" id="loginbtn">Entra</button>
+    <p class="msg" id="loginmsg" role="status" aria-live="polite"></p>
+  </form>
+</section>
+
+<!-- DASHBOARD -->
+<main class="wrap" id="dash" hidden>
+  <div class="top">
+    <h1>Iscritti FlashApp</h1>
+    <div class="actions">
+      <button class="btn" id="csv">Scarica CSV</button>
+      <button class="btn ghost" id="logout">Esci</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tablewrap">
+    <table id="table">
+      <thead>
+        <tr><th>Email</th><th>Canale</th><th>Landing</th><th>Iscritto il</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="empty" id="empty" hidden>Ancora nessuna iscrizione.</p>
+  </div>
+</main>
+
+</body>
+</html>
