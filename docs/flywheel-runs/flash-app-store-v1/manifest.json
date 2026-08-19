@@ -1,6 +1,9 @@
 {
   "artifacts": {
     "context": "docs/flywheel-runs/flash-app-store-v1/context-pack.md",
+    "decision_requests": [
+      "docs/decision-requests/flash-app-store-v1/account-switch-data-boundary.md"
+    ],
     "intake": "docs/flywheel-runs/flash-app-store-v1/intake.md",
     "review": "docs/reviews/flash-app-store-v1.md",
     "review_command_results": "docs/flywheel-runs/flash-app-store-v1/review-command-results.json",
@@ -36,7 +39,8 @@
     "worker_reports": {
       "sas-00-contract": "docs/worker-reports/flash-app-store-v1/sas-00-contract.md",
       "sas-01-data-foundation": "docs/worker-reports/flash-app-store-v1/sas-01-data-foundation.md",
-      "sas-02-persistent-library": "docs/worker-reports/flash-app-store-v1/sas-02-persistent-library.md"
+      "sas-02-persistent-library": "docs/worker-reports/flash-app-store-v1/sas-02-persistent-library.md",
+      "sas-03-private-sync": "docs/worker-reports/flash-app-store-v1/sas-03-private-sync.md"
     }
   },
   "br_beads": {},
@@ -84,6 +88,12 @@
       "status": "complete",
       "updated_at": "2026-08-19T12:34:39+00:00"
     },
+    "decision_request": {
+      "path": "docs/decision-requests/flash-app-store-v1/account-switch-data-boundary.md",
+      "severity": "blocking",
+      "status": "open",
+      "updated_at": "2026-08-19T19:04:27+00:00"
+    },
     "intake": {
       "path": "docs/flywheel-runs/flash-app-store-v1/intake.md",
       "status": "complete",
@@ -118,20 +128,20 @@
       "updated_at": "2026-08-19T12:34:39+00:00"
     },
     "validate": {
-      "issues": 0,
+      "issues": 1,
       "path": "docs/flywheel-runs/flash-app-store-v1/validation.md",
-      "status": "passed",
-      "updated_at": "2026-08-19T17:54:58+00:00"
+      "status": "failed",
+      "updated_at": "2026-08-19T19:06:00+00:00"
     },
     "worker_report": {
-      "path": "docs/worker-reports/flash-app-store-v1/sas-02-persistent-library.md",
-      "status": "complete",
-      "task": "sas-02-persistent-library",
-      "updated_at": "2026-08-19T17:54:07+00:00"
+      "path": "docs/worker-reports/flash-app-store-v1/sas-03-private-sync.md",
+      "status": "blocked",
+      "task": "sas-03-private-sync",
+      "updated_at": "2026-08-19T19:05:17+00:00"
     }
   },
   "project": "/Users/ebrahimabdelwahed/Desktop/Dev/flashapp",
   "run_id": "flash-app-store-v1",
   "schema_version": 1,
-  "updated_at": "2026-08-19T17:54:58+00:00"
+  "updated_at": "2026-08-19T19:06:00+00:00"
 }

@@ -1,6 +1,13 @@
 {
-  "issues": [],
-  "ok": true,
+  "issues": [
+    {
+      "code": "blocking-decision-open",
+      "message": "Blocking decision request is still open.",
+      "path": "docs/decision-requests/flash-app-store-v1/account-switch-data-boundary.md",
+      "severity": "error"
+    }
+  ],
+  "ok": false,
   "project": "/Users/ebrahimabdelwahed/Desktop/Dev/flashapp",
   "run_id": "flash-app-store-v1"
 }

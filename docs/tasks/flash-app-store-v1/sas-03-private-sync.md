@@ -1,6 +1,6 @@
 # Task Bead: sas-03-private-sync Implement automatic personal CloudKit sync
 
-Status: Open
+Status: Blocked — decision request `account-switch-data-boundary` and review remediation
 Priority: P0
 Type: task
 Depends On: sas-02-persistent-library
@@ -77,3 +77,9 @@ The code can be built and fixture-tested before account activation, while schema
 ## Notes / Handoff
 
 - Worker must report files changed, behavior implemented, verification results, unresolved questions, and follow-up beads.
+- The first Luna pass is preserved but not accepted. Correctness and security reviews both
+  returned `BLOCKED`; see `docs/reviews/flash-app-store-v1/sas-03-private-sync.md`.
+- Do not dispatch remediation until
+  `docs/decision-requests/flash-app-store-v1/account-switch-data-boundary.md` is resolved
+  and the chosen policy is reflected in ADR-006, the brief, the implementation spec, and
+  this slice.

@@ -1,6 +1,6 @@
 # FlashApp 1.0 App Store hardening
 
-Status: active — sas-03 private sync
+Status: blocked — sas-03 account-switch data boundary decision
 Last updated: 2026-08-19
 Flywheel run: `flash-app-store-v1`
 Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
@@ -9,8 +9,9 @@ Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
 
 You are continuing `flash-app-store-v1`. Read ADR-006, the approved feature spec at
 `docs/specs/flashapp-1-0-app-store-hardening.md`, this README, and the next open slice.
-The next pickup is `03-private-sync`; `02-persistent-library` is accepted with correctness
-and security/data-safety review evidence.
+The next pickup is not dispatchable. Resolve `account-switch-data-boundary`, amend the
+governing contracts, then remediate and re-review `03-private-sync`; `02-persistent-library`
+remains accepted with correctness and security/data-safety review evidence.
 Do not touch `assets/emma-avatar/`. Never mark an Apple-account gate PASS without supplied
 evidence. Before ending your pass, update this section, the evidence ledger, the owning task
 bead, the worker report, and `docs/decisions/worklog.md`.
@@ -30,6 +31,8 @@ Active warnings:
 
 - Apple Developer membership and final identifiers are not yet available.
 - CloudKit real-device/schema/signing/TestFlight claims remain `HUMAN_REQUIRED`.
+- `account-switch-data-boundary` is an open blocking safety decision. The first SAS-03
+  implementation pass has green tests but failed correctness and security review.
 - Production now uses the persistent repository; CloudKit truthfulness, complete archives
   and the final release surface still block release until slices 03–05 are accepted.
 
@@ -83,7 +86,7 @@ runs in parallel with feature work.
 | 00 | done | worker report; semantic review approved; spec/dispatch validation passed |
 | 01 | done | 15 focused tests; correctness + security reviews approved |
 | 02 | done | 264 package tests; 20 UI tests; correctness + security reviews approved |
-| 03 | ready | private CloudKit sync implementation; account/device proof remains human-gated |
+| 03 | blocked | 277 package + 21 UI tests pass; correctness/security reviews blocked; account boundary decision open |
 | 04–06 | open | — |
 | 07 | HUMAN_REQUIRED | Apple account, identifiers, schema, signing, archive, TestFlight, ASC |
 

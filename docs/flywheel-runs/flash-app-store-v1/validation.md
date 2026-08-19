@@ -5,12 +5,12 @@ Run ID: `flash-app-store-v1`
 
 ## Summary
 
-- Errors: `0`
+- Errors: `1`
 - Warnings: `0`
 
 ## Findings
 
-- No validation findings.
+- [ERROR] `blocking-decision-open` `docs/decision-requests/flash-app-store-v1/account-switch-data-boundary.md`: Blocking decision request is still open.
 
 ## Gate
 
