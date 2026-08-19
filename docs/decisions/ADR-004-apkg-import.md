@@ -158,18 +158,10 @@ and its notes are rejected with a visible reason.
 notes are soft-deleted and can come back. Deleting blobs there would be data loss, which
 `AGENTS.md` forbids outright.
 
-## 7. Decision: backup keeps media references, not media bytes
+## 7. Superseded for version 1.0: backup includes media bytes
 
-`BackupDocument` goes to `version: 2` (v1 still decodes), `BackupNote` gains `mediaIDs`, and
-the document gains the `MediaAsset` records. **The blobs stay out of the JSON.**
-
-A backup of a media-heavy collection would otherwise be hundreds of megabytes of base64 in a
-single JSON file — slow to write, slow to parse, and prone to failing on the devices that
-need it most. A restore whose blob is missing renders a placeholder rather than failing the
-note.
-
-This is a real limitation, and it must be visible: it is stated in the backup screen copy,
-not only here.
+**Superseded 2026-08-19 by ADR-006 and `docs/decisions/backup-format.md`.** The old
+reference-only behavior must not be implemented or used as release evidence.
 
 ## 8. Hard limits
 

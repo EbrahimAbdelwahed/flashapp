@@ -1,0 +1,19 @@
+{
+  "commands_exit_ok": true,
+  "has_commands": true,
+  "results": [
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "python3 agent-flywheel/scripts/flywheel-runner.py validate --project . --run-id flash-app-store-v1 --stage dispatch --fail-on-warnings",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\n  \"issues\": [],\n  \"ok\": true,\n  \"project\": \"/Users/ebrahimabdelwahed/Desktop/Dev/flashapp\",\n  \"run_id\": \"flash-app-store-v1\"\n}\n"
+    }
+  ],
+  "run_id": "flash-app-store-v1"
+}

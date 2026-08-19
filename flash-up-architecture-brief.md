@@ -3,6 +3,24 @@
 Status: approved product brief for specification work  
 Purpose: source of truth for Claude/Fable and implementation planning
 
+## Owner amendment — App Store version 1.0 (2026-08-19)
+
+ADR-006 supersedes conflicting launch requirements below:
+
+- version 1.0 includes automatic personal iCloud sync through one private Core Data store;
+- collaborative Groups, CloudKit sharing, and the shared store are deferred beyond 1.0;
+- primary navigation is Today, Library, and Settings; Import remains inside Library and
+  Statistics is reached from Today;
+- the paid launch price is €2.99, changed manually to €4.99 one month after launch;
+- onboarding is short and skippable and still leaves a generalist demo deck available;
+- backups include referenced media bytes and restore by safe, idempotent merge;
+- internal TestFlight is required; an external cohort is not a 1.0 gate;
+- submission is blocked until personal CloudKit sync is proven end-to-end;
+- Apple-account operations remain human-required and unverified until evidence exists.
+
+See `docs/decisions/ADR-006-app-store-v1-contract.md` and the
+`flash-app-store-v1` run for the implementation and evidence contracts.
+
 ## Instruction to the specification author
 
 Treat every statement marked **Required** as a fixed constraint. Do not reopen
@@ -36,7 +54,8 @@ by subscriptions or complicated flashcard software.
 
 ## Commercial and App Store constraints
 
-- **Required:** paid download at €1.99.
+- **Required:** paid download at €2.99 at launch, changed manually to €4.99 one
+  calendar month after the actual launch date.
 - **Required:** no free tier, trial, in-app purchase, or subscription.
 - **Required:** all launch functionality is included in the purchase.
 - **Required:** disable Family Sharing if App Store Connect permits it.
@@ -83,13 +102,13 @@ by subscriptions or complicated flashcard software.
 
 ### Persistence and CloudKit
 
-Collaboration is a launch requirement. SwiftData’s automatic CloudKit
-integration does not cover the required shared-database workflow. Therefore:
+Personal CloudKit synchronization is a launch requirement. Collaboration is
+deferred beyond 1.0. Therefore:
 
 - **Required:** use Core Data with `NSPersistentCloudKitContainer`.
 - **Required:** use the user’s private CloudKit database for personal content
   and personal study data.
-- **Required:** use CloudKit sharing (`CKShare`) and shared record zones for
+- **Deferred:** use CloudKit sharing (`CKShare`) and shared record zones for
   collaborative groups.
 - **Required:** do not create a proprietary account, password, login, or
   authentication backend.
@@ -110,8 +129,8 @@ integration does not cover the required shared-database workflow. Therefore:
 
 ## Domain model and ownership boundaries
 
-The specification must preserve the distinction between shared learning
-material and private learning progress.
+Version 1.0 stores personal learning material and private learning progress in the private
+store. The distinction from future shared material is deferred with Groups.
 
 ### Content entities
 
@@ -119,10 +138,8 @@ material and private learning progress.
 
 - **Required:** a named collection of notes.
 - **Required:** launch with a flat deck structure; no nested decks.
-- **Required:** a deck is either personal or assigned to one collaborative
-  group.
-- **Required:** a deck can move between personal space and a group after
-  import.
+- **Required for 1.0:** every deck is personal.
+- **Deferred:** assigning or moving a deck to a collaborative group.
 
 #### Note
 
@@ -155,8 +172,8 @@ material and private learning progress.
 
 - **Required:** a generated review unit with a stable identity.
 - **Required:** each generated card owns an independent FSRS state.
-- **Required:** content identity must remain stable enough for collaborators to
-  retain private progress when shared content changes.
+- **Required:** content identity remains stable across personal edits and multi-device
+  synchronization.
 
 #### Tag
 
@@ -169,7 +186,7 @@ material and private learning progress.
 
 #### Schedule
 
-- **Required:** remains private to one user, including for shared decks.
+- **Required:** remains private to one user.
 - **Required:** stores the current FSRS scheduling state for one generated card.
 
 #### ReviewLog
@@ -181,7 +198,7 @@ material and private learning progress.
   another.
 - **Required:** current FSRS state can be recalculated from the ordered history
   when devices review the same card offline.
-- **Required:** shared-deck participants never share ReviewLog or Schedule data.
+- **Deferred:** shared-deck participant behavior.
 
 #### ImportBatch
 
@@ -223,8 +240,8 @@ material and private learning progress.
   handoffs.
 - **Required:** provide a copyable prompt that asks ChatGPT to generate the
   canonical format.
-- **Required:** destination can be a new deck, existing personal deck, or
-  collaborative group.
+- **Required for 1.0:** destination can be a new or existing personal deck.
+- **Deferred:** collaborative-group destinations.
 - **Required:** show a preview before committing.
 - **Required:** identify invalid rows with actionable explanations.
 - **Required:** detect duplicate note content within the destination deck.
@@ -235,17 +252,20 @@ material and private learning progress.
 
 - **Required:** export an individual deck in the canonical CSV format.
 - **Required:** export a versioned FlashApp backup containing personal decks,
-  notes, FSRS state, review history, settings, and snapshots of shared content.
+  notes, FSRS state, review history, settings, and every referenced supported media byte.
 - **Required:** restore a full FlashApp backup.
-- **Required:** restored shared snapshots become personal copies; backups do not
-  recreate groups, participants, or permissions.
+- **Deferred:** shared snapshots, groups, participants, and permissions are outside the
+  1.0 backup format.
 - **Required:** import an Anki `.apkg`, both container generations, with the
   field mapping confirmed by the user before anything is written (ADR-004).
 - **Deferred:** Anki `.apkg` export.
 
-## Collaborative groups
+## Collaborative groups — deferred beyond version 1.0
 
 Groups represent classes or study circles, not a single deck.
+
+Every `Required` clause in this section is a requirement for the future Groups release,
+not version 1.0. No 1.0 task or release gate depends on this section.
 
 - **Required:** an owner creates a group and shares an invitation link.
 - **Required:** accepting the link adds the participant to the group.
@@ -303,9 +323,8 @@ Groups represent classes or study circles, not a single deck.
 - **Required:** provide “Delete all my data” separately from the trash.
 - **Required:** deletion is immediate and permanent, bypassing the 30-day trash.
 - **Required:** use destructive styling and a “Permanent deletion” badge.
-- **Required:** explain exactly which local, private CloudKit, and owned shared
-  data is affected.
-- **Required:** warn separately about effects on group participants.
+- **Required:** explain exactly which local and private CloudKit data is affected.
+- **Deferred:** warnings about effects on group participants.
 - **Required:** require two-step confirmation, including typing `ELIMINA`.
 - **Required:** offer backup export before deletion.
 
@@ -336,12 +355,11 @@ Groups represent classes or study circles, not a single deck.
 
 ## Navigation and discovery
 
-Use four primary sections:
+Use three primary sections in version 1.0:
 
 1. **Today:** due reviews, new cards, streak, and summary statistics.
 2. **Library:** personal decks, notes, tags, import, search, and trash.
-3. **Groups:** classes, shared decks, participants, and invitations.
-4. **Settings:** study behavior, reminders, sync, data, privacy, and help.
+3. **Settings:** study behavior, reminders, sync, data, privacy, and help.
 
 Detailed statistics are reached from Today rather than adding a fifth primary
 tab.
@@ -349,8 +367,7 @@ tab.
 ### Search
 
 - **Required:** local search over deck names, fronts, backs, and tags.
-- **Required:** filters for note type, new, due, suspended, personal, and
-  shared.
+- **Required:** filters for note type, new, due, suspended, and personal.
 - **Required:** sorting by name, modification time, next review, and card count.
 - **Required:** do not send card contents to a search server.
 
@@ -358,7 +375,7 @@ tab.
 
 ### First launch
 
-- **Required:** a short mandatory tutorial.
+- **Required:** a short, skippable tutorial.
 - **Required:** explain import, the review interaction, and the four FSRS
   grades.
 - **Required:** include a ready-to-study demonstration deck.
@@ -366,8 +383,8 @@ tab.
 
 ### Feature tutorials
 
-- **Required:** show the Groups tutorial only on first entry to Groups.
-- **Required:** explain group creation, invitation links, and sharing decks.
+- **Deferred:** show the Groups tutorial only when Groups ships.
+- **Deferred:** explain group creation, invitation links, and sharing decks.
 - **Required:** show the Settings tutorial only on first entry to Settings.
 - **Required:** contextual tutorials are short, skippable, and replayable from
   Help.
@@ -412,16 +429,15 @@ Settings must provide:
 
 - **Required:** automated tests cover CSV parsing, note-to-card generation,
   FSRS integration, trash behavior, and data migration.
-- **Required:** CloudKit integration tests use at least two Apple Accounts and
-  multiple devices.
-- **Required:** test shared groups, offline edits, conflict resolution, leaving
-  groups, and deletion.
+- **Required:** personal CloudKit integration tests use the same Apple Account on
+  multiple devices and cover offline edits, reconnect, convergence, and deletion.
+- **Deferred:** shared-group, invitation, leaving, ownership, and group-deletion tests.
 - **Required:** test purchase, onboarding, import, study, reminders, backup,
   restoration, and permanent deletion.
 - **Required:** verify VoiceOver, Dynamic Type, dark mode, and reduced motion.
 - **Required:** test a small and large iPhone, iPad, and Apple Silicon Mac.
-- **Required:** perform internal TestFlight testing followed by a small external
-  cohort of real students.
+- **Required:** perform internal TestFlight testing. An external cohort is not a
+  version 1.0 release gate.
 - **Required:** do not submit while release-blocking defects remain.
 
 ## App Store presentation
@@ -441,12 +457,9 @@ These are validation tasks, not invitations to change the product:
 1. Confirm current App Store Connect support for disabling Family Sharing on a
    new paid application.
 2. Confirm CloudKit quotas and operational behavior at the expected scale.
-3. Validate the exact Core Data store topology for private and shared CloudKit
-   databases.
-4. Validate moving a deck between personal and group stores while preserving
-   stable content identifiers and private progress.
-5. Validate invitation acceptance and shared-store handling in a SwiftUI
-   application.
+3. Validate the exact private Core Data/CloudKit store topology for version 1.0.
+4. **Deferred with Groups:** validate moving a deck between personal and group stores.
+5. **Deferred with Groups:** validate invitation acceptance and shared-store handling.
 6. Define deterministic reconciliation of concurrent ReviewLogs and content
    edits.
 7. Define the versioned FlashApp backup schema and migration policy.

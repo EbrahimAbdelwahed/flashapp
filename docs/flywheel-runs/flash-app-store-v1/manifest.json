@@ -1,0 +1,135 @@
+{
+  "artifacts": {
+    "context": "docs/flywheel-runs/flash-app-store-v1/context-pack.md",
+    "intake": "docs/flywheel-runs/flash-app-store-v1/intake.md",
+    "review": "docs/reviews/flash-app-store-v1.md",
+    "review_command_results": "docs/flywheel-runs/flash-app-store-v1/review-command-results.json",
+    "spec": "docs/specs/flashapp-1-0-app-store-hardening.md",
+    "task_beads": [
+      "docs/tasks/flash-app-store-v1/sas-00-contract.md",
+      "docs/tasks/flash-app-store-v1/sas-01-data-foundation.md",
+      "docs/tasks/flash-app-store-v1/sas-02-persistent-library.md",
+      "docs/tasks/flash-app-store-v1/sas-03-private-sync.md",
+      "docs/tasks/flash-app-store-v1/sas-04-complete-backup.md",
+      "docs/tasks/flash-app-store-v1/sas-05-release-surface.md",
+      "docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md",
+      "docs/tasks/flash-app-store-v1/sas-07-human-release.md"
+    ],
+    "validation": "docs/flywheel-runs/flash-app-store-v1/validation.md",
+    "validation_json": "docs/flywheel-runs/flash-app-store-v1/validation.json",
+    "worker_briefs": [
+      "docs/worker-briefs/flash-app-store-v1/sas-00-contract.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-01-data-foundation.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-02-persistent-library.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-03-private-sync.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-04-complete-backup.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-05-release-surface.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-06-quality-evidence.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-07-human-release.md"
+    ],
+    "worker_profiles": {
+      "app-store-data-engineer": "docs/worker-profiles/app-store-data-engineer.md",
+      "app-store-portability-engineer": "docs/worker-profiles/app-store-portability-engineer.md",
+      "app-store-product-engineer": "docs/worker-profiles/app-store-product-engineer.md",
+      "app-store-release-governor": "docs/worker-profiles/app-store-release-governor.md"
+    },
+    "worker_reports": {
+      "sas-00-contract": "docs/worker-reports/flash-app-store-v1/sas-00-contract.md"
+    }
+  },
+  "br_beads": {},
+  "created_at": "2026-08-19T12:34:33+00:00",
+  "feature": {
+    "raw": "FlashApp 1.0 App Store hardening: personal automatic iCloud sync through one Private.sqlite NSPersistentCloudKitContainer; Groups deferred; complete media backups; honest Apple-account gates",
+    "slug": "flashapp-1-0-app-store-hardening",
+    "title": "FlashApp 1.0 App Store hardening"
+  },
+  "phases": {
+    "beads": {
+      "br_created": {},
+      "count": 8,
+      "paths": [
+        "docs/tasks/flash-app-store-v1/sas-00-contract.md",
+        "docs/tasks/flash-app-store-v1/sas-01-data-foundation.md",
+        "docs/tasks/flash-app-store-v1/sas-02-persistent-library.md",
+        "docs/tasks/flash-app-store-v1/sas-03-private-sync.md",
+        "docs/tasks/flash-app-store-v1/sas-04-complete-backup.md",
+        "docs/tasks/flash-app-store-v1/sas-05-release-surface.md",
+        "docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md",
+        "docs/tasks/flash-app-store-v1/sas-07-human-release.md"
+      ],
+      "status": "complete",
+      "updated_at": "2026-08-19T12:44:34+00:00"
+    },
+    "briefs": {
+      "count": 8,
+      "paths": [
+        "docs/worker-briefs/flash-app-store-v1/sas-00-contract.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-01-data-foundation.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-02-persistent-library.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-03-private-sync.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-04-complete-backup.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-05-release-surface.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-06-quality-evidence.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-07-human-release.md"
+      ],
+      "status": "complete",
+      "updated_at": "2026-08-19T12:44:34+00:00"
+    },
+    "context": {
+      "files_count": 1,
+      "path": "docs/flywheel-runs/flash-app-store-v1/context-pack.md",
+      "status": "complete",
+      "updated_at": "2026-08-19T12:34:39+00:00"
+    },
+    "intake": {
+      "path": "docs/flywheel-runs/flash-app-store-v1/intake.md",
+      "status": "complete",
+      "updated_at": "2026-08-19T12:34:33+00:00"
+    },
+    "profiles": {
+      "count": 4,
+      "paths": {
+        "app-store-data-engineer": "docs/worker-profiles/app-store-data-engineer.md",
+        "app-store-portability-engineer": "docs/worker-profiles/app-store-portability-engineer.md",
+        "app-store-product-engineer": "docs/worker-profiles/app-store-product-engineer.md",
+        "app-store-release-governor": "docs/worker-profiles/app-store-release-governor.md"
+      },
+      "skipped_tasks": [
+        "sas-00-contract",
+        "sas-02-persistent-library",
+        "sas-03-private-sync",
+        "sas-07-human-release"
+      ],
+      "status": "complete",
+      "updated_at": "2026-08-19T12:43:17+00:00"
+    },
+    "review": {
+      "commands": 2,
+      "path": "docs/reviews/flash-app-store-v1.md",
+      "status": "prepared",
+      "updated_at": "2026-08-19T13:02:22+00:00"
+    },
+    "spec": {
+      "path": "docs/specs/flashapp-1-0-app-store-hardening.md",
+      "status": "approved",
+      "updated_at": "2026-08-19T12:34:39+00:00"
+    },
+    "validate": {
+      "issues": 0,
+      "path": "docs/flywheel-runs/flash-app-store-v1/validation.md",
+      "status": "passed",
+      "updated_at": "2026-08-19T13:03:02+00:00"
+    },
+    "worker_report": {
+      "path": "docs/worker-reports/flash-app-store-v1/sas-00-contract.md",
+      "status": "complete",
+      "task": "sas-00-contract",
+      "updated_at": "2026-08-19T13:02:15+00:00"
+    }
+  },
+  "project": "/Users/ebrahimabdelwahed/Desktop/Dev/flashapp",
+  "run_id": "flash-app-store-v1",
+  "schema_version": 1,
+  "updated_at": "2026-08-19T13:03:02+00:00"
+}

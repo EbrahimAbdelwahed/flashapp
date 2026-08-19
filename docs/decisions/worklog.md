@@ -444,3 +444,27 @@ container. They are not repository assets and were not added to version control.
 - `xcodebuild ... build`: `** BUILD SUCCEEDED **` for the iPhone 17 simulator.
 - `ImportUITests.testImportOffersACopyablePromptForChatGPT`: passed, covering the exact CSV
   header, organizational-content exclusion, code-block response and no-attachment contract.
+
+---
+
+## sas-00-contract — FlashApp App Store 1.0 contract — 2026-08-19
+
+### Built
+
+- Accepted ADR-006 and amended the product brief/spec for personal private-CloudKit sync,
+  three tabs, deferred Groups, complete media backup, skippable onboarding, and explicit
+  human Apple-account gates.
+- Created the `flash-app-store-v1` Flywheel graph, canonical slices, scoped worker profiles,
+  backup-format contract, release gate ledger, worker report, and review evidence.
+- Resolved semantic review findings around persistence inventory, demo installation, sync
+  retry/account transition, backup composition, deletion propagation, and Apple Silicon Mac.
+
+### Verification
+
+- Flywheel spec validation: passed with zero issues.
+- Flywheel dispatch validation: passed with zero issues.
+- `git diff --check`: passed.
+- Independent standards review: approved.
+- Independent spec review: all blocking findings resolved before acceptance.
+- Apple account/team/container/schema/signing/archive/TestFlight gates remain
+  `HUMAN_REQUIRED` or `UNVERIFIED`.

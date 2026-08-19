@@ -5,6 +5,10 @@ Status: binding for every UI batch (`fu-08` through `fu-14`), set by the product
 direction the brief left open. Where it conflicts with the brief, the brief still wins and
 the conflict becomes a decision request.
 
+Owner amendment 2026-08-19: ADR-006 removes Groups from version 1.0 and makes the
+three-step onboarding skippable. The `flash-app-store-v1` UI slice is additionally bound by
+this document; historical group-specific guidance applies only when Groups returns.
+
 **Resolved 2026-07-28: the minimum stays iOS 17 and Liquid Glass is applied progressively**
 (`docs/decision-requests/flash-up-v1/liquid-glass-minimum-os.md`). Consequences that bind
 every UI batch:
@@ -68,8 +72,8 @@ to belong to it.
 
 ## 3. Speed of entry
 
-- No modal blocks the first launch except the mandatory 3-step onboarding, which ends by
-  installing the demo deck so the app is never empty on first open.
+- No modal blocks the first launch except the skippable 3-step onboarding. Completing or
+  skipping it installs the demo deck idempotently so the app is never empty on first open.
 - Import is reachable from both the library and Today; a user who arrives with a CSV in
   hand never has to look for it in Settings.
 - Anything destructive or irreversible (delete, leave a group, erase all data) is behind a

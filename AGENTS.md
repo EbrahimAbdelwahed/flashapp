@@ -5,7 +5,10 @@
 - Product decisions: `flash-up-architecture-brief.md`.
 - Engineering contract: `flash-up-implementation-spec.md`.
 - Design direction for every UI batch: `docs/ux-principles.md` (owner amendment, 2026-07-28).
-- Delivery state, batch beads, worker briefs, and review evidence: `docs/flywheel-runs/flash-up-v1/`.
+- Delivery state, batch beads, worker briefs, and review evidence for the App Store 1.0
+  cycle: `docs/flywheel-runs/flash-app-store-v1/`. The earlier
+  `docs/flywheel-runs/flash-up-v1/` remains historical evidence and is superseded where
+  ADR-006 changes launch scope.
 
 If the brief conflicts with the implementation specification, stop and record the conflict as an ADR; the brief wins.
 
@@ -30,6 +33,7 @@ Read the assigned batch bead before changing code. A batch may contain several o
 ## Coordination and verification
 
 - Keep changes within the assigned batch's file boundary and report any follow-up as a new bead candidate.
-- Prefer one active owner per batch; use the dependency graph in `docs/flywheel-runs/flash-up-v1/batch-plan.md` before parallel dispatch.
+- Prefer one active owner per batch; use the dependency graph in
+  `docs/flywheel-runs/flash-app-store-v1/batch-plan.md` before parallel dispatch.
 - Do not publish, push, or create a remote GitHub repository without explicit user authorization.
 - Each completed batch updates `docs/decisions/worklog.md` once that file exists and records the requested verification evidence.

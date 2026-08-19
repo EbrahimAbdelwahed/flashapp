@@ -5,6 +5,28 @@ Status: implementation-ready specification derived from the approved architectur
 is the engineering source of truth. Where the two conflict, the brief wins and the spec
 must be amended — never silently diverged from.
 
+## Version 1.0 release amendment — 2026-08-19
+
+ADR-006 and the `flash-app-store-v1` Flywheel run supersede the original 1.0 assumptions
+about price, Groups, store topology, onboarding, backup media, TestFlight cohort, and
+release evidence. The active 1.0 contract is:
+
+- paid download €2.99 at launch and €4.99 after one calendar month, with no StoreKit/IAP;
+- one versioned `Private.sqlite` in `NSPersistentCloudKitContainer`, mirrored only to the
+  user's private CloudKit database and fully usable locally/offline;
+- no `Shared.sqlite`, Groups, `CKShare`, group model/UI/tutorial, or group release gate;
+- Today, Library, and Settings tabs; Import in Library and Statistics from Today;
+- skippable onboarding with idempotent, persistent, generalist demo content;
+- versioned complete backups containing referenced media bytes and safe idempotent merge;
+- internal TestFlight only; personal CloudKit proof remains a hard submission gate;
+- Apple account/team/App ID/container/schema/signing/archive/TestFlight/ASC operations are
+  `HUMAN_REQUIRED` until real evidence is recorded.
+
+The canonical slices and acceptance evidence live in
+`docs/specs/flashapp-1-0-app-store-hardening.md` and
+`specs/flash-app-store-v1/`. Original Phase 7 group beads are retained only as historical
+planning context and are not dispatchable for version 1.0.
+
 Audience: coding agents implementing the project as discrete work items ("beads").
 Every bead in Part B has explicit inputs, tasks, deliverables, stop conditions, and
 out-of-scope declarations. **Agents must stop at the stop conditions.** Anything not
@@ -18,7 +40,8 @@ These apply to every bead. A bead is not DONE if any global rule is violated.
 
 ### 0.1 Non-negotiable product constraints (from the brief)
 
-1. Paid app, €1.99, no IAP/subscription/trial/ads. Nothing in the codebase may
+1. Paid app, €2.99 at launch then €4.99 after one calendar month, no
+   IAP/subscription/trial/ads. Nothing in the codebase may
    reference StoreKit purchases, entitlement gating, or paywalls.
 2. No third-party analytics, tracking, crash, or advertising SDK. Apple-native
    diagnostics only (MetricKit/Xcode Organizer — no code integration required at launch).
@@ -77,7 +100,6 @@ FlashUp/
 │   │   ├── Today/
 │   │   ├── Library/
 │   │   ├── Study/
-│   │   ├── Groups/
 │   │   ├── Settings/
 │   │   ├── Onboarding/
 │   │   ├── Import/
@@ -139,32 +161,53 @@ architecture mid-bead.
 
 ### A1.1 Stores and databases
 
-One `NSManagedObjectModel`, one `NSPersistentCloudKitContainer`, **two SQLite stores**:
+For version 1.0: one `NSManagedObjectModel`, one `NSPersistentCloudKitContainer`, and
+**one SQLite store**:
 
 | Store file        | CloudKit database scope | Contents |
 |-------------------|------------------------|----------|
-| `Private.sqlite`  | `.private`             | Personal content (decks/notes/cards/tags), content the user owns and shares (groups they created live in a shared **zone** of the private DB), and **all private study data** (Schedule, ReviewLog, ImportBatch, Revision-pruning bookkeeping). |
-| `Shared.sqlite`   | `.shared`              | Content shared **with** the user by other owners (groups they joined): mirrored CDGroup/CDDeck/CDNote/CDCard/CDTag/CDRevision records. |
+| `Private.sqlite`  | `.private`             | Personal decks, notes, cards, tags, schedules, review logs, import batches, study settings, trash metadata, and migration bookkeeping. |
+
+The resumable study session is intentionally device-local and atomically stored at
+`Application Support/session-state.json` (A6.6); onboarding/tutorial flags remain in
+`UserDefaults`. These are not additional Core Data stores and are not CloudKit mirrored.
+
+Version 1.0 persistence inventory:
+
+| Value | Storage | CloudKit | Backup | Recovery |
+|---|---|---|---|---|
+| Deck/note/card/tag/trash/import metadata | `Private.sqlite` | private | yes, except demo/trashed | store recovery path |
+| Schedule and review log | `Private.sqlite` | private | yes | deterministic replay |
+| Study limits, appearance, reminder preference/time | `CDStudySettings` singleton | private | yes | default only when no record exists; never reset a failed store |
+| Active study session | atomic `Application Support/session-state.json` | no | no | discard only an invalid/expired (>24h) session file |
+| Onboarding/tutorial completion | `UserDefaults` | no | no | missing key means not completed |
+| Notification authorization | system `UNUserNotificationCenter` state | no | no | re-query the system; never infer from backup |
+
+Delete-all removes the app-owned rows/files/default keys after explicit confirmation but
+does not and cannot mutate the system notification authorization.
+
+`Shared.sqlite`, group entities, shared zones, and `CKShare` are deferred beyond 1.0.
 
 Configuration:
 
-- Both store descriptions enable:
+- The store description enables:
   - `NSPersistentHistoryTrackingKey = true`
   - `NSPersistentStoreRemoteChangeNotificationPostOptionKey = true`
-- `cloudKitContainerOptions.databaseScope = .private` / `.shared` respectively, same
-  CloudKit container identifier `iCloud.<bundle-id>`.
+- Release builds always set `cloudKitContainerOptions.databaseScope = .private` with the
+  configured CloudKit container identifier `iCloud.<bundle-id>` before loading the store.
 - `viewContext.automaticallyMergesChangesFromParent = true`,
   `mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy`.
 - Background work uses `container.newBackgroundContext()` per operation; never write on
   the view context except trivial UI-driven single-object edits.
-- If iCloud is unavailable (no account, iCloud Drive off, restricted), the container is
-  built **without** `cloudKitContainerOptions` (pure local mode) and a
-  `SyncAvailability` state is exposed (see A4.4). Store files are identical in both
-  modes so toggling iCloud later re-uses the same data.
+- If iCloud is unavailable (no account, iCloud Drive off, restricted, or offline), the
+  configured store remains open and locally usable while `SyncAvailability` exposes the
+  truthful state (A4.4). When availability returns, the same loaded store exports pending
+  history; there is no runtime store replacement. Pure-local options are test/preview or
+  explicit non-CloudKit-build fixtures only and load the same file format.
 
 ### A1.2 CloudKit-compatible modeling rules (mandatory)
 
-Because both stores are CloudKit-mirrored, the Core Data model MUST follow:
+Because the private store is CloudKit-mirrored, the Core Data model MUST follow:
 
 1. No uniqueness constraints (CloudKit forbids them). App-level uniqueness on `uuid`
    is enforced by repositories + a dedup pass (A4.3).
@@ -174,38 +217,28 @@ Because both stores are CloudKit-mirrored, the Core Data model MUST follow:
 5. No `Deny` delete rules.
 6. Entities never rely on `NSManagedObjectID` for identity across devices.
 
-### A1.3 Cross-store reference rule (critical)
+### A1.3 Relationship and identity rule (critical)
 
-Core Data relationships cannot cross stores, and `NSPersistentCloudKitContainer` moves
-an object's *entire relationship graph* into a shared zone when its root is shared.
-Therefore:
+Version 1.0 has one private store. Relationships stay within the personal content graph,
+while stable UUID attributes keep study replay and future migrations portable.
 
-- **Content entities** (CDGroup, CDDeck, CDNote, CDCard, CDTag, CDRevision) form a
-  connected relationship graph and always live together in the same store/zone.
+- **Content entities** (CDDeck, CDNote, CDCard, CDTag) form a connected relationship
+  graph in `Private.sqlite`.
 - **Private study entities** (CDSchedule, CDReviewLog, CDImportBatch) have **no Core
   Data relationships at all** — not to content, not to each other. They reference
   content via plain UUID attributes (`cardUUID`, `noteUUID`, `deckUUID`). This
   guarantees they can never be dragged into a shared zone and never sync to other
   participants.
-- Study entities are always created with `context.assign(object, to: privateStore)`.
-  A repository-level assertion enforces this in DEBUG.
+- Study entities are always created in `Private.sqlite`; repository tests enforce this.
 
 Consequence embraced by design: joins between study data and content are done in
 memory by UUID (dictionary lookups). Expected scale (≤ tens of thousands of cards)
 makes this trivially fast; fetches use `IN %@` predicates on UUID arrays when needed.
 
-### A1.4 Zone/sharing layout
+### A1.4 Zone/sharing layout — deferred
 
-- Personal content: default zone of the private database (managed by the container).
-- A collaborative group: the container places the `CDGroup` object graph (group → decks
-  → notes → cards/tags/revisions) into a dedicated shared zone in the **owner's private
-  database** when the group is shared via
-  `NSPersistentCloudKitContainer.share(_:to:)`. One `CKShare` per group, rooted at the
-  `CDGroup` record.
-- Participants receive the zone in their **shared database**, mirrored into
-  `Shared.sqlite`.
-- Tags used by shared notes are group-scoped copies (see A3.6) so the tag graph never
-  links a shared note to a personal tag object.
+Version 1.0 uses the container-managed default zone in the private database. Shared zones,
+`CKShare`, participants and the shared database are not part of the V1 model or runtime.
 
 ## A2. Core Data model v1 (`FlashUp.xcdatamodeld`, model version `V1`)
 
@@ -221,8 +254,7 @@ All entities include this base attribute set unless noted:
 ### CDDeck
 - `name: String` (default `""`)
 - `isDemo: Bool` (default `false`) — demo deck flag (excluded from backups)
-- Relationships: `notes: [CDNote]` (cascade), `group: CDGroup?` (nullify),
-  inverse on both.
+- Relationship: `notes: [CDNote]` (cascade), with inverse.
 
 ### CDNote
 - `type: String` — `"basic" | "reversed" | "cloze"` (enum `NoteType` in Domain)
@@ -231,7 +263,7 @@ All entities include this base attribute set unless noted:
 - `back: String` (default `""`)
 - `contentHash: String` (default `""`) — dedup fingerprint, see A3.5
 - Relationships: `deck: CDDeck?` (nullify), `cards: [CDCard]` (cascade),
-  `tags: [CDTag]` (many-to-many, nullify), `revisions: [CDRevision]` (cascade).
+  `tags: [CDTag]` (many-to-many, nullify).
 
 ### CDCard
 - `templateKey: String` — stable generation identity: `"forward"`, `"reverse"`, or
@@ -246,24 +278,10 @@ All entities include this base attribute set unless noted:
 - `normalizedName: String` — see A3.6
 - Relationship: `notes: [CDNote]` many-to-many.
 
-### CDGroup
-- `name: String`
-- Relationship: `decks: [CDDeck]` (nullify).
-- Participant/role data is NOT modeled in Core Data; it is read live from the group's
-  `CKShare` participants (A5.3). This keeps the permission model extensible without
-  schema changes (brief: "design the permission model so granular roles can be added
-  later").
+### CDGroup and CDRevision — deferred
 
-### CDRevision  (shared content version history, A5.5)
-- `entityKind: String` — `"note"` (v1 only writes note revisions; deck rename revisions
-  use `entityKind = "deck"` with `front` = old name)
-- `targetUUID: UUID` — uuid of the revised note/deck (attribute, plus relationship
-  below for zone co-location)
-- `authorDisplayName: String` — captured client-side at save time
-- `timestamp: Date`
-- `type/front/back: String` — full snapshot of the note before the edit
-- Relationship: `note: CDNote?` (cascade from note) — required so revisions live in the
-  same shared zone as their note.
+These entities are not present in model V1. Groups and shared revision history require a
+future versioned model and architecture cycle.
 
 ### CDSchedule  (private store only, relationship-free)
 - `cardUUID: UUID` (indexed)
@@ -298,6 +316,16 @@ All entities include this base attribute set unless noted:
   stays on-device; never exported in diagnostics)
 - `duplicateRowsJSON: String` — JSON `[{row:Int, matchedNoteUUID:UUID, imported:Bool}]`
 - `undoneAt: Date?`
+
+### CDStudySettings (private store only, relationship-free singleton)
+- `singletonKey: String` (default `"primary"`; repository-enforced, no unique constraint)
+- `newPerDay: Int32` (default `20`)
+- `reviewsPerDay: Int32` (default `200`)
+- `appearanceRaw: String` (default `"system"`)
+- `reminderEnabled: Bool` (default `false`)
+- `reminderHour: Int16` (default `20`), `reminderMinute: Int16` (default `30`)
+- Concurrent duplicates are resolved deterministically by lowest UUID; values from the
+  most recently updated record win before duplicates are removed.
 
 ### Model hygiene
 - Model is versioned from day one: `V1` is the current version; the `.xcdatamodeld`
@@ -334,14 +362,13 @@ Card reconciliation on note edit (`CardReconciler.sync(note)`):
   note text never changes card uuids for surviving templateKeys. Renumbering cloze
   groups DOES change templateKeys and therefore produces new cards — the editor warns
   when an edit removes existing groups (Bead B5.4).
-- This is the contract that lets collaborators keep private FSRS progress across
-  shared-content edits.
+- This preserves private FSRS progress across personal edits and device convergence.
 
 ### A3.3 Note type conversion
 
 `NoteTypeConverter.convert(note, to: newType, hasStudyHistory: Bool)`:
 - `hasStudyHistory` = any non-revoked local ReviewLog exists for any of the note's card
-  uuids **or** the note lives in a group (collaborators may have history we cannot see).
+  uuids.
 - If `false`: convert in place (change `type`, reconcile cards; unscheduled cards may
   be freely deleted, not soft-deleted).
 - If `true`: create a duplicate note of the new type in the same deck (new uuid, copied
@@ -376,11 +403,8 @@ deletion := "{{c" INT "::" text ( "::" hint )? "}}"
 
 - `TagNormalizer.normalize(name)`: NFC, trim, collapse whitespace, casefold →
   `normalizedName`. Display `name` keeps the first-seen authored casing.
-- Repository `findOrCreateTag(name, scope)` where scope = personal store or a specific
-  group: tags are looked up by `normalizedName` **within the scope's object graph**.
-  A shared note only ever links to CDTag objects living in its own group's zone;
-  personal notes link to personal tags. Moving a deck between scopes re-maps tags via
-  findOrCreate in the destination scope (A5.6).
+- Repository `findOrCreateTag(name)` looks up `normalizedName` in the personal graph.
+  Future group-scoped tag identity is deferred with A5.
 - CloudKit duplicate tags (two devices create `anatomia` offline) are merged by the
   dedup pass (A4.3): keep lowest-uuid tag, re-link notes, delete the other.
 
@@ -399,18 +423,14 @@ deletion := "{{c" INT "::" text ( "::" hint )? "}}"
 ### A4.1 Components
 
 - `PersistenceController` — builds the container per A1; exposes `viewContext`,
-  `newBackgroundContext()`, store references (`privateStore`, `sharedStore`), and
-  local-only mode.
+  `newBackgroundContext()`, the private store, and local-only mode.
 - `SyncMonitor` (`@Observable`) — consumes
   `NSPersistentCloudKitContainer.eventChangedNotification` and `CKAccountChanged`;
   publishes `SyncAvailability` + `SyncActivity` (A4.4) and a `lastError`.
 - `RemoteChangeProcessor` — consumes remote-change notifications, drains persistent
   history since the last processed token (stored in metadata), and triggers:
   card reconciliation for changed notes (A3.1), schedule replay for merged review logs
-  (A6.4), dedup pass (A4.3), and revision pruning (A8).
-- `ShareManager` — wraps `share(_:to:)`, `fetchShares(matching:)`,
-  `persistUpdatedShare`, `purgeObjectsAndRecordsInZone`, participant listing, and
-  `acceptShareInvitations` handling (A5).
+  (A6.4) and the dedup pass (A4.3).
 
 ### A4.2 Remote change pipeline
 
@@ -430,7 +450,7 @@ Deterministic rule "lowest uuid wins" so every device converges independently:
   losers' notes; losers hard-deleted.
 - CDSchedule: same `cardUUID` → winner = lowest uuid; before deleting losers, run
   replay (A6.4) so the winner reflects the union of logs.
-- CDGroup/CDDeck/CDNote/CDCard duplicates are not expected (single insertion point);
+- CDDeck/CDNote/CDCard duplicates are not expected (single insertion point);
   if detected, log at fault level and do not auto-delete (human review path).
 
 ### A4.4 Sync status UX contract
@@ -445,7 +465,11 @@ Deterministic rule "lowest uuid wins" so every device converges independently:
   export) and "Open Settings" guidance. Study and editing are never blocked (brief
   §Local-first).
 
-## A5. Collaborative groups (CloudKit sharing)
+## A5. Collaborative groups (CloudKit sharing) — deferred beyond version 1.0
+
+All subsections in A5 are retained as historical future-design notes only. They are not
+requirements for model V1, may not be implemented by a 1.0 bead, and cannot override
+ADR-006 or the `flash-app-store-v1` task graph.
 
 ### A5.1 Group lifecycle (owner)
 
@@ -592,9 +616,9 @@ ordered history.
 - New list (after due, brief §Study): cards with no schedule, order note `createdAt`
   then `templateKey`; capped by `newPerDay − newIntroducedToday(deck)` (logs today with
   `prevState == new`).
-- Limits: global defaults 20 new / 200 reviews, user-adjustable in Settings
-  (`StudySettings` in UserDefaults; per-deck overrides are deferred — do not build
-  them). `.allEligible` applies limits per deck, then interleaves decks by dueAt.
+- Limits: global defaults 20 new / 200 reviews, user-adjustable in Settings and persisted
+  by the `CDStudySettings` singleton; per-deck overrides are deferred. `.allEligible`
+  applies limits per deck, then interleaves decks by dueAt.
 
 ### A6.6 Session persistence
 
@@ -622,7 +646,7 @@ and offered as "Resume session". Cleared on completion/abandon.
 - On store load: if `NSPersistentStoreCoordinator.metadata` model-compatibility check
   indicates migration, and migration is lightweight-inferable → before loading,
   `MigrationBackup.create()` copies `Private.sqlite`(+`-wal`,`-shm`) and
-  `Shared.sqlite` files to `Application Support/backups/<date>-preV<N>/` (structural
+  files to `Application Support/backups/<date>-preV<N>/` (structural
   migrations only; keep last 2 backups).
 - If load fails: NEVER delete the store. Enter `PersistenceFailure` mode: app boots
   into a recovery screen offering (1) Retry, (2) Export raw backup files via share
@@ -648,22 +672,19 @@ and offered as "Resume session". Cleared on completion/abandon.
 2. Delete CDSchedules/CDReviewLogs/whose `cardUUID` matches cards purged in step 1, and
    orphans whose card uuid no longer exists anywhere **and** the orphan's last touch is
    > 30d old (protects against transient sync gaps).
-3. Delete CDRevisions older than 30d.
-4. Delete CDImportBatches older than 90d (bookkeeping only).
-Purge runs only on the user's own stores; each participant purges their mirror
-independently (CloudKit propagates content deletions anyway).
+3. Delete CDImportBatches older than 90d (bookkeeping only).
+Purge runs only on the user's private store; CloudKit propagates personal deletions to the
+user's devices.
 
 ### A8.3 Delete all my data
 Separate, immediate, bypasses trash (brief):
-- Screen explains scopes affected: local stores, private CloudKit database, and groups
-  the user OWNS (deleted for everyone); groups the user joined are left (mirrors
-  purged locally + membership removed).
+- Screen explains scopes affected: the local private store and the user's private
+  CloudKit database.
 - Two-step: destructive confirm → type `ELIMINA` (both locales use `ELIMINA`; show the
   word to type). Offer backup export first.
-- Execution order: (1) optional backup, (2) delete owned CDGroups + shares, (3) leave
-  joined groups (purge zones), (4) delete all objects in both stores via batch deletes
-  + `NSPersistentCloudKitContainer` mirroring (deletes propagate to CloudKit), (5)
-  reset UserDefaults/session/tutorial state, (6) return to onboarding.
+- Execution order: (1) optional backup, (2) delete all user objects through the private
+  store and `NSPersistentCloudKitContainer` mirroring, (3) reset UserDefaults/session/
+  tutorial state, (4) return to onboarding.
 
 ## A9. CSV contract and import pipeline
 
@@ -690,9 +711,9 @@ Separate, immediate, bypasses trash (brief):
    (default skipped, per-row override to import anyway), produce `ImportPlan`
    { valid, duplicates, rejected }.
 3. Preview UI shows counts + first N rows per bucket with reasons; user picks
-   destination (new deck / existing personal deck / group deck) and confirms.
+   destination (new deck / existing personal deck) and confirms.
 4. Commit in one background transaction: create notes+cards (generation A3.1), tags
-   via findOrCreate in the destination scope, write CDImportBatch.
+   via personal findOrCreate, write CDImportBatch.
 5. Undo (from Library or the post-import toast): sets `deletedAt` on all
    `createdNoteUUIDs` notes (→ trash, fully recoverable) and `undoneAt` on the batch.
 
@@ -739,19 +760,21 @@ Import only; FlashApp never writes `.apkg`.
 - Entry point: `.fileImporter` with an imported UTType `org.ankiweb.apkg`
   (conforms to `public.zip-archive`, extension `apkg`), declared in `Info.plist`.
 
-## A10. FlashApp backup (versioned)
+## A10. FlashApp backup (versioned archive)
 
-Single JSON file, extension `.flashupbackup`, UTType exported by the app.
+Version 1.0 exports one `.flashupbackup` archive with a JSON manifest/data document plus
+content-addressed media blobs. ADR-006 supersedes the earlier reference-only JSON format.
+The archive is validated and staged in full before restore mutates the live repository.
 
 ```jsonc
 {
   "format": "flashup-backup",
-  "formatVersion": 1,
+  "formatVersion": 3,
   "appVersion": "1.0 (build)",
   "exportedAt": "ISO8601",
   "settings": { "newPerDay": 20, "reviewsPerDay": 200, "appearance": "system",
                  "reminder": {"enabled": true, "hour": 20, "minute": 30} },
-  "decks": [ { "uuid": "...", "name": "...", "origin": "personal|sharedSnapshot",
+  "decks": [ { "uuid": "...", "name": "...", "origin": "personal",
                "createdAt": "...", "notes": [ { "uuid": "...", "type": "basic",
                  "front": "...", "back": "...", "tags": ["..."],
                  "createdAt": "...", "updatedAt": "...",
@@ -766,17 +789,17 @@ Single JSON file, extension `.flashupbackup`, UTType exported by the app.
 }
 ```
 
-- Export scope: all personal decks + snapshots of shared decks the user can see
-  (marked `origin = sharedSnapshot`), all private study data, settings. Demo deck
-  excluded. Trashed content excluded.
+- Export scope: all personal decks, all private study data, settings, and every referenced
+  supported media blob. Demo content and trashed content are excluded.
 - Restore: `formatVersion` gate (unknown major → refuse with "backup created by a
   newer version" message). Merge policy: objects restore by uuid; existing uuid →
-  skip (never overwrite live data); `sharedSnapshot` decks restore as personal decks
-  (brief: backups do not recreate groups). Review logs merge append-only by uuid;
-  schedules restore only if absent, then replay reconciles.
+  skip (never overwrite live data). Review logs merge append-only by uuid; schedules
+  restore only if absent, then replay reconciles. Media restore is content-addressed and
+  idempotent. Corrupt, missing, or hash-mismatched media refuses the archive before any
+  partial mutation.
 - `BackupCodec` lives in Domain (pure Codable structs), `BackupService` in Data.
-- Future format changes bump `formatVersion` with a documented migration in
-  `docs/decisions/backup-format.md` (verification task 7).
+- `docs/decisions/backup-format.md` is the canonical container, limit, legacy-import,
+  atomicity, and merge contract. Future changes bump `formatVersion` and require an ADR.
 
 ## A11. UI architecture
 
@@ -784,7 +807,7 @@ Single JSON file, extension `.flashupbackup`, UTType exported by the app.
 - Pattern: SwiftUI views + `@Observable` feature models (one per screen family),
   constructed by `AppEnvironment` (manual DI via initializers/Environment; no DI
   framework).
-- Tabs (`TabView`): Today, Library, Groups, Settings. iPad: same TabView (brief has
+- Tabs (`TabView`): Today, Library, Settings. iPad: same TabView (brief has
   no sidebar requirement; keep one adaptive layout). Statistics detail pushes from
   Today (no fifth tab).
 - Appearance: setting {system, light, dark} → `preferredColorScheme` at root.
@@ -796,7 +819,6 @@ Single JSON file, extension `.flashupbackup`, UTType exported by the app.
 | Today | TodayView (due/new counts, streak, Study Now, summary metrics), StatisticsView (detail: retention 7/30, per-deck due table, history chart via Swift Charts) |
 | Library | DeckListView, DeckDetailView (notes list, filters), NoteEditorView, NotePreview (generated cards), SearchView (global), TrashView, ImportFlow (picker → preview → result), ExportSheet |
 | Study | StudySessionView (prompt → reveal → grades), SessionCompleteView, ResumePrompt |
-| Groups | GroupListView, GroupDetailView (decks, participants), CreateGroupSheet, ShareInviteFlow, RevisionHistoryView, LeaveDeleteFlows, MoveDeckSheet |
 | Settings | SettingsRoot, StudySettings, RemindersSettings, SyncStatusView, DataView (import/export/backup/trash link), DeleteAllDataFlow, PrivacyView, HelpView (FAQs + replayable tutorials), SupportComposer |
 | Onboarding | 3-step tutorial (import journey, review interaction, grades) + demo deck install |
 
@@ -812,11 +834,11 @@ Single JSON file, extension `.flashupbackup`, UTType exported by the app.
 - Reduced motion: replace flip animation with crossfade.
 
 ### A11.4 Onboarding & tutorials
-- `TutorialState` in UserDefaults: `didFinishOnboarding`, `didSeeGroupsTutorial`,
-  `didSeeSettingsTutorial`, `didPromptReminders`, `reviewPromptMilestoneDone`.
-- Onboarding: mandatory, 3 short screens, ends installing the localized demo deck
+- `TutorialState` in UserDefaults: `didFinishOnboarding`, `didSeeSettingsTutorial`,
+  `didPromptReminders`, `reviewPromptMilestoneDone`.
+- Onboarding: skippable, at most 3 short screens, installs the localized generalist demo deck
   (bundled CSV imported through the real import pipeline, `isDemo = true`).
-- Groups/Settings tutorials: one-off sheets on first tab entry; replayable from Help.
+- Settings tutorial: one-off sheet on first tab entry; replayable from Help.
 - Reminder ask: after first completed session → sheet to pick a time → only on enable
   request `UNUserNotificationCenter` authorization; schedule daily
   `UNCalendarNotificationTrigger`. Changeable in Settings.
@@ -863,7 +885,11 @@ in parallel unless Deps say otherwise.
 Dependency overview:
 
 ```
-Phase 0 ─ B0.1 → B0.2 → B0.3
+The B-prefixed graph below is retained as historical implementation coverage. For the 1.0
+App Store cycle, `docs/flywheel-runs/flash-app-store-v1/batch-plan.md` is the executable
+graph; deferred B0.3/Phase 7 work is not a dependency of any 1.0 task.
+
+Phase 0 ─ B0.1 → B0.2; B0.3 deferred
               └→ B0.4        (B0.5 manual, anytime before Phase 9)
 Phase 1 ─ B1.1(←B0.2) → B1.2 → B1.3, B1.4
 Phase 2 ─ B2.1 → B2.2 → B2.3 ; B2.4, B2.5 (←B1.2)
@@ -871,7 +897,7 @@ Phase 3 ─ B3.1(←B0.4,B1.2) → B3.2 → B3.3 → B3.4 ; B3.5(←B3.2)
 Phase 4 ─ B4.1 → B4.2(←B2.2,B2.5) → B4.3 ; B4.4 ; B4.5(←B3.2)
 Phase 5 ─ B5.1(←B1.4) → B5.2(←B3.5) , B5.3 , B5.4(←B2.x) , B5.5 , B5.6(←B1.3) , B5.7
 Phase 6 ─ B6.1(←B3.4,B5.1) → B6.2
-Phase 7 ─ B7.1(←B0.3,B5.1) → B7.2 → B7.3 → B7.4 → B7.5 → B7.6
+Phase 7 ─ deferred beyond 1.0
 Phase 8 ─ B8.1…B8.6 (←B5.1 + subsystem deps noted)
 Phase 9 ─ B9.1 → B9.2 → B9.3
 ```
@@ -892,31 +918,32 @@ Phase 9 ─ B9.1 → B9.2 → B9.3
 3. Enable capabilities: iCloud → CloudKit with container `iCloud.<bundle-id>`,
    Background Modes → Remote notifications, Push Notifications (required for CloudKit
    silent pushes).
-4. Add `.swiftlint.yml`, `ci/test.sh`, `ci/build.sh`; placeholder `TabView` with 4
+4. Add `.swiftlint.yml`, `ci/test.sh`, `ci/build.sh`; placeholder `TabView` with 3
    empty tabs; String Catalog with the tab titles in en+it.
 5. Copy the architecture brief into `docs/`, create `docs/decisions/worklog.md`.
 **Deliverables:** compiling project, green CI script locally.
-**Stop conditions:** app boots to 4-tab shell on iPhone+iPad sims; `swift test` runs
+**Stop conditions:** app boots to 3-tab shell on iPhone+iPad sims; `swift test` runs
 (zero tests OK); lint clean. STOP — no Core Data, no features.
 **Out of scope:** any model code, any UI beyond the empty shell.
 
-### B0.2 — Spike: CloudKit store topology proof (ADR)
+### B0.2 — Historical spike: CloudKit store topology proof (superseded; do not dispatch)
 **Deps:** B0.1. **Type:** spike — throwaway code allowed under `Spikes/` (excluded
 from release target), but the ADR is the deliverable.
 **Tasks:**
-1. Build a minimal `NSPersistentCloudKitContainer` with the two-store topology of
+1. Build a minimal `NSPersistentCloudKitContainer` with the one-private-store topology of
    A1.1 and a toy entity; verify mirroring setup succeeds
    (`initializeCloudKitSchema(options:)` in DEBUG) with the app's container id.
-2. Verify: history tracking + remote change notifications fire on both stores;
-   local-only mode (no cloudKitContainerOptions) loads the same files.
+2. Verify: history tracking + remote change notifications fire on the private store;
+   local-only mode (no cloudKitContainerOptions) loads the same file.
 3. Document in `docs/decisions/ADR-001-store-topology.md`: exact store options,
    schema-initialization procedure, entitlements, gotchas found. Address verification
    tasks 2 and 3 (quota notes from CloudKit docs/console).
-**Stop conditions:** ADR-001 committed answering: two-store setup works as specified /
+**Stop conditions:** ADR-001 committed answering: private-store setup works as specified /
 any deviation required (flag for human review). STOP — do not build the real model.
-**Out of scope:** production persistence code, sharing (that's B0.3).
+**Out of scope:** production persistence code and sharing. The executable replacement is
+`flash-app-store-v1/sas-01`; this historical bead is not dispatched for 1.0.
 
-### B0.3 — Spike: sharing + deck move proof (ADR)
+### B0.3 — Sharing + deck move proof (deferred beyond 1.0; do not dispatch)
 **Deps:** B0.2. **Type:** spike, two Apple test accounts + two simulators/devices.
 **Tasks:**
 1. Extend the spike: share a root object via `share(_:to:)`, accept from account B
@@ -950,9 +977,10 @@ adapter + determinism unit test. STOP — no Schedule persistence.
 ### B0.5 — Manual checklist: App Store Connect setup (human task)
 **Deps:** none (needs Apple Developer account; complete before Phase 9).
 **Tasks:** execute A12 checklist; record outcomes (name availability, Family Sharing
-toggle answer — verification task 1, price tier, rating) in
-`docs/decisions/ADR-004-appstore.md`.
-**Stop conditions:** ADR-004 committed. Not a coding bead.
+toggle answer — verification task 1, price tier, rating) in the App Store gate ledger
+governed by ADR-006.
+**Stop conditions:** every account-dependent cell has primary evidence or remains
+`HUMAN_REQUIRED`. Not a coding bead.
 
 ---
 
@@ -961,7 +989,7 @@ toggle answer — verification task 1, price tier, rating) in
 ### B1.1 — Core Data model V1 + PersistenceController
 **Deps:** B0.2 (ADR-001).
 **Tasks:**
-1. Implement `FlashUp.xcdatamodeld` V1 exactly per A2 (all entities, attributes,
+1. Implement `FlashUp.xcdatamodeld` V1 exactly per A2 (personal entities, attributes,
    relationships, delete rules, indexes on uuid/cardUUID/deckUUID/dueAt/deletedAt).
 2. `PersistenceController` per A1.1/A4.1 incl. local-only mode, in-memory mode for
    tests, DEBUG `initializeCloudKitSchema` hook behind a launch argument.
@@ -970,23 +998,21 @@ toggle answer — verification task 1, price tier, rating) in
 4. Tests (FlashUpDataTests, in-memory + on-disk): model loads without warnings;
    CloudKit-compat lint test that programmatically walks the model asserting A1.2
    rules (no unique constraints, optionals/defaults, inverses, unordered).
-**Stop conditions:** tests green incl. the model-lint test; app boots with both stores
-attached (or local-only) without console errors. STOP — no repositories.
+**Stop conditions:** tests green incl. the model-lint test; app boots with the private
+store attached (or local-only) without console errors. STOP — no repositories.
 **Out of scope:** queries, sync processing, UI.
 
 ### B1.2 — Repositories and store affinity
 **Deps:** B1.1.
 **Tasks:**
-1. `ContentRepository` (decks/notes/cards/tags/groups/revisions CRUD, uuid lookups,
+1. `ContentRepository` (decks/notes/cards/tags CRUD, uuid lookups,
    non-trashed default predicate) and `StudyRepository` (schedules/logs/import
    batches) with `assign(to: privateStore)` on every study insert + DEBUG assertion
    per A1.3.
 2. `findOrCreateTag(name, scope:)` per A3.6 (normalization from Domain).
-3. Fetch helpers spanning both stores for content; store-scoped fetches
-   (`affectedStores`) where scope matters (personal vs shared listings).
-4. Tests: affinity assertion (schedule created while a shared store exists lands in
-   private store); tag scope isolation (same normalizedName in personal vs group
-   graphs yields distinct CDTags); cross-store deck listing.
+3. Private-store fetch helpers for personal content.
+4. Tests: every content/study insert has private-store affinity; normalized tag names
+   deduplicate deterministically in the personal graph.
 **Stop conditions:** tests green. STOP.
 **Out of scope:** sync pipeline, dedup, purge.
 
@@ -1156,13 +1182,12 @@ round-trips through CSVParser losslessly for all three types incl. quotes/newlin
 
 ### B4.5 — Backup export/restore
 **Deps:** B3.2, B1.3.
-**Tasks:** implement A10 (BackupCodec Domain structs + tests; BackupService export
-incl. shared snapshots, restore with uuid-skip merge, snapshot→personal conversion,
-formatVersion gate; fileExporter/importer UI in Settings→Data arrives in B8.1 —
-here expose service + a Data-layer integration test only).
+**Tasks:** implement A10 (BackupCodec Domain structs + tests; BackupArchiveService export
+including all referenced supported media, validation-first uuid-skip restore, and
+formatVersion gate; inject its Domain port through AppEnvironment for Settings).
 Tests: export→wipe(in-memory)→restore round-trip preserves decks/notes/cards/
-schedules/logs; restoring over live data skips existing uuids; unknown formatVersion
-refused; shared snapshot becomes personal deck.
+schedules/logs/media; restoring over live data skips existing uuids; unknown formatVersion
+refused; corrupt/missing/hash-mismatched media causes zero mutations.
 **Stop conditions:** tests green. STOP.
 **Out of scope:** Settings UI wiring (B8.1), delete-all-data.
 
@@ -1172,7 +1197,7 @@ refused; shared snapshot becomes personal deck.
 
 ### B5.1 — App shell, theming, navigation, sync badge
 **Deps:** B1.4.
-**Tasks:** real 4-tab shell with per-tab NavigationStack; AppEnvironment composition
+**Tasks:** real 3-tab shell with per-tab NavigationStack; AppEnvironment composition
 root building PersistenceController/services; appearance setting plumbing
 (`preferredColorScheme`); `SyncBadge` + Library passive banner per A4.4 with Retry;
 PersistenceFailure recovery screen per A7 (retry/export raw files/support). Empty
@@ -1263,7 +1288,7 @@ completion stats correct. STOP.
 
 ---
 
-## Phase 7 — Groups and sharing
+## Phase 7 — Groups and sharing — deferred beyond version 1.0; do not dispatch
 
 ### B7.1 — ShareManager + create group + invite
 **Deps:** B0.3 (ADR-002), B5.1.
@@ -1338,19 +1363,18 @@ works end-to-end from UI (UI test with small seed). STOP.
 
 ### B8.2 — Onboarding + demo deck
 **Deps:** B4.2, B5.1, B6.1.
-**Tasks:** mandatory 3-step onboarding per A11.4 (import journey w/ ChatGPT prompt
+**Tasks:** skippable 3-step onboarding per A11.4 (import journey w/ ChatGPT prompt
 mention, review interaction, grades explained), demo deck CSVs (it/en, ~15 notes
 covering all three types, study-method themed content authored in this bead),
 installed via ImportCommitter with `isDemo`; TutorialState persistence.
 **Stop conditions:** fresh install → onboarding → demo deck studyable immediately;
-onboarding never reappears (state test); skippable is NOT allowed (mandatory) but ≤
+onboarding never reappears after completion or skip (state test); at most
 3 screens. STOP.
 
 ### B8.3 — Contextual tutorials + Help
-**Deps:** B8.2, B7.1.
-**Tasks:** Groups tutorial (first Groups entry: create/invite/share decks) and
-Settings tutorial (first Settings entry), short + skippable + replayable from Help;
-Help screen with FAQs (authored: import format, sync troubleshooting, groups &
+**Deps:** B8.2.
+**Tasks:** Settings tutorial (first Settings entry), short + skippable + replayable from
+Help; Help screen with FAQs (authored: import format, personal sync troubleshooting,
 privacy of progress, trash/backup, contact) in it+en.
 **Stop conditions:** tutorials fire exactly once (state tests), replay works. STOP.
 
@@ -1364,13 +1388,13 @@ manual notification delivery check (worklog).
 **Stop conditions:** tests green; manual check done. STOP.
 
 ### B8.5 — Delete all my data
-**Deps:** B8.1, B4.5, B7.6.
-**Tasks:** implement A8.3 exactly (explanatory screen incl. separate owned-groups
-warning, ELIMINA typed confirmation, pre-deletion backup offer, ordered execution,
-return to onboarding). Data test for the execution order on in-memory stores;
+**Deps:** B8.1, B4.5.
+**Tasks:** implement A8.3 exactly (explanatory screen, ELIMINA typed confirmation,
+pre-deletion backup offer, ordered execution, return to onboarding). Data test for the
+execution order on the private store;
 UI test for the confirmation gate (wrong text ≠ enabled).
-**Stop conditions:** tests green; manual two-account check: owned group vanishes for
-participant, joined group untouched for its owner. STOP.
+**Stop conditions:** tests green; same-account device propagation remains a human release
+gate. STOP.
 
 ### B8.6 — Support + review prompt
 **Deps:** B8.1.
@@ -1404,18 +1428,19 @@ motion, dark/light/system, keyboard on iPad; fix findings; record audit matrix i
 **Deps:** everything, B0.5.
 **Tasks:**
 1. Execute the brief's full test matrix: purchase-fresh-install path (TestFlight),
-   onboarding, import, study, reminders, backup/restore, permanent deletion; sharing
-   checklist re-run on ≥ 2 accounts and ≥ 2 devices incl. offline edits + conflicts;
+   onboarding, import, study, reminders, backup/restore, soft delete/restore and permanent
+   deletion; personal CloudKit checklist on the same Apple account and at least two devices,
+   including offline edits, conflicts, deletion propagation, reconnect, and relaunch;
    device matrix small iPhone / large iPhone / iPad / Apple Silicon Mac. Log results
    in `docs/testing/release-matrix.md`.
 2. Migration test: install a build with a synthetic V0→V1-style store fixture? V1 is
    first release — instead verify PersistenceFailure recovery path and
    MigrationBackup dry-run with a corrupted-store fixture.
-3. TestFlight: internal round → fixes → small external student cohort → triage; no
+3. TestFlight: internal round → fixes → triage; no
    release-blocking defects open.
 4. App Store: localized metadata, screenshots/video demonstrating ChatGPT→CSV→
    import→study, privacy policy URL, App Privacy from verified behavior, submit per
-   ADR-004.
+   ADR-006 and the App Store gate ledger.
 **Stop conditions:** release-matrix all pass; zero open blockers; submission
 completed. END OF PLAN.
 

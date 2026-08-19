@@ -2,6 +2,12 @@
 
 Status: approved engineering specification converted into implementation batches on 2026-07-28.
 
+> **Superseded for App Store version 1.0 on 2026-08-19.** ADR-006 removes Groups and the
+> shared store from 1.0 and changes persistence, onboarding, backup, price and release
+> gates. This graph remains historical evidence. New work is dispatched only from
+> `docs/flywheel-runs/flash-app-store-v1/batch-plan.md`; open group/sharing batches here are
+> deferred, not completed.
+
 ## Decision
 
 The source plan's 48 B-prefixed beads are intentionally fine-grained. For implementation, that granularity would repeatedly reload the same Core Data model, FSRS contracts, and SwiftUI navigation surfaces. We retain the source IDs as acceptance coverage but dispatch 16 **batch beads**.
