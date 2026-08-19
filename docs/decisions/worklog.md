@@ -468,3 +468,29 @@ container. They are not repository assets and were not added to version control.
 - Independent spec review: all blocking findings resolved before acceptance.
 - Apple account/team/container/schema/signing/archive/TestFlight gates remain
   `HUMAN_REQUIRED` or `UNVERIFIED`.
+
+---
+
+## sas-01-data-foundation — Versioned private-store foundation — 2026-08-19
+
+### Built
+
+- Added the canonical versioned Core Data V1 model and compiled runtime model with one
+  `Private.sqlite` topology, CloudKit-compatible relationships/defaults/indexes and the
+  approved `CDStudySettings` inventory.
+- Added safe persistence lifecycle, compatible reopen, local staged migration, verified
+  SQLite/WAL/SHM recovery snapshots with retention two, and controller-scoped background
+  operations.
+- Kept staged migration local-only; private CloudKit options exist only on the final live
+  store description. No Apple account operation was performed.
+
+### Verification
+
+- Focused persistence suite: 15/15 passed independently.
+- Worker full SwiftPM suite: 245 passed; SwiftLint strict: zero violations.
+- Successful and failed staged migration, clean relaunch, corrupt store preservation,
+  source mutation rejection, retention, partial cleanup and close races are covered.
+- Independent correctness review: APPROVED.
+- Independent security/data-safety review: APPROVED.
+- Simulator/Archive and every account/container/schema/device gate remain `UNVERIFIED` or
+  `HUMAN_REQUIRED`.

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23500" systemVersion="25G" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="" currentVersion="V1">
+    <elements>
+        <element name="CDCard" positionX="-54" positionY="-18" width="128" height="120" />
+        <element name="CDDeck" positionX="-270" positionY="-18" width="128" height="120" />
+        <element name="CDImportBatch" positionX="-270" positionY="198" width="128" height="120" />
+        <element name="CDNote" positionX="-54" positionY="198" width="128" height="135" />
+        <element name="CDReviewLog" positionX="-54" positionY="414" width="128" height="120" />
+        <element name="CDSchedule" positionX="-270" positionY="414" width="128" height="120" />
+        <element name="CDStudySettings" positionX="162" positionY="-18" width="128" height="150" />
+        <element name="CDTag" positionX="162" positionY="198" width="128" height="120" />
+    </elements>
+</model>

@@ -40,8 +40,8 @@ blocker even if every repository-only test passes.
 | Batch | State | Evidence |
 | --- | --- | --- |
 | sas-00-contract | Done | worker report + approved semantic review + validation |
-| sas-01-data-foundation | Ready | sas-00 accepted |
-| sas-02-persistent-library | Pending | waits for sas-01 |
+| sas-01-data-foundation | Done | worker report + correctness/security approvals + tests |
+| sas-02-persistent-library | Ready | sas-01 accepted |
 | sas-03-private-sync | Pending | waits for sas-02; real-account cells human-gated |
 | sas-04-complete-backup | Pending | waits for sas-03 |
 | sas-05-release-surface | Pending | waits for sas-04 |

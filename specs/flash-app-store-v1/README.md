@@ -1,6 +1,6 @@
 # FlashApp 1.0 App Store hardening
 
-Status: active — sas-01 data foundation
+Status: active — sas-02 persistent library
 Last updated: 2026-08-19
 Flywheel run: `flash-app-store-v1`
 Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
@@ -9,7 +9,8 @@ Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
 
 You are continuing `flash-app-store-v1`. Read ADR-006, the approved feature spec at
 `docs/specs/flashapp-1-0-app-store-hardening.md`, this README, and the next open slice.
-The next pickup is `01-data-foundation` after the contract/run artifacts pass validation.
+The next pickup is `02-persistent-library`; `01-data-foundation` is accepted with
+correctness and security review evidence.
 Do not touch `assets/emma-avatar/`. Never mark an Apple-account gate PASS without supplied
 evidence. Before ending your pass, update this section, the evidence ledger, the owning task
 bead, the worker report, and `docs/decisions/worklog.md`.
@@ -17,7 +18,7 @@ bead, the worker report, and `docs/decisions/worklog.md`.
 Global TODO:
 
 - [x] `00-contract`: owner decisions, source amendments, graph, worker report and semantic review accepted.
-- [ ] `01-data-foundation`: versioned one-store Core Data foundation and recovery seam.
+- [x] `01-data-foundation`: versioned one-store Core Data foundation and recovery seam.
 - [ ] `02-persistent-library`: persistent `LibraryRepository` and production composition.
 - [ ] `03-private-sync`: private CloudKit processing and honest account-gated proof.
 - [ ] `04-complete-backup`: media-complete archive and safe merge restore.
@@ -80,8 +81,9 @@ runs in parallel with feature work.
 | Slice | State | Evidence |
 | --- | --- | --- |
 | 00 | done | worker report; semantic review approved; spec/dispatch validation passed |
-| 01 | ready | one-store Core Data foundation; no Apple-account PASS claims |
-| 02–06 | open | — |
+| 01 | done | 15 focused tests; correctness + security reviews approved |
+| 02 | ready | persistent LibraryRepository and production composition |
+| 03–06 | open | — |
 | 07 | HUMAN_REQUIRED | Apple account, identifiers, schema, signing, archive, TestFlight, ASC |
 
 ## Review map

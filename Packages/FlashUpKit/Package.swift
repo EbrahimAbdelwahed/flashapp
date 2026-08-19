@@ -44,6 +44,13 @@ let package = Package(
                 "FlashUpDomain",
                 .product(name: "libzstd", package: "zstd")
             ],
+            resources: [
+                .process("CoreData/Model/FlashUp.xcdatamodeld"),
+                // SwiftPM's macOS host build copies xcdatamodeld sources without invoking momc.
+                // Keep the momc output in a distinct resource directory so Xcode's model compile
+                // does not produce a duplicate FlashUp.momd output.
+                .copy("CoreData/Model/Precompiled/FlashUpRuntime.momd")
+            ],
             // System SQLite: `.apkg` carries an Anki collection database. Not a package —
             // it is already on every Apple platform (ADR-004 §3).
             linkerSettings: [.linkedLibrary("sqlite3")]
