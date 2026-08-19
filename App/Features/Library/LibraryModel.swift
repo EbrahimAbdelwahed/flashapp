@@ -11,6 +11,7 @@ final class LibraryModel {
     private(set) var decks: [DeckSummary] = []
     private(set) var searchResults: [NoteSummary] = []
     private(set) var trashed: [Note] = []
+    private(set) var errorMessage: String?
     var filters = SearchFilters()
 
     init(library: any LibraryRepository) {
@@ -20,8 +21,14 @@ final class LibraryModel {
     var isSearching: Bool { filters.isActive }
 
     func refresh() async {
-        decks = await library.decks()
-        trashed = await library.trashedNotes()
+        do {
+            decks = try await library.decks()
+            trashed = try await library.trashedNotes()
+            errorMessage = nil
+        } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+            return
+        }
         await runSearch()
     }
 
@@ -30,35 +37,56 @@ final class LibraryModel {
             searchResults = []
             return
         }
-        searchResults = await library.search(filters, now: Date())
+        do {
+            searchResults = try await library.search(filters, now: Date())
+            errorMessage = nil
+        } catch {
+            searchResults = []
+            errorMessage = String(localized: "library.error.unavailable")
+        }
     }
 
     func createDeck(named name: String) async {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        _ = await library.createDeck(named: trimmed)
+        do { _ = try await library.createDeck(named: trimmed) } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+            return
+        }
         await refresh()
     }
 
     func rename(_ deck: Deck, to name: String) async {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        await library.renameDeck(deck.id, to: trimmed)
+        do { try await library.renameDeck(deck.id, to: trimmed) } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+            return
+        }
         await refresh()
     }
 
     func trash(_ deck: Deck) async {
-        await library.trashDeck(deck.id)
+        do { try await library.trashDeck(deck.id) } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+            return
+        }
         await refresh()
     }
 
     func restore(_ note: Note) async {
-        await library.restoreNote(note.id)
+        do { try await library.restoreNote(note.id) } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+            return
+        }
         await refresh()
     }
 
     func emptyTrash() async {
-        await library.emptyTrash()
+        do { try await library.emptyTrash() } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+            return
+        }
         await refresh()
     }
 }

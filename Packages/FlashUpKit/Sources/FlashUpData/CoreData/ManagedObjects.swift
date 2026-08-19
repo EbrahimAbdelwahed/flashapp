@@ -33,6 +33,8 @@ open class CDManagedObject: NSManagedObject {
 public class CDDeck: CDManagedObject {
     @NSManaged public var createdAt: Date?
     @NSManaged public var deletedAt: Date?
+    @NSManaged public var demoSeedID: String?
+    @NSManaged public var demoVersion: Int16
     @NSManaged public var isDemo: Bool
     @NSManaged public var name: String
     @NSManaged public var notes: NSSet?
@@ -84,6 +86,7 @@ public class CDSchedule: CDManagedObject {
     @NSManaged public var createdAt: Date?
     @NSManaged public var deckUUID: UUID?
     @NSManaged public var difficulty: Double
+    @NSManaged public var buriedUntil: Date?
     @NSManaged public var dueAt: Date?
     @NSManaged public var lastReviewedAt: Date?
     @NSManaged public var lapses: Int32
@@ -105,6 +108,9 @@ public class CDReviewLog: CDManagedObject {
     @NSManaged public var gradeRaw: Int16
     @NSManaged public var prevDifficulty: Double
     @NSManaged public var prevDueAt: Date?
+    @NSManaged public var prevLapses: Int32
+    @NSManaged public var prevLastReviewedAt: Date?
+    @NSManaged public var prevReps: Int32
     @NSManaged public var prevStability: Double
     @NSManaged public var prevStateRaw: Int16
     @NSManaged public var revokedAt: Date?

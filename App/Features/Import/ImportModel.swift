@@ -62,7 +62,13 @@ final class ImportModel {
     }
 
     func prepare() async {
-        decks = await library.decks()
+        do {
+            decks = try await library.decks()
+        } catch {
+            decks = []
+            errorMessage = String(localized: "import.error.unreadable")
+            return
+        }
         if let first = decks.first, destination == .newDeck, newDeckName.isEmpty {
             // Importing into an existing deck is the common case once decks exist.
             destination = .existing(first.deck.id)
@@ -139,7 +145,15 @@ final class ImportModel {
         switch destination {
         case .newDeck:
             let name = newDeckName.trimmingCharacters(in: .whitespacesAndNewlines)
-            let deck = await library.createDeck(named: name.isEmpty ? String(localized: "import.default_deck") : name)
+            let deck: Deck
+            do {
+                deck = try await library.createDeck(
+                    named: name.isEmpty ? String(localized: "import.default_deck") : name
+                )
+            } catch {
+                errorMessage = String(localized: "import.error.unreadable")
+                return
+            }
             deckID = deck.id
             wasNew = true
         case let .existing(id):
@@ -150,16 +164,25 @@ final class ImportModel {
         // Attachments first, then the notes: the store assigns the real ids, and the rows
         // still carry the provisional ones the mapper invented (ADR-004 §6).
         let committed = await storingMedia(plan)
-        let batch = await library.commitImport(
-            committed, into: deckID, sourceName: sourceName, wasNewDeck: wasNew
-        )
+        let batch: ImportBatch
+        do {
+            batch = try await library.commitImport(
+                committed, into: deckID, sourceName: sourceName, wasNewDeck: wasNew
+            )
+        } catch {
+            errorMessage = String(localized: "import.error.unreadable")
+            return
+        }
         lastBatchID = batch.id
         stage = .done(batch.createdNoteIDs.count)
     }
 
     func undo() async {
         guard let lastBatchID else { return }
-        await library.undoImport(lastBatchID)
+        do { try await library.undoImport(lastBatchID) } catch {
+            errorMessage = String(localized: "import.error.unreadable")
+            return
+        }
         stage = .done(0)
     }
 
@@ -215,7 +238,11 @@ final class ImportModel {
     /// notes are actually going into.
     func replan() async {
         guard let outcome else { return }
-        plan = ImportPlanner.plan(outcome, existingHashes: await existingHashes())
+        do {
+            plan = ImportPlanner.plan(outcome, existingHashes: try await existingHashes())
+        } catch {
+            errorMessage = String(localized: "import.error.unreadable")
+        }
     }
 
     /// Stores the attachments this import actually uses and rewrites the plan to point at
@@ -255,9 +282,9 @@ final class ImportModel {
     }
 
     /// Duplicates are only meaningful against a destination that already exists.
-    private func existingHashes() async -> [UUID: String] {
+    private func existingHashes() async throws -> [UUID: String] {
         guard case let .existing(deckID) = destination else { return [:] }
-        return await library.contentHashes(in: deckID)
+        return try await library.contentHashes(in: deckID)
     }
 
     /// Actionable, localized, and never a raw parser error (spec §0.2). The `.apkg` reader's

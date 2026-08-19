@@ -63,64 +63,75 @@ public enum StudyScope: Equatable, Hashable, Sendable {
 /// the interface layer can be built and tested against an in-memory implementation and then
 /// run unchanged on the persistent one (`fu-04-data-core`).
 public protocol LibraryRepository: Sendable {
+    /// Health of the last repository operation. `failed` is never represented as an empty
+    /// successful result by the persistent adapter.
+    func repositoryState() async -> LibraryRepositoryState
+
     // MARK: Reading
 
-    func todaySnapshot(now: Date) async -> TodaySnapshot
-    func metrics(now: Date) async -> StudyMetrics
-    func decks() async -> [DeckSummary]
-    func deck(_ id: UUID) async -> Deck?
-    func notes(in deckID: UUID, filters: SearchFilters, now: Date) async -> [NoteSummary]
-    func search(_ filters: SearchFilters, now: Date) async -> [NoteSummary]
-    func note(_ id: UUID) async -> Note?
-    func cards(for noteID: UUID) async -> [Card]
-    func trashedNotes() async -> [Note]
-    func contentHashes(in deckID: UUID) async -> [UUID: String]
-    func settings() async -> StudySettings
-    func syncStatus() async -> SyncStatus
+    func todaySnapshot(now: Date) async throws -> TodaySnapshot
+    func metrics(now: Date) async throws -> StudyMetrics
+    func decks() async throws -> [DeckSummary]
+    func deck(_ id: UUID) async throws -> Deck?
+    func notes(in deckID: UUID, filters: SearchFilters, now: Date) async throws -> [NoteSummary]
+    func search(_ filters: SearchFilters, now: Date) async throws -> [NoteSummary]
+    func note(_ id: UUID) async throws -> Note?
+    func cards(for noteID: UUID) async throws -> [Card]
+    func trashedNotes() async throws -> [Note]
+    func contentHashes(in deckID: UUID) async throws -> [UUID: String]
+    func settings() async throws -> StudySettings
+    func syncStatus() async throws -> SyncStatus
 
     // MARK: Studying
 
-    func studyQueue(scope: StudyScope, now: Date) async -> [Card]
-    func cards(withIDs ids: [UUID]) async -> [Card]
-    func schedule(for cardID: UUID) async -> ReviewState?
-    func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) async
-    func revokeLastAnswer(in scope: StudyScope) async
+    func studyQueue(scope: StudyScope, now: Date) async throws -> [Card]
+    func cards(withIDs ids: [UUID]) async throws -> [Card]
+    func schedule(for cardID: UUID) async throws -> ReviewState?
+    func record(_ transition: ScheduleTransition, for cardID: UUID, durationMs: Int) async throws
+    func revokeLastAnswer(in scope: StudyScope) async throws
     /// Takes cards in or out of every queue indefinitely. Plural so a note's siblings are
     /// suspended together in one write.
-    func setSuspended(_ suspended: Bool, cardIDs: [UUID]) async
+    func setSuspended(_ suspended: Bool, cardIDs: [UUID]) async throws
     /// Takes cards out of the queue until `until`, after which they return on their own.
     /// `until` is the caller's to choose so the decision stays testable.
-    func setBuried(_ buried: Bool, cardIDs: [UUID], until: Date) async
+    func setBuried(_ buried: Bool, cardIDs: [UUID], until: Date) async throws
     /// Lifts both hiding flags from every card of a note, putting it back in the queues.
     ///
     /// One verb rather than two flag writes from the caller: from the Library the user is
     /// resuming a note, and does not distinguish which of the two ways it came to be hidden.
-    func resumeNote(_ noteID: UUID) async
+    func resumeNote(_ noteID: UUID) async throws
     /// Revokes every log for the card and drops its schedule, so it returns to "new".
-    func resetCard(_ cardID: UUID) async
+    func resetCard(_ cardID: UUID) async throws
     /// Schedule plus surviving history for one card, for the card info screen.
-    func cardInfo(_ cardID: UUID) async -> CardInfo?
-    func storedSession() async -> SessionState?
-    func storeSession(_ state: SessionState?) async
+    func cardInfo(_ cardID: UUID) async throws -> CardInfo?
+    func storedSession() async throws -> SessionState?
+    func storeSession(_ state: SessionState?) async throws
 
     // MARK: Writing
 
-    func createDeck(named name: String) async -> Deck
-    func renameDeck(_ deckID: UUID, to name: String) async
-    func trashDeck(_ deckID: UUID) async
-    @discardableResult func saveNote(_ draft: NoteDraft) async -> Note?
-    func trashNote(_ noteID: UUID) async
-    func restoreNote(_ noteID: UUID) async
-    func emptyTrash() async
-    func updateSettings(_ settings: StudySettings) async
+    func createDeck(named name: String) async throws -> Deck
+    func renameDeck(_ deckID: UUID, to name: String) async throws
+    func trashDeck(_ deckID: UUID) async throws
+    @discardableResult func saveNote(_ draft: NoteDraft) async throws -> Note?
+    func trashNote(_ noteID: UUID) async throws
+    func restoreNote(_ noteID: UUID) async throws
+    func emptyTrash() async throws
+    func updateSettings(_ settings: StudySettings) async throws
+    /// Installs the bundled demo deck once. Repeated calls are idempotent.
+    func installDemoDeck() async throws
 
     // MARK: Portability
 
-    func commitImport(_ plan: ImportPlan, into deckID: UUID, sourceName: String, wasNewDeck: Bool) async -> ImportBatch
-    func undoImport(_ batchID: UUID) async
-    func exportCSV(deckID: UUID?) async -> Data
-    func backupDocument(appVersion: String, now: Date) async -> BackupDocument
-    func restore(_ document: BackupDocument) async -> RestoreSummary
+    func commitImport(
+        _ plan: ImportPlan,
+        into deckID: UUID,
+        sourceName: String,
+        wasNewDeck: Bool
+    ) async throws -> ImportBatch
+    func undoImport(_ batchID: UUID) async throws
+    func exportCSV(deckID: UUID?) async throws -> Data
+    func backupDocument(appVersion: String, now: Date) async throws -> BackupDocument
+    func restore(_ document: BackupDocument) async throws -> RestoreSummary
     /// Irreversible local erasure (spec §A11.2 DeleteAllDataFlow).
-    func deleteAllData() async
+    func deleteAllData() async throws
 }

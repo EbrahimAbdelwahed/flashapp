@@ -75,7 +75,7 @@ struct ApkgMediaImportTests {
 
         // Every id in the text now resolves to something the store actually holds.
         for id in row.mediaIDs {
-            #expect(await store.data(for: id) != nil)
+            #expect(try await store.data(for: id) != nil)
         }
         #expect(MediaReference.ids(in: row.front) == [row.mediaIDs[0]])
     }
@@ -92,8 +92,8 @@ struct ApkgMediaImportTests {
 
         var kinds: [MediaAsset.Kind: Data] = [:]
         for id in result.replacements.values {
-            let asset = try #require(await store.asset(for: id))
-            kinds[asset.kind] = await store.data(for: id)
+            let asset = try #require(try await store.asset(for: id))
+            kinds[asset.kind] = try await store.data(for: id)
         }
 
         #expect(kinds[.image]?.prefix(4) == Data([0x89, 0x50, 0x4E, 0x47]), "PNG magic")
@@ -162,7 +162,7 @@ struct ApkgMediaImportTests {
         // `AGENTS.md` forbids destroying user data to tidy up (ADR-004 §6).
         await library.undoImport(batch.id)
         for id in withMedia.first?.note.mediaIDs ?? [] {
-            #expect(await store.data(for: id) != nil, "undo must not delete attachment bytes")
+            #expect(try await store.data(for: id) != nil, "undo must not delete attachment bytes")
         }
     }
 

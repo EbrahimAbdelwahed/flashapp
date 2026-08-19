@@ -198,3 +198,31 @@ public enum SyncStatus: Equatable, Sendable {
     case accountUnavailable
     case failed(reason: String)
 }
+
+/// Stable operation failures shared by repository implementations.
+///
+/// Library operations throw these values. `repositoryState()` is retained only so bootstrap
+/// and recovery UI can describe a previously observed failure without inspecting framework
+/// errors or inventing an empty successful result.
+public enum LibraryRepositoryError: Error, Equatable, Sendable, LocalizedError {
+    case persistenceUnavailable
+    case readFailed
+    case writeFailed
+    case malformedPersistedData
+    case sessionFailed
+
+    public var errorDescription: String? {
+        switch self {
+        case .persistenceUnavailable: "FlashApp storage is unavailable."
+        case .readFailed: "FlashApp could not read its stored data."
+        case .writeFailed: "FlashApp could not save that change."
+        case .malformedPersistedData: "FlashApp found data it could not safely interpret."
+        case .sessionFailed: "FlashApp could not update the study session."
+        }
+    }
+}
+
+public enum LibraryRepositoryState: Equatable, Sendable {
+    case ready
+    case failed(LibraryRepositoryError)
+}

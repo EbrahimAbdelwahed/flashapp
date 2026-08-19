@@ -116,9 +116,14 @@ struct NoteEditorView: View {
         toSave.deckID = deckID
         toSave.tags = tagText.split(separator: ",").map(String.init)
         Task {
-            await library.saveNote(toSave)
-            onSave()
-            dismiss()
+            do {
+                _ = try await library.saveNote(toSave)
+                onSave()
+                dismiss()
+            } catch {
+                // The editor remains open so the user cannot mistake a failed save for a
+                // successful mutation.
+            }
         }
     }
 

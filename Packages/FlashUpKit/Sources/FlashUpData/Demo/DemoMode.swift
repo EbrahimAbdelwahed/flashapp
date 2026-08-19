@@ -6,8 +6,8 @@ import Foundation
 /// `DEMO_MODE=1 DEMO_DECK=<slug>`. The same file is then also the artifact the import flow
 /// picks up on camera, so one CSV serves both roles and there is nothing to keep in sync.
 ///
-/// Absent or malformed configuration returns `nil` and the app seeds normally: a recording
-/// harness must never be able to degrade the shipping launch path.
+/// Absent or malformed configuration returns `nil` and the app uses its persistent shipping
+/// path: a recording harness must never be able to degrade the normal launch path.
 public struct DemoMode: Equatable, Sendable {
     public static let modeKey = "DEMO_MODE"
     public static let deckKey = "DEMO_DECK"

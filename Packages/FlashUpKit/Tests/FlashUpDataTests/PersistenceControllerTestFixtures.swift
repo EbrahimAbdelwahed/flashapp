@@ -112,4 +112,42 @@ extension PersistenceControllerTests {
         try container.viewContext.save()
         return (container, identifier)
     }
+
+    /// Creates a real V1-format store from the checked-in V1.mom. This is intentionally not
+    /// a hand-written subset model: the migration test must prove that the shipped V1 schema
+    /// can be staged into the V2 current model without changing the live source bytes.
+    func makeActualV1DeckStore(at url: URL) throws -> (container: NSPersistentContainer, uuid: UUID) {
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        guard let modelURL = PersistenceController.bundledModelURL?.appendingPathComponent("V1.mom"),
+              let model = NSManagedObjectModel(contentsOf: modelURL) else {
+            throw PersistenceError.modelUnavailable
+        }
+        let container = NSPersistentContainer(name: "FlashUpActualV1Fixture", managedObjectModel: model)
+        let description = NSPersistentStoreDescription(url: url)
+        description.type = NSSQLiteStoreType
+        description.shouldAddStoreAsynchronously = false
+        container.persistentStoreDescriptions = [description]
+        var loadError: Error?
+        let semaphore = DispatchSemaphore(value: 0)
+        container.loadPersistentStores { _, error in
+            loadError = error
+            semaphore.signal()
+        }
+        semaphore.wait()
+        if let loadError { throw loadError }
+
+        let identifier = UUID()
+        guard let deck = NSEntityDescription.insertNewObject(
+            forEntityName: "CDDeck",
+            into: container.viewContext
+        ) as? CDDeck else { throw PersistenceError.modelUnavailable }
+        deck.uuid = identifier
+        deck.name = "Actual V1 deck"
+        deck.isDemo = false
+        try container.viewContext.save()
+        return (container, identifier)
+    }
 }

@@ -1,6 +1,6 @@
 # Task Bead: sas-02-persistent-library Replace the shipping in-memory library
 
-Status: Open
+Status: Done
 Priority: P0
 Type: task
 Depends On: sas-01-data-foundation
@@ -58,11 +58,11 @@ The complete app surface already consumes LibraryRepository, so the adapter can 
 
 ## Acceptance Criteria
 
-- [ ] Behavior contract tests agree across in-memory and on-disk adapters.
-- [ ] Relaunch preserves all user state.
-- [ ] Production composition contains no InMemoryLibrary or InMemoryMediaStore fallback.
-- [ ] Repeated demo installation yields exactly one persistent `isDemo` deck.
-- [ ] No group/shared-snapshot field remains in the 1.0 Domain or backup contract.
+- [x] Behavior contract tests agree across in-memory and on-disk adapters.
+- [x] Relaunch preserves all user state.
+- [x] Production composition contains no InMemoryLibrary or InMemoryMediaStore fallback.
+- [x] Repeated demo installation yields exactly one persistent `isDemo` deck.
+- [x] No group/shared-snapshot field remains in the 1.0 Domain or backup contract.
 
 ## Verification
 
@@ -76,4 +76,8 @@ The complete app surface already consumes LibraryRepository, so the adapter can 
 
 ## Notes / Handoff
 
-- Worker must report files changed, behavior implemented, verification results, unresolved questions, and follow-up beads.
+- Accepted after independent correctness and security/data-safety review.
+- The V1 model remains immutable; V2 is current and a checked-in V1 store migrates through
+  staging before a clean V2 relaunch.
+- Real Apple account, CloudKit schema/container, signing, device and TestFlight evidence
+  remains `HUMAN_REQUIRED` or `UNVERIFIED`.

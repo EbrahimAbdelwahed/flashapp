@@ -17,6 +17,7 @@ final class TodayModel {
     var isOfferingResume = false
     private(set) var resumableScope: StudyScope?
     private(set) var resumableCount = 0
+    private(set) var errorMessage: String?
 
     init(library: any LibraryRepository) {
         self.library = library
@@ -25,12 +26,30 @@ final class TodayModel {
     var isLoading: Bool { snapshot == nil }
 
     func refresh() async {
-        snapshot = await library.todaySnapshot(now: Date())
+        do {
+            snapshot = try await library.todaySnapshot(now: Date())
+        } catch {
+            snapshot = nil
+            resumableScope = nil
+            resumableCount = 0
+            errorMessage = String(localized: "today.error.unavailable")
+            return
+        }
+        errorMessage = nil
         await checkForResumableSession()
     }
 
     private func checkForResumableSession() async {
-        guard let session = await library.storedSession(), session.isResumable(at: Date()) else {
+        let session: SessionState?
+        do {
+            session = try await library.storedSession()
+        } catch {
+            resumableScope = nil
+            resumableCount = 0
+            errorMessage = String(localized: "today.error.unavailable")
+            return
+        }
+        guard let session, session.isResumable(at: Date()) else {
             resumableScope = nil
             resumableCount = 0
             return
@@ -43,8 +62,15 @@ final class TodayModel {
     }
 
     func discardSession() async {
-        await library.storeSession(nil)
+        do { try await library.storeSession(nil) } catch {
+            errorMessage = String(localized: "today.error.unavailable")
+            return
+        }
         resumableScope = nil
         resumableCount = 0
+    }
+
+    func clearError() {
+        errorMessage = nil
     }
 }

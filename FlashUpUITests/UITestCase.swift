@@ -13,6 +13,8 @@ class UITestCase: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["-didFinishOnboarding", "NO"]
+        app.launchEnvironment["FLASHUP_UI_TEST_LOCAL"] = "1"
+        app.launchEnvironment["FLASHUP_UI_TEST_RUN_ID"] = UUID().uuidString
         app.launch()
     }
 

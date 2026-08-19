@@ -70,7 +70,6 @@ extension InMemoryLibrary {
                 BackupDeck(
                     uuid: deck.id,
                     name: deck.name,
-                    origin: deck.groupID == nil ? .personal : .sharedSnapshot,
                     createdAt: deck.createdAt,
                     notes: store.liveNotes(in: deck.id).map { note in
                         BackupNote(
@@ -114,6 +113,7 @@ extension InMemoryLibrary {
         var notesAdded = 0
         var notesSkipped = 0
         var logsAdded = 0
+        var restoredCardIDs: [UUID: UUID] = [:]
 
         mutate { store in
             for backupDeck in document.decks {
@@ -123,10 +123,7 @@ extension InMemoryLibrary {
                         name: backupDeck.name,
                         createdAt: backupDeck.createdAt,
                         updatedAt: backupDeck.createdAt,
-                        isDemo: false,
-                        // A backup never recreates a group: shared snapshots come back
-                        // as personal decks.
-                        groupID: nil
+                        isDemo: false
                     )
                     decksAdded += 1
                 }
@@ -137,10 +134,20 @@ extension InMemoryLibrary {
                     } else {
                         notesSkipped += 1
                     }
+                    let restoredCards = store.cards(forNote: backupNote.uuid)
+                    for backupCard in backupNote.cards {
+                        if let card = restoredCards.first(where: { $0.templateKey == backupCard.templateKey }) {
+                            restoredCardIDs[backupCard.uuid] = card.id
+                        }
+                    }
                 }
             }
 
-            logsAdded = Self.restoreProgress(from: document, into: &store)
+            logsAdded = Self.restoreProgress(
+                from: document,
+                cardIDMap: restoredCardIDs,
+                into: &store
+            )
         }
 
         return RestoreSummary(
@@ -185,16 +192,36 @@ extension InMemoryLibrary {
 
     /// Schedules restore only when absent and logs merge append-only by uuid, so a restore
     /// can never rewrite history the device already has.
-    private static func restoreProgress(from document: BackupDocument, into store: inout LibraryStore) -> Int {
-        for schedule in document.schedules where store.schedules[schedule.cardUUID] == nil {
-            store.schedules[schedule.cardUUID] = schedule.reviewState
+    private static func restoreProgress(
+        from document: BackupDocument,
+        cardIDMap: [UUID: UUID],
+        into store: inout LibraryStore
+    ) -> Int {
+        for schedule in document.schedules {
+            guard let cardID = cardIDMap[schedule.cardUUID],
+                  store.cards[cardID] != nil,
+                  store.schedules[cardID] == nil else { continue }
+            store.schedules[cardID] = schedule.reviewState
         }
 
         var added = 0
         let knownLogIDs = Set(store.logs.map(\.id))
         for backupLog in document.reviewLogs where !knownLogIDs.contains(backupLog.uuid) {
-            guard let log = backupLog.reviewLog else { continue }
-            store.logs.append(log)
+            guard let cardID = cardIDMap[backupLog.cardUUID],
+                  store.cards[cardID] != nil,
+                  let log = backupLog.reviewLog else { continue }
+            store.logs.append(ReviewLog(
+                id: log.id,
+                cardID: cardID,
+                deckID: log.deckID,
+                reviewedAt: log.reviewedAt,
+                durationMs: log.durationMs,
+                grade: log.grade,
+                previous: log.previous,
+                scheduledDays: log.scheduledDays,
+                elapsedDays: log.elapsedDays,
+                revokedAt: log.revokedAt
+            ))
             added += 1
         }
         return added

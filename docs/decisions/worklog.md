@@ -494,3 +494,29 @@ container. They are not repository assets and were not added to version control.
 - Independent security/data-safety review: APPROVED.
 - Simulator/Archive and every account/container/schema/device gate remain `UNVERIFIED` or
   `HUMAN_REQUIRED`.
+
+---
+
+## sas-02-persistent-library — Persistent production repository — 2026-08-19
+
+### Built
+
+- Replaced the shipping in-memory library with one typed, persistent Core Data repository
+  and durable media store; preview/test in-memory adapters remain explicit only.
+- Preserved immutable V1, introduced current V2, and proved staged migration, relaunch,
+  recovery, concurrent mutation retry, deterministic duplicate handling and one-owner retry.
+- Persisted the complete study/history/settings/import/trash/demo/session contract and made
+  restore map card identities before dependent scheduling/log data is written.
+- Added root recovery actions, aggregate erase failures and DEBUG-only local UI-test storage
+  without adding a Release fallback.
+
+### Verification
+
+- Independent SwiftPM suite: 264 tests in 29 suites passed.
+- Worker `ci/test.sh`: 20 UI tests plus package/lint checks passed; strict SwiftLint reported
+  zero violations across 131 files.
+- Release simulator builds succeeded for iPhone and iPad on iOS/iPadOS 17.4.
+- Independent correctness review: APPROVED.
+- Independent security/data-safety review: APPROVED.
+- Apple account, container/schema, signing, device, Archive and TestFlight gates remain
+  `HUMAN_REQUIRED` or `UNVERIFIED`.

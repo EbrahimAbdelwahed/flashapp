@@ -1,6 +1,6 @@
 # FlashApp 1.0 App Store hardening
 
-Status: active — sas-02 persistent library
+Status: active — sas-03 private sync
 Last updated: 2026-08-19
 Flywheel run: `flash-app-store-v1`
 Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
@@ -9,8 +9,8 @@ Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
 
 You are continuing `flash-app-store-v1`. Read ADR-006, the approved feature spec at
 `docs/specs/flashapp-1-0-app-store-hardening.md`, this README, and the next open slice.
-The next pickup is `02-persistent-library`; `01-data-foundation` is accepted with
-correctness and security review evidence.
+The next pickup is `03-private-sync`; `02-persistent-library` is accepted with correctness
+and security/data-safety review evidence.
 Do not touch `assets/emma-avatar/`. Never mark an Apple-account gate PASS without supplied
 evidence. Before ending your pass, update this section, the evidence ledger, the owning task
 bead, the worker report, and `docs/decisions/worklog.md`.
@@ -19,7 +19,7 @@ Global TODO:
 
 - [x] `00-contract`: owner decisions, source amendments, graph, worker report and semantic review accepted.
 - [x] `01-data-foundation`: versioned one-store Core Data foundation and recovery seam.
-- [ ] `02-persistent-library`: persistent `LibraryRepository` and production composition.
+- [x] `02-persistent-library`: persistent `LibraryRepository` and production composition.
 - [ ] `03-private-sync`: private CloudKit processing and honest account-gated proof.
 - [ ] `04-complete-backup`: media-complete archive and safe merge restore.
 - [ ] `05-release-surface`: three-tab/onboarding/reminder/privacy release UI.
@@ -30,8 +30,8 @@ Active warnings:
 
 - Apple Developer membership and final identifiers are not yet available.
 - CloudKit real-device/schema/signing/TestFlight claims remain `HUMAN_REQUIRED`.
-- Production currently defaults to `InMemoryLibrary`; no release claim is valid until
-  slices 01–05 replace the shipping path.
+- Production now uses the persistent repository; CloudKit truthfulness, complete archives
+  and the final release surface still block release until slices 03–05 are accepted.
 
 ## Goal and end state
 
@@ -82,8 +82,9 @@ runs in parallel with feature work.
 | --- | --- | --- |
 | 00 | done | worker report; semantic review approved; spec/dispatch validation passed |
 | 01 | done | 15 focused tests; correctness + security reviews approved |
-| 02 | ready | persistent LibraryRepository and production composition |
-| 03–06 | open | — |
+| 02 | done | 264 package tests; 20 UI tests; correctness + security reviews approved |
+| 03 | ready | private CloudKit sync implementation; account/device proof remains human-gated |
+| 04–06 | open | — |
 | 07 | HUMAN_REQUIRED | Apple account, identifiers, schema, signing, archive, TestFlight, ASC |
 
 ## Review map

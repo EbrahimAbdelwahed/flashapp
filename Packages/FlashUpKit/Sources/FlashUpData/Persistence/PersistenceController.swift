@@ -30,6 +30,12 @@ public final class PersistenceController: @unchecked Sendable {
         lifecycleCondition.withLock { activeBackgroundOperations }
     }
 
+    /// Test-only conflict barrier. Production callers leave this unset; when present it is
+    /// invoked immediately before a background context saves so the repository tests can make
+    /// a second, committed context win the race deterministically.
+    internal var saveConflictHook: ((Int) throws -> Void)?
+    internal private(set) var saveConflictAttemptCount = 0
+
     public convenience init(
         configuration: PersistenceConfiguration = .inMemory,
         fileManager: FileManager = .default
@@ -107,7 +113,9 @@ public final class PersistenceController: @unchecked Sendable {
         lifecycleCondition.unlock()
 
         let context = container.newBackgroundContext()
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        // The repository retries a real NSErrorMergePolicy conflict from a fresh context. Core
+        // Data must not silently choose one context's object at save time.
+        context.mergePolicy = NSErrorMergePolicy
         defer {
             lifecycleCondition.lock()
             activeBackgroundOperations -= 1
@@ -119,7 +127,13 @@ public final class PersistenceController: @unchecked Sendable {
         context.performAndWait {
             do {
                 let value = try operation(context)
-                if context.hasChanges { try context.save() }
+                if context.hasChanges {
+                    if let saveConflictHook {
+                        saveConflictAttemptCount += 1
+                        try saveConflictHook(saveConflictAttemptCount)
+                    }
+                    try context.save()
+                }
                 result = .success(value)
             } catch {
                 result = .failure(error)
@@ -140,6 +154,18 @@ public final class PersistenceController: @unchecked Sendable {
             }
         }
         if saveError != nil { throw PersistenceError.storeCloseFailed }
+    }
+
+    /// Removes recovery copies only after an explicit user erase. Recovery copies are never
+    /// used as a repair mechanism for a failed load, so the live store remains untouched.
+    public func discardRecoveryArtifact() throws {
+        guard let artifact = recoveryArtifact else { return }
+        do {
+            try FileManager.default.removeItem(at: artifact.directoryURL)
+            recoveryArtifact = nil
+        } catch {
+            throw PersistenceError.recoverySnapshotFailed
+        }
     }
 
     /// Rejects new background work, waits for active operations, then unloads the store.
@@ -369,13 +395,5 @@ private extension PersistenceController {
         case .compatible, .newStore:
             .storeUnreadable
         }
-    }
-}
-
-private extension NSCondition {
-    func withLock<T>(_ body: () throws -> T) rethrows -> T {
-        lock()
-        defer { unlock() }
-        return try body()
     }
 }

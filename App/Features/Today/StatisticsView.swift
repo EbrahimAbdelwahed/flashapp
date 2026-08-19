@@ -8,6 +8,7 @@ struct StatisticsView: View {
 
     @State private var metrics: StudyMetrics?
     @State private var decks: [DeckSummary] = []
+    @State private var errorMessage: String?
 
     var body: some View {
         List {
@@ -52,9 +53,25 @@ struct StatisticsView: View {
         }
         .screenCanvas()
         .navigationTitle("stats.title")
+        .alert(
+            "stats.error.title",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("common.ok") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "stats.error.unavailable")
+        }
         .task {
-            metrics = await library.metrics(now: Date())
-            decks = await library.decks()
+            do {
+                metrics = try await library.metrics(now: Date())
+                decks = try await library.decks()
+            } catch {
+                metrics = nil
+                errorMessage = String(localized: "stats.error.unavailable")
+            }
         }
     }
 

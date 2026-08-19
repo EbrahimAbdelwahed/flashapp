@@ -5,7 +5,7 @@ import Observation
 /// Drives one study session (spec §A11.3).
 @Observable
 @MainActor
-final class StudySessionModel {
+final class StudySessionModel { // swiftlint:disable:this type_body_length
     /// Whether a card action applies to the card on screen or to every card its note makes.
     ///
     /// A reversed or cloze note generates siblings, and meeting the sibling ten seconds after
@@ -44,6 +44,7 @@ final class StudySessionModel {
     /// Every card the current note generates, so the note-level actions can be offered only
     /// when there is actually a sibling to act on.
     private(set) var siblingIDs: [UUID] = []
+    private(set) var errorMessage: String?
     /// When the current prompt appeared, so the answer can record how long it took.
     private var shownAt = Date()
     private var startedAt = Date()
@@ -72,18 +73,25 @@ final class StudySessionModel {
     var hasSiblings: Bool { siblingIDs.count > 1 }
 
     func start() async {
+        errorMessage = nil
         // A stored session for this scope wins: the user asked to carry on, not to be
         // handed a freshly built queue.
-        if let stored = await library.storedSession(),
-           stored.scope.scope == scope,
-           stored.isResumable(at: Date()) {
-            queue = await library.cards(withIDs: stored.remainingCardIDs)
-            answeredCount = stored.answeredCount
-            startedAt = stored.startedAt
-        } else {
-            queue = await library.studyQueue(scope: scope, now: Date())
-            answeredCount = 0
-            startedAt = Date()
+        do {
+            if let stored = try await library.storedSession(),
+               stored.scope.scope == scope,
+               stored.isResumable(at: Date()) {
+                queue = try await library.cards(withIDs: stored.remainingCardIDs)
+                answeredCount = stored.answeredCount
+                startedAt = stored.startedAt
+            } else {
+                queue = try await library.studyQueue(scope: scope, now: Date())
+                answeredCount = 0
+                startedAt = Date()
+            }
+        } catch {
+            queue = []
+            errorMessage = String(localized: "study.error.unavailable")
+            return
         }
         index = 0
         lastAction = nil
@@ -93,17 +101,23 @@ final class StudySessionModel {
 
     private func persistSession() async {
         guard !isFinished else {
-            await library.storeSession(nil)
+            do {
+                try await library.storeSession(nil)
+            } catch {
+                errorMessage = String(localized: "study.error.unavailable")
+            }
             return
         }
-        await library.storeSession(
-            SessionState(
-                scope: scope,
-                remainingCardIDs: queue[index...].map(\.id),
-                answeredCount: answeredCount,
-                startedAt: startedAt
+        do {
+            try await library.storeSession(
+                SessionState(
+                    scope: scope,
+                    remainingCardIDs: queue[index...].map(\.id),
+                    answeredCount: answeredCount,
+                    startedAt: startedAt
+                )
             )
-        )
+        } catch { errorMessage = String(localized: "study.error.unavailable") }
     }
 
     func reveal() {
@@ -117,10 +131,21 @@ final class StudySessionModel {
     func answer(_ grade: Grade) async {
         guard let card = current else { return }
         let now = Date()
-        let state = await library.schedule(for: card.id) ?? .unseen(dueAt: now)
+        let state: ReviewState
+        do {
+            state = try await library.schedule(for: card.id) ?? .unseen(dueAt: now)
+        } catch {
+            reportStorageFailure()
+            return
+        }
         guard let transition = try? scheduler.next(state, grade: grade, at: now) else { return }
 
-        await library.record(transition, for: card.id, durationMs: durationMs(since: shownAt))
+        do {
+            try await library.record(transition, for: card.id, durationMs: durationMs(since: shownAt))
+        } catch {
+            reportStorageFailure()
+            return
+        }
         answeredCount += 1
         lastAction = .answered
         advance()
@@ -133,19 +158,32 @@ final class StudySessionModel {
     /// The note behind the card on screen, for the editor.
     func currentNote() async -> Note? {
         guard let card = current else { return nil }
-        return await library.note(card.noteID)
+        do {
+            return try await library.note(card.noteID)
+        } catch {
+            reportStorageFailure()
+            return nil
+        }
     }
 
     func currentCardInfo() async -> CardInfo? {
         guard let card = current else { return nil }
-        return await library.cardInfo(card.id)
+        do {
+            return try await library.cardInfo(card.id)
+        } catch {
+            reportStorageFailure()
+            return nil
+        }
     }
 
     /// Takes the card — or its whole note — out of every queue until the user lifts it.
     func suspend(_ target: ActionTarget) async {
         let ids = cardIDs(for: target)
         guard !ids.isEmpty else { return }
-        await library.setSuspended(true, cardIDs: ids)
+        do { try await library.setSuspended(true, cardIDs: ids) } catch {
+            reportStorageFailure()
+            return
+        }
         let removals = removeFromQueue(Set(ids))
         lastAction = .suspended(removals: removals)
         await afterQueueChange()
@@ -155,7 +193,10 @@ final class StudySessionModel {
     func bury(_ target: ActionTarget) async {
         let ids = cardIDs(for: target)
         guard !ids.isEmpty else { return }
-        await library.setBuried(true, cardIDs: ids, until: Self.endOfDay(from: Date()))
+        do { try await library.setBuried(true, cardIDs: ids, until: Self.endOfDay(from: Date())) } catch {
+            reportStorageFailure()
+            return
+        }
         let removals = removeFromQueue(Set(ids))
         lastAction = .buried(removals: removals)
         await afterQueueChange()
@@ -165,7 +206,10 @@ final class StudySessionModel {
     /// learn it again, so handing it straight back is the useful thing to do.
     func resetCurrentCard() async {
         guard let card = current else { return }
-        await library.resetCard(card.id)
+        do { try await library.resetCard(card.id) } catch {
+            reportStorageFailure()
+            return
+        }
         isRevealed = false
         shownAt = Date()
         // The reset revoked answers this session may have counted; undoing it would need an
@@ -177,7 +221,10 @@ final class StudySessionModel {
     /// Moves the whole note to the Trash, from which it can be restored.
     func deleteCurrentNote() async {
         guard let card = current else { return }
-        await library.trashNote(card.noteID)
+        do { try await library.trashNote(card.noteID) } catch {
+            reportStorageFailure()
+            return
+        }
         _ = removeFromQueue(Set(siblingIDs.isEmpty ? [card.id] : siblingIDs))
         lastAction = nil
         await afterQueueChange()
@@ -190,7 +237,13 @@ final class StudySessionModel {
     /// the old text. A card whose template is gone — a deleted cloze group — leaves.
     func refreshAfterEdit() async {
         guard let noteID = current?.noteID else { return }
-        let fresh = await library.cards(for: noteID)
+        let fresh: [Card]
+        do {
+            fresh = try await library.cards(for: noteID)
+        } catch {
+            reportStorageFailure()
+            return
+        }
         let byID = Dictionary(uniqueKeysWithValues: fresh.map { ($0.id, $0) })
 
         var updated = Array(queue[..<index])
@@ -215,14 +268,29 @@ final class StudySessionModel {
         switch lastAction {
         case .answered:
             guard index > 0 else { return }
-            await library.revokeLastAnswer(in: scope)
+            do {
+                try await library.revokeLastAnswer(in: scope)
+            } catch {
+                reportStorageFailure()
+                return
+            }
             index -= 1
             answeredCount = max(answeredCount - 1, 0)
         case let .suspended(removals):
-            await library.setSuspended(false, cardIDs: removals.map(\.card.id))
+            do {
+                try await library.setSuspended(false, cardIDs: removals.map(\.card.id))
+            } catch {
+                reportStorageFailure()
+                return
+            }
             restore(removals)
         case let .buried(removals):
-            await library.setBuried(false, cardIDs: removals.map(\.card.id), until: Date())
+            do {
+                try await library.setBuried(false, cardIDs: removals.map(\.card.id), until: Date())
+            } catch {
+                reportStorageFailure()
+                return
+            }
             restore(removals)
         case nil:
             return
@@ -304,8 +372,27 @@ final class StudySessionModel {
             return
         }
         let now = Date()
-        let state = await library.schedule(for: card.id) ?? .unseen(dueAt: now)
+        let state: ReviewState
+        do {
+            state = try await library.schedule(for: card.id) ?? .unseen(dueAt: now)
+        } catch {
+            reportStorageFailure()
+            return
+        }
         preview = try? scheduler.preview(state, at: now)
-        siblingIDs = await library.cards(for: card.noteID).map(\.id)
+        do {
+            siblingIDs = try await library.cards(for: card.noteID).map(\.id)
+        } catch {
+            reportStorageFailure()
+            siblingIDs = []
+        }
+    }
+
+    private func reportStorageFailure() {
+        errorMessage = String(localized: "study.error.unavailable")
+    }
+
+    func clearError() {
+        errorMessage = nil
     }
 }

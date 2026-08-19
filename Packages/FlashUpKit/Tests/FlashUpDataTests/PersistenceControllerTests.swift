@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import FlashUpData
 
-@Suite("V1 Core Data foundation", .serialized)
+@Suite("Versioned Core Data foundation", .serialized)
 struct PersistenceControllerTests {
     @Test("The versioned model contains only the approved private entities")
     func modelIsCloudKitCompatible() throws {
@@ -11,7 +11,7 @@ struct PersistenceControllerTests {
         let bundledURL = try #require(PersistenceController.bundledModelURL)
         #expect(bundledURL.lastPathComponent == "FlashUpRuntime.momd")
         #expect(NSManagedObjectModel(contentsOf: bundledURL) != nil)
-        #expect(model.versionIdentifiers.contains("V1"))
+        #expect(model.versionIdentifiers.contains("V2"))
         #expect(CoreDataModelLint.issues(in: model).isEmpty)
 
         let names = Set(model.entities.compactMap(\.name))
@@ -95,7 +95,10 @@ struct PersistenceControllerTests {
         let identifier: UUID
         do {
             let controller = try PersistenceController(configuration: .onDisk(storeURL: url))
-            let deck = CDDeck(context: controller.viewContext)
+            let deck = try #require(
+                NSEntityDescription.insertNewObject(forEntityName: "CDDeck", into: controller.viewContext)
+                    as? CDDeck
+            )
             deck.uuid = UUID()
             deck.name = "Relaunch proof"
             identifier = try #require(deck.uuid)
@@ -297,7 +300,9 @@ extension PersistenceControllerTests {
         defer { removeStoreFiles(at: url) }
         let controller = try PersistenceController(configuration: .onDisk(storeURL: url))
         let identifier = try controller.performBackgroundTask { context in
-            let deck = CDDeck(context: context)
+            let deck = try #require(
+                NSEntityDescription.insertNewObject(forEntityName: "CDDeck", into: context) as? CDDeck
+            )
             deck.name = "Scoped background write"
             return try #require(deck.uuid)
         }
@@ -319,7 +324,10 @@ extension PersistenceControllerTests {
 
         DispatchQueue.global().async {
             _ = try? controller.performBackgroundTask { context in
-                let deck = CDDeck(context: context)
+                guard let deck = NSEntityDescription.insertNewObject(
+                    forEntityName: "CDDeck",
+                    into: context
+                ) as? CDDeck else { return UUID() }
                 deck.name = "Tracked background write"
                 started.signal()
                 release.wait()

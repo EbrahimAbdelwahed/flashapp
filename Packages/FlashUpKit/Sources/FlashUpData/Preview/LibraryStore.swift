@@ -22,6 +22,28 @@ struct LibraryStore: Sendable {
     var settings: StudySettings = .default
     var session: SessionState?
 
+    mutating func mergeDemoSeed(_ seed: LibraryStore) {
+        for (id, deck) in seed.decks where decks[id] == nil { decks[id] = deck }
+        for deck in seed.decks.values where deck.isDemo {
+            if var existing = decks[deck.id], existing.demoVersion < deck.demoVersion {
+                existing.isDemo = true
+                existing.demoSeedID = deck.demoSeedID
+                existing.demoVersion = deck.demoVersion
+                existing.updatedAt = deck.updatedAt
+                decks[deck.id] = existing
+            }
+        }
+        for (id, note) in seed.notes where notes[id] == nil { notes[id] = note }
+        for (id, card) in seed.cards where cards[id] == nil { cards[id] = card }
+        for (id, state) in seed.schedules where schedules[id] == nil { schedules[id] = state }
+        for (id, hash) in seed.contentHashes where contentHashes[id] == nil { contentHashes[id] = hash }
+        for (id, date) in seed.noteDeletedAt where noteDeletedAt[id] == nil { noteDeletedAt[id] = date }
+        for (id, date) in seed.deckDeletedAt where deckDeletedAt[id] == nil { deckDeletedAt[id] = date }
+        for (id, batch) in seed.importBatches where importBatches[id] == nil { importBatches[id] = batch }
+        let existingLogs = Set(logs.map(\.id))
+        logs.append(contentsOf: seed.logs.filter { !existingLogs.contains($0.id) })
+    }
+
     // MARK: - Derived reads
 
     var liveDecks: [Deck] {

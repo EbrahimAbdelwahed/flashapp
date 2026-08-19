@@ -1,8 +1,8 @@
 import FlashUpDomain
 import Foundation
 
-/// In-memory `LibraryRepository` used to build, demo and test the interface before the Core
-/// Data stack exists (`fu-04-data-core`).
+/// In-memory `LibraryRepository` used by explicit previews, recordings and tests. Shipping
+/// composition uses `CoreDataLibraryRepository` instead.
 ///
 /// It is a real implementation of the real protocol, not a stub: content is generated into
 /// cards, schedules move through the pinned FSRS adapter, undo replays history, import and
@@ -100,6 +100,8 @@ public actor InMemoryLibrary: LibraryRepository {
         status
     }
 
+    public func repositoryState() async -> LibraryRepositoryState { .ready }
+
     // MARK: - Writing
 
     public func createDeck(named name: String) async -> Deck {
@@ -137,6 +139,7 @@ public actor InMemoryLibrary: LibraryRepository {
             for card in store.cards(forNote: noteID) {
                 store.cards.removeValue(forKey: card.id)
                 store.schedules.removeValue(forKey: card.id)
+                store.logs.removeAll { $0.cardID == card.id }
             }
             store.notes.removeValue(forKey: noteID)
             store.contentHashes.removeValue(forKey: noteID)
@@ -144,6 +147,17 @@ public actor InMemoryLibrary: LibraryRepository {
         store.noteDeletedAt.removeAll()
 
         for deckID in store.deckDeletedAt.keys {
+            let noteIDs = store.notes.values.filter { $0.deckID == deckID }.map(\.id)
+            for noteID in noteIDs {
+                for card in store.cards(forNote: noteID) {
+                    store.cards.removeValue(forKey: card.id)
+                    store.schedules.removeValue(forKey: card.id)
+                    store.logs.removeAll { $0.cardID == card.id }
+                }
+                store.notes.removeValue(forKey: noteID)
+                store.noteDeletedAt.removeValue(forKey: noteID)
+                store.contentHashes.removeValue(forKey: noteID)
+            }
             store.decks.removeValue(forKey: deckID)
         }
         store.deckDeletedAt.removeAll()
@@ -151,6 +165,14 @@ public actor InMemoryLibrary: LibraryRepository {
 
     public func updateSettings(_ settings: StudySettings) async {
         store.settings = settings
+    }
+
+    public func installDemoDeck() async {
+        let seed = DemoContent.seededStore(scheduler: scheduler)
+        if let existing = store.decks.values.first(where: { $0.isDemo }) {
+            guard existing.demoVersion < DemoContent.version else { return }
+        }
+        store.mergeDemoSeed(seed)
     }
 
     // MARK: - Derived

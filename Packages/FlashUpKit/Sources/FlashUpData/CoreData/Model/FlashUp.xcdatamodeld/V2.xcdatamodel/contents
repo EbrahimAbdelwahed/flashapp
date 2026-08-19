@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23500" systemVersion="25G" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="V2">
+    <entity name="CDDeck" representedClassName="CDDeck" syncable="YES">
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="deletedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="demoSeedID" optional="YES" attributeType="String" syncable="YES" />
+        <attribute name="demoVersion" optional="NO" attributeType="Integer 16" defaultValueString="0" syncable="YES" />
+        <attribute name="isDemo" optional="NO" attributeType="Boolean" defaultValueString="NO" syncable="YES" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <relationship name="notes" optional="YES" minCount="0" maxCount="0" toMany="YES" deletionRule="Cascade" destinationEntity="CDNote" inverseName="deck" inverseEntity="CDNote" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="deletedAtIndex"><fetchIndexElement property="deletedAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDNote" representedClassName="CDNote" syncable="YES">
+        <attribute name="back" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="contentHash" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="deletedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="front" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="mediaIDsJSON" optional="NO" attributeType="String" defaultValueString="[]" syncable="YES" />
+        <attribute name="tagsJSON" optional="NO" attributeType="String" defaultValueString="[]" syncable="YES" />
+        <attribute name="type" optional="NO" attributeType="String" defaultValueString="basic" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <relationship name="cards" optional="YES" minCount="0" maxCount="0" toMany="YES" deletionRule="Cascade" destinationEntity="CDCard" inverseName="note" inverseEntity="CDCard" syncable="YES" />
+        <relationship name="deck" optional="YES" minCount="0" maxCount="1" toMany="NO" deletionRule="Nullify" destinationEntity="CDDeck" inverseName="notes" inverseEntity="CDDeck" syncable="YES" />
+        <relationship name="tags" optional="YES" minCount="0" maxCount="0" toMany="YES" deletionRule="Nullify" destinationEntity="CDTag" inverseName="notes" inverseEntity="CDTag" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="deletedAtIndex"><fetchIndexElement property="deletedAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDCard" representedClassName="CDCard" syncable="YES">
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="deletedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="templateKey" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <relationship name="note" optional="YES" minCount="0" maxCount="1" toMany="NO" deletionRule="Nullify" destinationEntity="CDNote" inverseName="cards" inverseEntity="CDNote" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="deletedAtIndex"><fetchIndexElement property="deletedAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDTag" representedClassName="CDTag" syncable="YES">
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="deletedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="normalizedName" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <relationship name="notes" optional="YES" minCount="0" maxCount="0" toMany="YES" deletionRule="Nullify" destinationEntity="CDNote" inverseName="tags" inverseEntity="CDNote" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="normalizedNameIndex"><fetchIndexElement property="normalizedName" type="Binary" /></fetchIndex>
+        <fetchIndex name="deletedAtIndex"><fetchIndexElement property="deletedAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDSchedule" representedClassName="CDSchedule" syncable="YES">
+        <attribute name="cardUUID" optional="YES" attributeType="UUID" syncable="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="deckUUID" optional="YES" attributeType="UUID" syncable="YES" />
+        <attribute name="difficulty" optional="NO" attributeType="Double" defaultValueString="0" syncable="YES" />
+        <attribute name="buriedUntil" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="dueAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="lastReviewedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="lapses" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="reps" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="stability" optional="NO" attributeType="Double" defaultValueString="0" syncable="YES" />
+        <attribute name="stateRaw" optional="NO" attributeType="Integer 16" defaultValueString="0" syncable="YES" />
+        <attribute name="suspendedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="cardUUIDIndex"><fetchIndexElement property="cardUUID" type="Binary" /></fetchIndex>
+        <fetchIndex name="deckUUIDIndex"><fetchIndexElement property="deckUUID" type="Binary" /></fetchIndex>
+        <fetchIndex name="dueAtIndex"><fetchIndexElement property="dueAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDReviewLog" representedClassName="CDReviewLog" syncable="YES">
+        <attribute name="cardUUID" optional="YES" attributeType="UUID" syncable="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="deckUUID" optional="YES" attributeType="UUID" syncable="YES" />
+        <attribute name="durationMs" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="elapsedDays" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="gradeRaw" optional="NO" attributeType="Integer 16" defaultValueString="0" syncable="YES" />
+        <attribute name="prevDifficulty" optional="NO" attributeType="Double" defaultValueString="0" syncable="YES" />
+        <attribute name="prevDueAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="prevLapses" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="prevLastReviewedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="prevReps" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="prevStability" optional="NO" attributeType="Double" defaultValueString="0" syncable="YES" />
+        <attribute name="prevStateRaw" optional="NO" attributeType="Integer 16" defaultValueString="0" syncable="YES" />
+        <attribute name="revokedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="reviewedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="scheduledDays" optional="NO" attributeType="Integer 32" defaultValueString="0" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="cardUUIDIndex"><fetchIndexElement property="cardUUID" type="Binary" /></fetchIndex>
+        <fetchIndex name="deckUUIDIndex"><fetchIndexElement property="deckUUID" type="Binary" /></fetchIndex>
+        <fetchIndex name="reviewedAtIndex"><fetchIndexElement property="reviewedAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDImportBatch" representedClassName="CDImportBatch" syncable="YES">
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="createdNoteUUIDsJSON" optional="NO" attributeType="String" defaultValueString="[]" syncable="YES" />
+        <attribute name="destinationDeckUUID" optional="YES" attributeType="UUID" syncable="YES" />
+        <attribute name="destinationWasNewDeck" optional="NO" attributeType="Boolean" defaultValueString="NO" syncable="YES" />
+        <attribute name="duplicateRowsJSON" optional="NO" attributeType="String" defaultValueString="[]" syncable="YES" />
+        <attribute name="importedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="rejectedRowsJSON" optional="NO" attributeType="String" defaultValueString="[]" syncable="YES" />
+        <attribute name="sourceName" optional="NO" attributeType="String" defaultValueString="" syncable="YES" />
+        <attribute name="undoneAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="destinationDeckUUIDIndex"><fetchIndexElement property="destinationDeckUUID" type="Binary" /></fetchIndex>
+        <fetchIndex name="importedAtIndex"><fetchIndexElement property="importedAt" type="Binary" /></fetchIndex>
+    </entity>
+    <entity name="CDStudySettings" representedClassName="CDStudySettings" syncable="YES">
+        <attribute name="appearanceRaw" optional="NO" attributeType="String" defaultValueString="system" syncable="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="newPerDay" optional="NO" attributeType="Integer 32" defaultValueString="20" syncable="YES" />
+        <attribute name="reminderEnabled" optional="NO" attributeType="Boolean" defaultValueString="NO" syncable="YES" />
+        <attribute name="reminderHour" optional="NO" attributeType="Integer 16" defaultValueString="20" syncable="YES" />
+        <attribute name="reminderMinute" optional="NO" attributeType="Integer 16" defaultValueString="30" syncable="YES" />
+        <attribute name="reviewsPerDay" optional="NO" attributeType="Integer 32" defaultValueString="200" syncable="YES" />
+        <attribute name="singletonKey" optional="NO" attributeType="String" defaultValueString="primary" syncable="YES" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" syncable="YES" />
+        <attribute name="uuid" optional="YES" attributeType="UUID" syncable="YES" />
+        <fetchIndex name="uuidIndex"><fetchIndexElement property="uuid" type="Binary" /></fetchIndex>
+        <fetchIndex name="singletonKeyIndex"><fetchIndexElement property="singletonKey" type="Binary" /></fetchIndex>
+    </entity>
+</model>

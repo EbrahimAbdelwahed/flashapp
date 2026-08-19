@@ -1,6 +1,6 @@
 # FlashApp App Store 1.0 — batch graph
 
-Status: approved; sas-01 ready for dispatch
+Status: active; sas-03 ready for dispatch
 Date: 2026-08-19
 Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
 
@@ -41,8 +41,8 @@ blocker even if every repository-only test passes.
 | --- | --- | --- |
 | sas-00-contract | Done | worker report + approved semantic review + validation |
 | sas-01-data-foundation | Done | worker report + correctness/security approvals + tests |
-| sas-02-persistent-library | Ready | sas-01 accepted |
-| sas-03-private-sync | Pending | waits for sas-02; real-account cells human-gated |
+| sas-02-persistent-library | Done | worker report + correctness/security approvals + tests |
+| sas-03-private-sync | Ready | sas-02 accepted; real-account cells human-gated |
 | sas-04-complete-backup | Pending | waits for sas-03 |
 | sas-05-release-surface | Pending | waits for sas-04 |
 | sas-06-quality-evidence | Pending | waits for sas-05 |

@@ -7,6 +7,7 @@ struct TrashView: View {
 
     @State private var notes: [Note] = []
     @State private var isConfirmingEmpty = false
+    @State private var errorMessage: String?
 
     var body: some View {
         List {
@@ -29,7 +30,12 @@ struct TrashView: View {
                 .swipeActions {
                     Button("trash.restore") {
                         Task {
-                            await library.restoreNote(note.id)
+                            do {
+                                try await library.restoreNote(note.id)
+                            } catch {
+                                errorMessage = String(localized: "storage.error.unavailable")
+                                return
+                            }
                             await reload()
                         }
                     }
@@ -55,7 +61,12 @@ struct TrashView: View {
         ) {
             Button("trash.confirm.action", role: .destructive) {
                 Task {
-                    await library.emptyTrash()
+                    do {
+                        try await library.emptyTrash()
+                    } catch {
+                        errorMessage = String(localized: "storage.error.unavailable")
+                        return
+                    }
                     await reload()
                 }
             }
@@ -63,11 +74,26 @@ struct TrashView: View {
         } message: {
             Text("trash.confirm.message")
         }
+        .alert(
+            "trash.error.title",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("common.ok") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "storage.error.unavailable")
+        }
         .task { await reload() }
     }
 
     private func reload() async {
-        notes = await library.trashedNotes()
+        do {
+            notes = try await library.trashedNotes()
+        } catch {
+            errorMessage = String(localized: "storage.error.unavailable")
+        }
     }
 }
 
@@ -79,6 +105,7 @@ struct ExportSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var exported: ExportedFile?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -98,6 +125,10 @@ struct ExportSheet: View {
                         Label("export.share", systemImage: "square.and.arrow.up")
                     }
                     .accessibilityIdentifier("export.share")
+                } else if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 } else {
                     ProgressView()
                 }
@@ -118,7 +149,13 @@ struct ExportSheet: View {
     }
 
     private func prepare() async {
-        let data = await library.exportCSV(deckID: deckID)
+        let data: Data
+        do {
+            data = try await library.exportCSV(deckID: deckID)
+        } catch {
+            errorMessage = String(localized: "storage.error.unavailable")
+            return
+        }
         let name = deckName.isEmpty ? "flashup" : deckName
         exported = ExportedFile.write(data, named: "\(name).csv")
     }

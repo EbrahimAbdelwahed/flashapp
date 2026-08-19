@@ -3385,6 +3385,96 @@
         }
       }
     },
+    "storage.recovery.export": {
+      "comment": "Exports the preserved raw recovery copy for support.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export recovery copy"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta copia di recupero"
+          }
+        }
+      }
+    },
+    "storage.recovery.message": {
+      "comment": "Explains that storage failed and preserves data for recovery.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FlashApp could not open your library. Your existing data was preserved. Export the recovery copy for support or try again."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FlashApp non ha potuto aprire la libreria. I dati esistenti sono stati conservati. Esporta la copia di recupero per l'assistenza oppure riprova."
+          }
+        }
+      }
+    },
+    "storage.recovery.retry": {
+      "comment": "Retries opening the local library.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprova"
+          }
+        }
+      }
+    },
+    "storage.recovery.support": {
+      "comment": "Opens support for storage recovery.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact support"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contatta l'assistenza"
+          }
+        }
+      }
+    },
+    "storage.recovery.title": {
+      "comment": "Storage recovery section header.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library recovery"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recupero della libreria"
+          }
+        }
+      }
+    },
     "settings.data": {
       "comment": "Data section header.",
       "extractionState": "manual",

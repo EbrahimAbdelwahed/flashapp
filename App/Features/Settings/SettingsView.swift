@@ -2,7 +2,7 @@ import FlashUpDomain
 import SwiftUI
 
 /// Settings, and the host for backup, data and support (spec §A11.2).
-struct SettingsView: View {
+struct SettingsView: View { // swiftlint:disable:this type_body_length
     let library: any LibraryRepository
     let reminders: any ReminderScheduling
 
@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var isRestoring = false
     @State private var backupFile: ExportedFile?
     @State private var restoreSummary: RestoreSummary?
+    @State private var errorMessage: String?
     /// Set when the reminder is on but iOS will not deliver it.
     @State private var isNotificationPermissionMissing = false
 
@@ -24,6 +25,9 @@ struct SettingsView: View {
             reminderSection
             appearanceSection
             dataSection
+            if appEnvironment.storageRecovery != nil {
+                recoverySection
+            }
             aboutSection
         }
         .screenCanvas()
@@ -37,7 +41,14 @@ struct SettingsView: View {
             // The reminder toggle persists itself, because it also has to report back what
             // the system granted.
             guard previous.reminder == updated.reminder else { return }
-            Task { await library.updateSettings(updated) }
+            Task {
+                do {
+                    try await library.updateSettings(updated)
+                } catch {
+                    errorMessage = String(localized: "storage.error.unavailable")
+                    return
+                }
+            }
         }
         .fileImporter(isPresented: $isRestoring, allowedContentTypes: [.json, .data]) { result in
             Task { await restore(result) }
@@ -59,13 +70,27 @@ struct SettingsView: View {
         ) {
             Button("settings.erase.action", role: .destructive) {
                 Task {
-                    await library.deleteAllData()
+                    let failures = await appEnvironment.eraseAllData()
+                    if !failures.isEmpty {
+                        errorMessage = String(localized: "storage.error.unavailable")
+                    }
                     await reload()
                 }
             }
             Button("common.cancel", role: .cancel) {}
         } message: {
             Text("settings.erase.message")
+        }
+        .alert(
+            "settings.error.title",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("common.ok") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "storage.error.unavailable")
         }
     }
 
@@ -226,11 +251,49 @@ struct SettingsView: View {
         .paperRows()
     }
 
+    private var recoverySection: some View {
+        Section("storage.recovery.title") {
+            Text("storage.recovery.message")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if let directoryURL = appEnvironment.storageRecovery?.artifact?.directoryURL {
+                ShareLink(item: directoryURL) {
+                    Label("storage.recovery.export", systemImage: "externaldrive.badge.exclamationmark")
+                }
+                .accessibilityIdentifier("storage.recovery.export")
+            }
+
+            Link(destination: supportURL) {
+                Label("storage.recovery.support", systemImage: "envelope")
+            }
+
+            Button("storage.recovery.retry") {
+                Task {
+                    await appEnvironment.retryStorage()
+                    await reload()
+                }
+            }
+            .disabled(appEnvironment.isStorageRetrying)
+        }
+        .paperRows()
+    }
+
+    private var supportURL: URL {
+        URL(string: "mailto:support@flashup.app?subject=FlashApp%20storage%20recovery")
+            ?? URL(filePath: "/")
+    }
+
     // MARK: - Actions
 
     private func reload() async {
-        settings = await library.settings()
-        status = await library.syncStatus()
+        do {
+            settings = try await library.settings()
+            status = try await library.syncStatus()
+        } catch {
+            errorMessage = String(localized: "storage.error.unavailable")
+            status = .failed(reason: "Storage unavailable")
+        }
     }
 
     /// Saves the settings and reflects what the system actually granted: if notification
@@ -239,13 +302,24 @@ struct SettingsView: View {
     /// Saves the choice, then reports whether iOS will actually deliver it. The switch is
     /// never moved behind the user's back.
     private func persist(_ updated: StudySettings) async {
-        await library.updateSettings(updated)
+        do {
+            try await library.updateSettings(updated)
+        } catch {
+            errorMessage = String(localized: "storage.error.unavailable")
+            return
+        }
         let scheduled = await reminders.apply(updated.reminder)
         isNotificationPermissionMissing = updated.reminder.isEnabled && !scheduled
     }
 
     private func makeBackup() async {
-        let document = await library.backupDocument(appVersion: AppInfo.versionString, now: Date())
+        let document: BackupDocument
+        do {
+            document = try await library.backupDocument(appVersion: AppInfo.versionString, now: Date())
+        } catch {
+            errorMessage = String(localized: "storage.error.unavailable")
+            return
+        }
         guard let data = try? BackupCodec.encode(document) else { return }
         backupFile = ExportedFile.write(data, named: "FlashUp.flashupbackup")
     }
@@ -257,7 +331,12 @@ struct SettingsView: View {
         guard let data = try? Data(contentsOf: url),
               let document = try? BackupCodec.decode(data)
         else { return }
-        restoreSummary = await library.restore(document)
+        do {
+            restoreSummary = try await library.restore(document)
+        } catch {
+            errorMessage = String(localized: "storage.error.unavailable")
+            return
+        }
         await reload()
     }
 

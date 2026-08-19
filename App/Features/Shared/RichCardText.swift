@@ -41,6 +41,7 @@ struct MediaAttachmentView: View {
 
     @State private var asset: MediaAsset?
     @State private var data: Data?
+    @State private var readError: MediaStoreError?
     @State private var didLoad = false
 
     var body: some View {
@@ -51,8 +52,14 @@ struct MediaAttachmentView: View {
                 // resolved must show the placeholder, not silently disappear.
                 didLoad = true
                 guard let store else { return }
-                asset = await store.asset(for: id)
-                data = await store.data(for: id)
+                do {
+                    asset = try await store.asset(for: id)
+                    data = try await store.data(for: id)
+                } catch let error as MediaStoreError {
+                    readError = error
+                } catch {
+                    readError = .readFailed
+                }
             }
     }
 
@@ -61,19 +68,23 @@ struct MediaAttachmentView: View {
     /// the card simply dropped it in silence.
     @ViewBuilder
     private var content: some View {
-        switch asset?.kind {
-        case .image:
-            image
-        case .audio:
-            AudioAttachmentButton(label: asset?.filename ?? "", data: data)
-        case nil:
-            // Once loading has finished and nothing came back, the blob is gone — a restored
-            // backup carries references but not bytes (ADR-004 §7). The card still works.
-            if didLoad {
-                placeholder
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: Spacing.minimumTapTarget)
+        if readError != nil {
+            placeholder
+        } else {
+            switch asset?.kind {
+            case .image:
+                image
+            case .audio:
+                AudioAttachmentButton(label: asset?.filename ?? "", data: data)
+            case nil:
+                // Once loading has finished and nothing came back, the blob is gone — a restored
+                // backup carries references but not bytes (ADR-004 §7). The card still works.
+                if didLoad {
+                    placeholder
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, minHeight: Spacing.minimumTapTarget)
+                }
             }
         }
     }

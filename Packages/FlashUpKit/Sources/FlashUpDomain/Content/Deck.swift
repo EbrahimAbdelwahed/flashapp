@@ -8,8 +8,9 @@ public struct Deck: Identifiable, Equatable, Sendable {
     public var updatedAt: Date
     /// True for the bundled demo deck installed by onboarding.
     public var isDemo: Bool
-    /// `nil` for personal decks; the group's id once the deck lives in a shared zone.
-    public var groupID: UUID?
+    /// Stable seed identity/version used to upgrade demo content without touching user decks.
+    public var demoSeedID: String?
+    public var demoVersion: Int
 
     public init(
         id: UUID = UUID(),
@@ -17,13 +18,15 @@ public struct Deck: Identifiable, Equatable, Sendable {
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
         isDemo: Bool = false,
-        groupID: UUID? = nil
+        demoSeedID: String? = nil,
+        demoVersion: Int = 0
     ) {
         self.id = id
         self.name = name
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.isDemo = isDemo
-        self.groupID = groupID
+        self.demoSeedID = demoSeedID
+        self.demoVersion = demoVersion
     }
 }

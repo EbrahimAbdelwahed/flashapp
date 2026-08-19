@@ -4,6 +4,43 @@ import Testing
 @testable import FlashUpData
 
 extension PersistenceControllerTests {
+    @Test("A checked-in V1 store migrates through staging and survives a V2 relaunch")
+    func checkedInV1StoreMigratesToV2() throws {
+        let url = temporaryMigrationStoreURL()
+        let prior = try makeActualV1DeckStore(at: url)
+        let identifier = prior.uuid
+        try closeFixture(prior.container)
+        defer { removeMigrationStoreFiles(at: url) }
+
+        #expect(
+            MigrationRecovery.preflight(at: url, model: try PersistenceController.loadModel())
+                == .migrationRequired
+        )
+        let controller = try PersistenceController(configuration: .onDisk(storeURL: url))
+        let artifact = try #require(controller.recoveryArtifact)
+        #expect(artifact.isValid())
+        #expect(FileManager.default.fileExists(
+            atPath: artifact.directoryURL.appendingPathComponent("Staged").path
+        ) == false)
+
+        let request = CDDeck.fetchRequest()
+        request.predicate = NSPredicate(format: "uuid == %@", identifier as CVarArg)
+        let deck = try #require(try controller.viewContext.fetch(request).first)
+        #expect(deck.name == "Actual V1 deck")
+        #expect(deck.demoSeedID == nil)
+        #expect(deck.demoVersion == 0)
+        try controller.close()
+
+        let reopened = try PersistenceController(configuration: .onDisk(storeURL: url))
+        #expect(reopened.recoveryArtifact == nil)
+        let reopenedRequest = CDDeck.fetchRequest()
+        reopenedRequest.predicate = NSPredicate(format: "uuid == %@", identifier as CVarArg)
+        let reopenedDeck = try #require(try reopened.viewContext.fetch(reopenedRequest).first)
+        #expect(reopenedDeck.uuid == identifier)
+        #expect(reopenedDeck.name == "Actual V1 deck")
+        try reopened.close()
+    }
+
     @Test("A successful staged migration adopts data and removes staging")
     func successfulStagedMigrationAdoptsData() throws {
         let url = temporaryMigrationStoreURL()

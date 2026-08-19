@@ -58,6 +58,17 @@ struct TodayView: View {
         } message: {
             Text("today.resume.message \(model.resumableCount)")
         }
+        .alert(
+            "today.error.title",
+            isPresented: Binding(
+                get: { model.errorMessage != nil },
+                set: { if !$0 { model.clearError() } }
+            )
+        ) {
+            Button("common.ok") { model.clearError() }
+        } message: {
+            Text(model.errorMessage ?? "today.error.unavailable")
+        }
         .task { await model.refresh() }
         .fullScreenCover(
             item: $studyingScope,

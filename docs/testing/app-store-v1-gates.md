@@ -13,8 +13,8 @@ Rules:
 
 | Gate | State | Evidence / unblocker |
 | --- | --- | --- |
-| Persistent relaunch | UNVERIFIED | sas-01/sas-02 on-disk evidence |
-| Migration/recovery preserves store | PASS | sas-01 staged success/failure, digest, retention and lifecycle fixtures; independent security review |
+| Persistent relaunch | PASS | sas-02 shared adapter contract, exact study/log/settings/session relaunch and restore regressions; independent reviews |
+| Migration/recovery preserves store | PASS | sas-01 safety fixtures plus sas-02 checked-in V1 → staged V2 migration/relaunch; independent reviews |
 | Offline personal journey | UNVERIFIED | sas-02/sas-05 matrix |
 | Complete backup with media | UNVERIFIED | sas-04 round trip |
 | Three-tab release surface | UNVERIFIED | sas-05 UI evidence |

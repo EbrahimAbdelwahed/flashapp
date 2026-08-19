@@ -228,7 +228,10 @@ struct LibraryFlowTests {
         #expect(summary.decksAdded == 1)
         #expect(summary.notesAdded == 1)
         #expect(summary.logsAdded == 1)
-        #expect(await restored.schedule(for: cardID) != nil)
+        let restoredCardID = try #require(await restored.cards(for: note.id).first?.id)
+        #expect(restoredCardID != cardID)
+        #expect(await restored.schedule(for: restoredCardID) != nil)
+        #expect(await restored.cardInfo(restoredCardID)?.logs.count == 1)
     }
 
     @Test("Restoring twice adds nothing and never overwrites live data")

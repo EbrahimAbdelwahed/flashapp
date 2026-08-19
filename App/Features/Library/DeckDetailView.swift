@@ -14,6 +14,7 @@ struct DeckDetailView: View {
     @State private var isCreating = false
     @State private var isExporting = false
     @State private var studying = false
+    @State private var errorMessage: String?
 
     var body: some View {
         List {
@@ -84,8 +85,12 @@ struct DeckDetailView: View {
                     .swipeActions {
                         Button("common.delete", role: .destructive) {
                             Task {
-                                await library.trashNote(summary.note.id)
-                                await reload()
+                                do {
+                                    try await library.trashNote(summary.note.id)
+                                    await reload()
+                                } catch {
+                                    errorMessage = String(localized: "library.error.unavailable")
+                                }
                             }
                         }
                         .accessibilityIdentifier("note.delete")
@@ -97,8 +102,12 @@ struct DeckDetailView: View {
                         if summary.isHidden {
                             Button("note.resume", systemImage: "play.circle") {
                                 Task {
-                                    await library.resumeNote(summary.note.id)
-                                    await reload()
+                                    do {
+                                        try await library.resumeNote(summary.note.id)
+                                        await reload()
+                                    } catch {
+                                        errorMessage = String(localized: "library.error.unavailable")
+                                    }
                                 }
                             }
                             .tint(Palette.success)
@@ -137,14 +146,29 @@ struct DeckDetailView: View {
             StudySessionView(library: library, scope: .deck(deckID))
         }
         .onChange(of: filters.state) { Task { await reload() } }
+        .alert(
+            "library.error.title",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("common.ok") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "library.error.unavailable")
+        }
         .task { await reload() }
     }
 
     private func reload() async {
-        deck = await library.deck(deckID)
-        let summaries = await library.decks()
-        summary = summaries.first { $0.deck.id == deckID }
-        notes = await library.notes(in: deckID, filters: filters, now: Date())
+        do {
+            deck = try await library.deck(deckID)
+            let summaries = try await library.decks()
+            summary = summaries.first { $0.deck.id == deckID }
+            notes = try await library.notes(in: deckID, filters: filters, now: Date())
+        } catch {
+            errorMessage = String(localized: "library.error.unavailable")
+        }
     }
 
     private func stateTitle(_ state: SearchFilters.State) -> LocalizedStringKey {

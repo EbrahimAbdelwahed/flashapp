@@ -77,22 +77,14 @@ public struct BackupDocument: Equatable, Codable, Sendable {
 }
 
 public struct BackupDeck: Equatable, Codable, Sendable {
-    /// `sharedSnapshot` decks restore as personal ones: a backup never recreates a group.
-    public enum Origin: String, Codable, Sendable {
-        case personal
-        case sharedSnapshot
-    }
-
     public var uuid: UUID
     public var name: String
-    public var origin: Origin
     public var createdAt: Date
     public var notes: [BackupNote]
 
-    public init(uuid: UUID, name: String, origin: Origin, createdAt: Date, notes: [BackupNote]) {
+    public init(uuid: UUID, name: String, createdAt: Date, notes: [BackupNote]) {
         self.uuid = uuid
         self.name = name
-        self.origin = origin
         self.createdAt = createdAt
         self.notes = notes
     }
@@ -209,6 +201,11 @@ public struct BackupReviewLog: Equatable, Codable, Sendable {
     public var prevStability: Double
     public var prevDifficulty: Double
     public var prevDueAt: Date?
+    /// Optional for backward-compatible decoding of backups written before complete
+    /// previous-state persistence was added.
+    public var prevLastReviewedAt: Date?
+    public var prevReps: Int?
+    public var prevLapses: Int?
     public var scheduledDays: Int
     public var elapsedDays: Int
     public var revokedAt: Date?
@@ -224,6 +221,9 @@ public struct BackupReviewLog: Equatable, Codable, Sendable {
         self.prevStability = log.previous.stability
         self.prevDifficulty = log.previous.difficulty
         self.prevDueAt = log.previous.dueAt
+        self.prevLastReviewedAt = log.previous.lastReviewedAt
+        self.prevReps = log.previous.reps
+        self.prevLapses = log.previous.lapses
         self.scheduledDays = log.scheduledDays
         self.elapsedDays = log.elapsedDays
         self.revokedAt = log.revokedAt
@@ -244,12 +244,12 @@ public struct BackupReviewLog: Equatable, Codable, Sendable {
             grade: grade,
             previous: ReviewState(
                 state: state,
-                stability: prevStability,
-                difficulty: prevDifficulty,
-                dueAt: dueAt,
-                lastReviewedAt: nil,
-                reps: 0,
-                lapses: 0
+                    stability: prevStability,
+                    difficulty: prevDifficulty,
+                    dueAt: dueAt,
+                    lastReviewedAt: prevLastReviewedAt,
+                    reps: prevReps ?? 0,
+                    lapses: prevLapses ?? 0
             ),
             scheduledDays: scheduledDays,
             elapsedDays: elapsedDays,

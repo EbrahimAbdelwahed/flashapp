@@ -69,6 +69,17 @@ struct StudySessionView: View {
             } message: {
                 Text("study.action.delete.message")
             }
+            .alert(
+                "study.error.title",
+                isPresented: Binding(
+                    get: { model.errorMessage != nil },
+                    set: { if !$0 { model.clearError() } }
+                )
+            ) {
+                Button("common.ok") { model.clearError() }
+            } message: {
+                Text(model.errorMessage ?? "study.error.unavailable")
+            }
         }
         .task { await model.start() }
     }

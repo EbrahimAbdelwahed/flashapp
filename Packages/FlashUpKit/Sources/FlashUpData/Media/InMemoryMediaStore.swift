@@ -24,25 +24,25 @@ public actor InMemoryMediaStore: MediaStore {
         return asset
     }
 
-    public func asset(for id: UUID) async -> MediaAsset? { assets[id] }
+    public func asset(for id: UUID) async throws -> MediaAsset? { assets[id] }
 
-    public func data(for id: UUID) async -> Data? {
+    public func data(for id: UUID) async throws -> Data? {
         guard let asset = assets[id] else { return nil }
         return blobs[asset.sha256]
     }
 
     /// Always `nil`: nothing here is on disk. Callers that need a URL — the audio player —
     /// must fall back to `data(for:)`.
-    public func url(for id: UUID) async -> URL? { nil }
+    public func url(for id: UUID) async throws -> URL? { nil }
 
-    public func removeAll(except keeping: Set<UUID>) async {
+    public func removeAll(except keeping: Set<UUID>) async throws {
         let survivors = assets.filter { keeping.contains($0.key) }
         let keptDigests = Set(survivors.values.map(\.sha256))
         blobs = blobs.filter { keptDigests.contains($0.key) }
         assets = survivors
     }
 
-    public func removeAll() async {
+    public func removeAll() async throws {
         assets = [:]
         blobs = [:]
     }
