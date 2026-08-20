@@ -1,6 +1,6 @@
 # Task Bead: sas-00-contract Freeze the App Store 1.0 contract and run
 
-Status: Done
+Status: Open
 Priority: P0
 Type: contract
 Depends On: none
@@ -55,9 +55,9 @@ The prior graph conflicts with the approved launch scope and is stale relative t
 
 ## Acceptance Criteria
 
-- [x] No 1.0 task depends on Groups, a shared store, mandatory onboarding, reference-only backups or an external cohort.
-- [x] Every Apple-account gate is HUMAN_REQUIRED/UNVERIFIED.
-- [x] assets/emma-avatar is untouched.
+- [ ] No 1.0 task depends on Groups, a shared store, mandatory onboarding, reference-only backups or an external cohort.
+- [ ] Every Apple-account gate is HUMAN_REQUIRED/UNVERIFIED.
+- [ ] assets/emma-avatar is untouched.
 
 ## Verification
 

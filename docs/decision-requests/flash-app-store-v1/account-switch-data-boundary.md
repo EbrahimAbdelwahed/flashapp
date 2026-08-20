@@ -1,6 +1,6 @@
 # Decision Request: account-switch-data-boundary
 
-Status: Open
+Status: Resolved
 Run ID: `flash-app-store-v1`
 Bead: sas-03-private-sync
 Agent: root
@@ -51,7 +51,7 @@ keep-blocked
 
 ## Resolution
 
-Answered by:
-Answered at:
-Decision:
+Answered by: owner
+Answered at: 2026-08-20 11:04
+Decision: per-account-stores
 Follow-up beads:

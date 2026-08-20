@@ -3,11 +3,12 @@
 Status: approved product brief for specification work  
 Purpose: source of truth for Claude/Fable and implementation planning
 
-## Owner amendment — App Store version 1.0 (2026-08-19)
+## Owner amendments — App Store version 1.0 (2026-08-19 / 2026-08-20)
 
 ADR-006 supersedes conflicting launch requirements below:
 
-- version 1.0 includes automatic personal iCloud sync through one private Core Data store;
+- version 1.0 includes automatic personal iCloud sync through one active private Core Data
+  store selected from isolated anonymous/Apple-Account/legacy profiles;
 - collaborative Groups, CloudKit sharing, and the shared store are deferred beyond 1.0;
 - primary navigation is Today, Library, and Settings; Import remains inside Library and
   Statistics is reached from Today;
@@ -18,7 +19,13 @@ ADR-006 supersedes conflicting launch requirements below:
 - submission is blocked until personal CloudKit sync is proven end-to-end;
 - Apple-account operations remain human-required and unverified until evidence exists.
 
-See `docs/decisions/ADR-006-app-store-v1-contract.md` and the
+ADR-007 supersedes ADR-006's global-store clauses: the current CloudKit user identity is
+resolved before loading an account store; account A and B never share a profile directory;
+anonymous/legacy workspaces are local-only and require an explicit validated copy into an
+iCloud profile; cold indeterminate identity opens Anonymous rather than cached account data.
+
+See `docs/decisions/ADR-006-app-store-v1-contract.md`,
+`docs/decisions/ADR-007-account-scoped-stores.md`, and the
 `flash-app-store-v1` run for the implementation and evidence contracts.
 
 ## Instruction to the specification author
@@ -99,6 +106,10 @@ by subscriptions or complicated flashcard software.
   nonblocking state rather than making the personal application unusable.
 - **Required:** expose a subtle synchronization status and a manual retry
   action.
+- **Required:** on a cold launch where Apple Account identity cannot be proven, open the
+  anonymous local workspace rather than exposing a cached identified-account library.
+- **Required:** an already-open identified workspace remains usable during an ordinary
+  network outage that does not signal an account change.
 
 ### Persistence and CloudKit
 
@@ -114,6 +125,15 @@ deferred beyond 1.0. Therefore:
   authentication backend.
 - **Required:** use the Apple Account/iCloud state already available on the
   device.
+- **Required:** resolve the opaque CloudKit user identity before loading an identified
+  production store and isolate each Apple Account in its own profile directory.
+- **Required:** load at most one profile store; sign-out selects Anonymous, A→B selects B,
+  and returning to A reopens A without implicit merging or deletion.
+- **Required:** raw CloudKit identity, derived fingerprint, email and account name are never
+  displayed or logged. Routing uses a device-keyed opaque fingerprint.
+- **Required:** anonymous and provenance-unknown legacy content remains local-only until the
+  user explicitly copies a fully validated, media-complete snapshot into the current iCloud
+  profile.
 - **Required:** use stable UUIDs for domain entities.
 - **Required:** persist creation, update, and soft-deletion timestamps.
 
@@ -324,6 +344,9 @@ not version 1.0. No 1.0 task or release gate depends on this section.
 - **Required:** deletion is immediate and permanent, bypassing the 30-day trash.
 - **Required:** use destructive styling and a “Permanent deletion” badge.
 - **Required:** explain exactly which local and private CloudKit data is affected.
+- **Required:** deletion names the active profile only. Identified-account deletion remains
+  pending until CloudKit export succeeds; inactive account and anonymous profiles are not
+  implicitly deleted.
 - **Deferred:** warnings about effects on group participants.
 - **Required:** require two-step confirmation, including typing `ELIMINA`.
 - **Required:** offer backup export before deletion.
@@ -431,6 +454,9 @@ Settings must provide:
   FSRS integration, trash behavior, and data migration.
 - **Required:** personal CloudKit integration tests use the same Apple Account on
   multiple devices and cover offline edits, reconnect, convergence, and deletion.
+- **Required:** account-boundary tests cover sign-out, return to the same account, A→B during
+  pending import/export, cold indeterminate identity, legacy quarantine, explicit anonymous
+  transfer and inspection of both accounts' private CloudKit records.
 - **Deferred:** shared-group, invitation, leaving, ownership, and group-deletion tests.
 - **Required:** test purchase, onboarding, import, study, reminders, backup,
   restoration, and permanent deletion.

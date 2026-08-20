@@ -8,9 +8,6 @@ Task title: sas-07-human-release Execute human Apple-account and submission gate
 
 ## Read First
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- `specs/flash-app-store-v1/slices/07-human-release.md`
-- `docs/testing/app-store-v1-gates.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/tasks/flash-app-store-v1/sas-07-human-release.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`

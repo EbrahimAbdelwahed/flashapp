@@ -13,7 +13,10 @@
       "docs/tasks/flash-app-store-v1/sas-01-data-foundation.md",
       "docs/tasks/flash-app-store-v1/sas-02-persistent-library.md",
       "docs/tasks/flash-app-store-v1/sas-03-private-sync.md",
+      "docs/tasks/flash-app-store-v1/sas-03a-account-routing.md",
+      "docs/tasks/flash-app-store-v1/sas-03b-sync-convergence.md",
       "docs/tasks/flash-app-store-v1/sas-04-complete-backup.md",
+      "docs/tasks/flash-app-store-v1/sas-04b-scoped-transfer-erasure.md",
       "docs/tasks/flash-app-store-v1/sas-05-release-surface.md",
       "docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md",
       "docs/tasks/flash-app-store-v1/sas-07-human-release.md"
@@ -25,14 +28,16 @@
       "docs/worker-briefs/flash-app-store-v1/sas-01-data-foundation.md",
       "docs/worker-briefs/flash-app-store-v1/sas-02-persistent-library.md",
       "docs/worker-briefs/flash-app-store-v1/sas-03-private-sync.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-03a-account-routing.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-03b-sync-convergence.md",
       "docs/worker-briefs/flash-app-store-v1/sas-04-complete-backup.md",
+      "docs/worker-briefs/flash-app-store-v1/sas-04b-scoped-transfer-erasure.md",
       "docs/worker-briefs/flash-app-store-v1/sas-05-release-surface.md",
       "docs/worker-briefs/flash-app-store-v1/sas-06-quality-evidence.md",
       "docs/worker-briefs/flash-app-store-v1/sas-07-human-release.md"
     ],
     "worker_profiles": {
       "app-store-data-engineer": "docs/worker-profiles/app-store-data-engineer.md",
-      "app-store-portability-engineer": "docs/worker-profiles/app-store-portability-engineer.md",
       "app-store-product-engineer": "docs/worker-profiles/app-store-product-engineer.md",
       "app-store-release-governor": "docs/worker-profiles/app-store-release-governor.md"
     },
@@ -53,34 +58,40 @@
   "phases": {
     "beads": {
       "br_created": {},
-      "count": 8,
+      "count": 11,
       "paths": [
         "docs/tasks/flash-app-store-v1/sas-00-contract.md",
         "docs/tasks/flash-app-store-v1/sas-01-data-foundation.md",
         "docs/tasks/flash-app-store-v1/sas-02-persistent-library.md",
         "docs/tasks/flash-app-store-v1/sas-03-private-sync.md",
+        "docs/tasks/flash-app-store-v1/sas-03a-account-routing.md",
+        "docs/tasks/flash-app-store-v1/sas-03b-sync-convergence.md",
         "docs/tasks/flash-app-store-v1/sas-04-complete-backup.md",
+        "docs/tasks/flash-app-store-v1/sas-04b-scoped-transfer-erasure.md",
         "docs/tasks/flash-app-store-v1/sas-05-release-surface.md",
         "docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md",
         "docs/tasks/flash-app-store-v1/sas-07-human-release.md"
       ],
       "status": "complete",
-      "updated_at": "2026-08-19T12:44:34+00:00"
+      "updated_at": "2026-08-20T09:18:17+00:00"
     },
     "briefs": {
-      "count": 8,
+      "count": 11,
       "paths": [
         "docs/worker-briefs/flash-app-store-v1/sas-00-contract.md",
         "docs/worker-briefs/flash-app-store-v1/sas-01-data-foundation.md",
         "docs/worker-briefs/flash-app-store-v1/sas-02-persistent-library.md",
         "docs/worker-briefs/flash-app-store-v1/sas-03-private-sync.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-03a-account-routing.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-03b-sync-convergence.md",
         "docs/worker-briefs/flash-app-store-v1/sas-04-complete-backup.md",
+        "docs/worker-briefs/flash-app-store-v1/sas-04b-scoped-transfer-erasure.md",
         "docs/worker-briefs/flash-app-store-v1/sas-05-release-surface.md",
         "docs/worker-briefs/flash-app-store-v1/sas-06-quality-evidence.md",
         "docs/worker-briefs/flash-app-store-v1/sas-07-human-release.md"
       ],
       "status": "complete",
-      "updated_at": "2026-08-19T12:44:34+00:00"
+      "updated_at": "2026-08-20T09:18:17+00:00"
     },
     "context": {
       "files_count": 1,
@@ -89,10 +100,10 @@
       "updated_at": "2026-08-19T12:34:39+00:00"
     },
     "decision_request": {
+      "decision": "per-account-stores",
       "path": "docs/decision-requests/flash-app-store-v1/account-switch-data-boundary.md",
-      "severity": "blocking",
-      "status": "open",
-      "updated_at": "2026-08-19T19:04:27+00:00"
+      "status": "resolved",
+      "updated_at": "2026-08-20T09:04:19+00:00"
     },
     "intake": {
       "path": "docs/flywheel-runs/flash-app-store-v1/intake.md",
@@ -100,10 +111,9 @@
       "updated_at": "2026-08-19T12:34:33+00:00"
     },
     "profiles": {
-      "count": 4,
+      "count": 3,
       "paths": {
         "app-store-data-engineer": "docs/worker-profiles/app-store-data-engineer.md",
-        "app-store-portability-engineer": "docs/worker-profiles/app-store-portability-engineer.md",
         "app-store-product-engineer": "docs/worker-profiles/app-store-product-engineer.md",
         "app-store-release-governor": "docs/worker-profiles/app-store-release-governor.md"
       },
@@ -111,10 +121,14 @@
         "sas-00-contract",
         "sas-02-persistent-library",
         "sas-03-private-sync",
+        "sas-03a-account-routing",
+        "sas-03b-sync-convergence",
+        "sas-04-complete-backup",
+        "sas-04b-scoped-transfer-erasure",
         "sas-07-human-release"
       ],
       "status": "complete",
-      "updated_at": "2026-08-19T12:43:17+00:00"
+      "updated_at": "2026-08-20T09:18:21+00:00"
     },
     "review": {
       "commands": 2,
@@ -128,10 +142,10 @@
       "updated_at": "2026-08-19T12:34:39+00:00"
     },
     "validate": {
-      "issues": 1,
+      "issues": 0,
       "path": "docs/flywheel-runs/flash-app-store-v1/validation.md",
-      "status": "failed",
-      "updated_at": "2026-08-19T19:06:00+00:00"
+      "status": "passed",
+      "updated_at": "2026-08-20T09:18:52+00:00"
     },
     "worker_report": {
       "path": "docs/worker-reports/flash-app-store-v1/sas-03-private-sync.md",
@@ -143,5 +157,5 @@
   "project": "/Users/ebrahimabdelwahed/Desktop/Dev/flashapp",
   "run_id": "flash-app-store-v1",
   "schema_version": 1,
-  "updated_at": "2026-08-19T19:06:00+00:00"
+  "updated_at": "2026-08-20T09:18:52+00:00"
 }

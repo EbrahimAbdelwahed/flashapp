@@ -5,15 +5,16 @@ Status: implementation-ready specification derived from the approved architectur
 is the engineering source of truth. Where the two conflict, the brief wins and the spec
 must be amended — never silently diverged from.
 
-## Version 1.0 release amendment — 2026-08-19
+## Version 1.0 release amendments — 2026-08-19 / 2026-08-20
 
 ADR-006 and the `flash-app-store-v1` Flywheel run supersede the original 1.0 assumptions
 about price, Groups, store topology, onboarding, backup media, TestFlight cohort, and
 release evidence. The active 1.0 contract is:
 
 - paid download €2.99 at launch and €4.99 after one calendar month, with no StoreKit/IAP;
-- one versioned `Private.sqlite` in `NSPersistentCloudKitContainer`, mirrored only to the
-  user's private CloudKit database and fully usable locally/offline;
+- one active account-scoped `Private.sqlite` at a time in
+  `NSPersistentCloudKitContainer`; identified profiles mirror only to that Apple Account's
+  private CloudKit database, while Anonymous/Legacy profiles are local-only;
 - no `Shared.sqlite`, Groups, `CKShare`, group model/UI/tutorial, or group release gate;
 - Today, Library, and Settings tabs; Import in Library and Statistics from Today;
 - skippable onboarding with idempotent, persistent, generalist demo content;
@@ -22,7 +23,8 @@ release evidence. The active 1.0 contract is:
 - Apple account/team/App ID/container/schema/signing/archive/TestFlight/ASC operations are
   `HUMAN_REQUIRED` until real evidence is recorded.
 
-The canonical slices and acceptance evidence live in
+ADR-007 supersedes ADR-006's global file URL, same-store account transition, and
+no-shipping-local-only clauses. The canonical slices and acceptance evidence live in
 `docs/specs/flashapp-1-0-app-store-hardening.md` and
 `specs/flash-app-store-v1/`. Original Phase 7 group beads are retained only as historical
 planning context and are not dispatchable for version 1.0.
@@ -57,7 +59,8 @@ These apply to every bead. A bead is not DONE if any global rule is violated.
 
 ### 0.2 Technical conventions
 
-- **Language/tooling:** Swift 5.10+, Xcode 16.x, SwiftUI + Observation framework
+- **Language/tooling:** Swift 5.10+, Xcode 26.x / iOS 26 SDK for release while retaining
+  iOS/iPadOS 17 deployment, SwiftUI + Observation framework
   (`@Observable`), `NavigationStack`/`NavigationSplitView`, Swift Concurrency
   (`async/await`, actors). No Combine except where Core Data/CloudKit notifications
   require it internally.
@@ -161,12 +164,14 @@ architecture mid-bead.
 
 ### A1.1 Stores and databases
 
-For version 1.0: one `NSManagedObjectModel`, one `NSPersistentCloudKitContainer`, and
-**one SQLite store**:
+For version 1.0: one `NSManagedObjectModel`, at most one loaded
+`NSPersistentCloudKitContainer`, and a family of isolated profile stores:
 
-| Store file        | CloudKit database scope | Contents |
-|-------------------|------------------------|----------|
-| `Private.sqlite`  | `.private`             | Personal decks, notes, cards, tags, schedules, review logs, import batches, study settings, trash metadata, and migration bookkeeping. |
+| Profile | Store file | CloudKit database scope | Contents |
+|---|---|---|---|
+| Anonymous | `Stores/Anonymous/Private.sqlite` | none | Local personal library awaiting optional explicit transfer. |
+| Identified | `Stores/Accounts/<fingerprint>/Private.sqlite` | `.private` | Only that Apple Account's personal library and progress. |
+| Legacy | `Stores/Legacy/<migration-id>/Private.sqlite` | none | Provenance-unknown pre-ADR-007 data, quarantined until explicit transfer/export. |
 
 The resumable study session is intentionally device-local and atomically stored at
 `Application Support/session-state.json` (A6.6); onboarding/tutorial flags remain in
@@ -179,12 +184,13 @@ Version 1.0 persistence inventory:
 | Deck/note/card/tag/trash/import metadata | `Private.sqlite` | private | yes, except demo/trashed | store recovery path |
 | Schedule and review log | `Private.sqlite` | private | yes | deterministic replay |
 | Study limits, appearance, reminder preference/time | `CDStudySettings` singleton | private | yes | default only when no record exists; never reset a failed store |
-| Active study session | atomic `Application Support/session-state.json` | no | no | discard only an invalid/expired (>24h) session file |
+| Active study session | atomic profile-scoped `session-state.json` | no | no | discard only an invalid/expired (>24h) session file |
 | Onboarding/tutorial completion | `UserDefaults` | no | no | missing key means not completed |
 | Notification authorization | system `UNUserNotificationCenter` state | no | no | re-query the system; never infer from backup |
 
-Delete-all removes the app-owned rows/files/default keys after explicit confirmation but
-does not and cannot mutate the system notification authorization.
+Delete-all removes only the active profile's rows/files/scoped defaults after explicit
+confirmation and does not mutate inactive profiles or system notification authorization.
+Identified deletion remains pending until a CloudKit export completion is observed.
 
 `Shared.sqlite`, group entities, shared zones, and `CKShare` are deferred beyond 1.0.
 
@@ -193,17 +199,23 @@ Configuration:
 - The store description enables:
   - `NSPersistentHistoryTrackingKey = true`
   - `NSPersistentStoreRemoteChangeNotificationPostOptionKey = true`
-- Release builds always set `cloudKitContainerOptions.databaseScope = .private` with the
-  configured CloudKit container identifier `iCloud.<bundle-id>` before loading the store.
+- Identified profiles set `cloudKitContainerOptions.databaseScope = .private` with the
+  configured container before load. Anonymous/Legacy profiles deliberately set no CloudKit
+  options in release builds.
 - `viewContext.automaticallyMergesChangesFromParent = true`,
   `mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy`.
 - Background work uses `container.newBackgroundContext()` per operation; never write on
   the view context except trivial UI-driven single-object edits.
-- If iCloud is unavailable (no account, iCloud Drive off, restricted, or offline), the
-  configured store remains open and locally usable while `SyncAvailability` exposes the
-  truthful state (A4.4). When availability returns, the same loaded store exports pending
-  history; there is no runtime store replacement. Pure-local options are test/preview or
-  explicit non-CloudKit-build fixtures only and load the same file format.
+- `CloudAccountIdentityResolver` completes before any cold production load. Known identity
+  selects its account profile; no/restricted/indeterminate identity selects Anonymous.
+- A device-keyed HMAC-SHA256 fingerprint routes identified profiles; raw record identity,
+  fingerprint and path are never displayed or logged. Missing key with existing profiles is
+  a recovery state.
+- An already-open identified store remains local-first during ordinary network loss. An
+  account-change event gates writes, cancels observers/work, closes the store, resolves
+  identity and opens exactly one matching profile through a generation-checked coordinator.
+- No account transition implicitly merges, moves or deletes another profile. Anonymous and
+  Legacy transfer only through the fully validated archive contract in A10.
 
 ### A1.2 CloudKit-compatible modeling rules (mandatory)
 
@@ -219,17 +231,18 @@ Because the private store is CloudKit-mirrored, the Core Data model MUST follow:
 
 ### A1.3 Relationship and identity rule (critical)
 
-Version 1.0 has one private store. Relationships stay within the personal content graph,
+Version 1.0 has one active profile store. Relationships stay within that profile graph,
 while stable UUID attributes keep study replay and future migrations portable.
 
 - **Content entities** (CDDeck, CDNote, CDCard, CDTag) form a connected relationship
-  graph in `Private.sqlite`.
+  graph in its `Private.sqlite`.
 - **Private study entities** (CDSchedule, CDReviewLog, CDImportBatch) have **no Core
   Data relationships at all** — not to content, not to each other. They reference
   content via plain UUID attributes (`cardUUID`, `noteUUID`, `deckUUID`). This
   guarantees they can never be dragged into a shared zone and never sync to other
   participants.
-- Study entities are always created in `Private.sqlite`; repository tests enforce this.
+- Study entities are always created in the active profile's `Private.sqlite`; repository
+  tests enforce this.
 
 Consequence embraced by design: joins between study data and content are done in
 memory by UUID (dictionary lookups). Expected scale (≤ tens of thousands of cards)
@@ -422,6 +435,11 @@ deletion := "{{c" INT "::" text ( "::" hint )? "}}"
 
 ### A4.1 Components
 
+- `CloudAccountIdentityResolver` — resolves account availability plus current
+  `CKRecord.ID` before load and derives the device-keyed opaque routing fingerprint.
+- `AccountStoreCoordinator` — owns the profile catalog, legacy quarantine, exactly-one
+  active repository/media/session/history/recovery scope, generation-checked account
+  transitions and recovery states. `AppEnvironment` consumes this coordinator.
 - `PersistenceController` — builds the container per A1; exposes `viewContext`,
   `newBackgroundContext()`, the private store, and local-only mode.
 - `SyncMonitor` (`@Observable`) — consumes
@@ -443,6 +461,11 @@ On remote change notification (debounced 2s):
 5. Run `Deduplicator` for CDTag and CDSchedule (A4.3).
 6. Persist the new history token; delete history older than 7 days.
 
+Cursor decode/fetch failure quarantines the derived cursor and retries once from nil. The
+source store is never modified to repair a cursor. Checkpoint occurs only after changed-note
+card reconciliation, UUID-safe deduplication and schedule replay all succeed; pruning occurs
+after checkpoint and is retryable.
+
 ### A4.3 Deduplication (CloudKit has no unique constraints)
 
 Deterministic rule "lowest uuid wins" so every device converges independently:
@@ -450,6 +473,10 @@ Deterministic rule "lowest uuid wins" so every device converges independently:
   losers' notes; losers hard-deleted.
 - CDSchedule: same `cardUUID` → winner = lowest uuid; before deleting losers, run
   replay (A6.4) so the winner reflects the union of logs.
+- Malformed rows with absent required app identity never participate as winners and never
+  cause valid rows to be deleted. They surface a typed, nonblocking sync recovery state.
+- Review logs union by UUID before replay: identical duplicates apply once; divergent
+  payloads fail safely for recovery and are never chosen by fetch order.
 - CDDeck/CDNote/CDCard duplicates are not expected (single insertion point);
   if detected, log at fault level and do not auto-delete (human review path).
 
@@ -458,6 +485,11 @@ Deterministic rule "lowest uuid wins" so every device converges independently:
 `SyncAvailability`: `.available`, `.noAccount`, `.restricted`, `.temporarilyUnavailable`,
 `.localOnly` (user disabled or capability missing).
 `SyncActivity`: `.idle`, `.syncing`, `.error(SyncError)`.
+
+`ActiveProfile`: `.resolving`, `.anonymous`, `.legacy`, `.identified`, `.switching`,
+`.recovery`. Availability and activity are orthogonal; account availability alone is never
+presented as “Up to date.” Overlapping setup/import/export event identities remain in flight
+until their own completion, and any relevant failure is visible/retryable.
 
 - Presentation is *subtle*: a small status glyph in Settings row "iCloud Sync" and a
   passive banner on Library only for `.noAccount`/`.error` states, with a "Retry"
@@ -654,6 +686,13 @@ and offered as "Resume session". Cleared on completion/abandon.
   §Schema evolution.
 - Heavyweight/custom migrations require a dedicated future bead + ADR; none exist in
   v1.
+- The pre-ADR-007 global `Application Support/FlashApp/Private.sqlite` has unknown Apple
+  Account provenance. Before any account store loads, clone its SQLite/WAL/SHM, media and
+  session into a new `Stores/Legacy/<migration-id>/` recovery scope, verify source and clone
+  hashes, and open only the clone local-only. Keep the original and migration marker until
+  explicit later deletion. Never assign the global store to the currently available account.
+- Missing/corrupt profile catalog or fingerprint key enters the same Retry / Export Recovery
+  Files / Support surface; it never creates a blank replacement identity catalog.
 
 ## A8. Trash, purge, and permanent deletion
 
@@ -678,13 +717,15 @@ user's devices.
 
 ### A8.3 Delete all my data
 Separate, immediate, bypasses trash (brief):
-- Screen explains scopes affected: the local private store and the user's private
-  CloudKit database.
+- Screen names the exact active profile. Other account, Anonymous and Legacy profiles are
+  not touched.
 - Two-step: destructive confirm → type `ELIMINA` (both locales use `ELIMINA`; show the
   word to type). Offer backup export first.
-- Execution order: (1) optional backup, (2) delete all user objects through the private
-  store and `NSPersistentCloudKitContainer` mirroring, (3) reset UserDefaults/session/
-  tutorial state, (4) return to onboarding.
+- Anonymous/Legacy execution removes that profile's rows, media, session, cursor, scoped
+  defaults and recovery artifacts after optional backup.
+- Identified execution writes logical deletions and remains `deletionPending` until a
+  successful CloudKit export event. Sign-out or account switch preserves the scoped store
+  for later completion and cannot fabricate success.
 
 ## A9. CSV contract and import pipeline
 
@@ -765,6 +806,9 @@ Import only; FlashApp never writes `.apkg`.
 Version 1.0 exports one `.flashupbackup` archive with a JSON manifest/data document plus
 content-addressed media blobs. ADR-006 supersedes the earlier reference-only JSON format.
 The archive is validated and staged in full before restore mutates the live repository.
+ADR-007 makes the archive scope-neutral: it contains no record name, account fingerprint,
+profile path or CloudKit metadata and is the only transfer mechanism from Anonymous/Legacy
+into an identified profile.
 
 ```jsonc
 {
@@ -790,7 +834,8 @@ The archive is validated and staged in full before restore mutates the live repo
 ```
 
 - Export scope: all personal decks, all private study data, settings, and every referenced
-  supported media blob. Demo content and trashed content are excluded.
+  supported media blob from exactly one explicit source profile. Demo content and trashed
+  content are excluded.
 - Restore: `formatVersion` gate (unknown major → refuse with "backup created by a
   newer version" message). Merge policy: objects restore by uuid; existing uuid →
   skip (never overwrite live data). Review logs merge append-only by uuid; schedules
@@ -798,6 +843,10 @@ The archive is validated and staged in full before restore mutates the live repo
   idempotent. Corrupt, missing, or hash-mismatched media refuses the archive before any
   partial mutation.
 - `BackupCodec` lives in Domain (pure Codable structs), `BackupService` in Data.
+- Source and destination stores are never loaded simultaneously for transfer. Export closes
+  and validates a staged archive before the coordinator opens the explicit destination;
+  transfer is copy-first and leaves the source unchanged unless a later separate deletion
+  is confirmed.
 - `docs/decisions/backup-format.md` is the canonical container, limit, legacy-import,
   atomicity, and merge contract. Future changes bump `formatVersion` and require an ADR.
 

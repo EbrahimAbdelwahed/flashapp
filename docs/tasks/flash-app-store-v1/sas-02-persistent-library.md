@@ -1,6 +1,6 @@
 # Task Bead: sas-02-persistent-library Replace the shipping in-memory library
 
-Status: Done
+Status: Open
 Priority: P0
 Type: task
 Depends On: sas-01-data-foundation
@@ -43,8 +43,7 @@ The complete app surface already consumes LibraryRepository, so the adapter can 
 
 - Implement CoreDataLibraryRepository for content, study, settings, session, import, trash and erasure behavior.
 - Wire AppEnvironment to the persistent repository and persistent media store; keep in-memory adapters preview/test-only.
-- Add a stable, versioned, idempotent demo-install repository operation with `isDemo = true`.
-- Remove dormant `Deck.groupID` and `BackupDeck.sharedSnapshot` from the 1.0 Domain contract and update fixtures/codecs.
+- Add an idempotent stable-version demo-install operation with isDemo=true; remove dormant Deck.groupID and BackupDeck.sharedSnapshot from the 1.0 Domain contract.
 
 ## Likely Files / Packages
 
@@ -58,11 +57,10 @@ The complete app surface already consumes LibraryRepository, so the adapter can 
 
 ## Acceptance Criteria
 
-- [x] Behavior contract tests agree across in-memory and on-disk adapters.
-- [x] Relaunch preserves all user state.
-- [x] Production composition contains no InMemoryLibrary or InMemoryMediaStore fallback.
-- [x] Repeated demo installation yields exactly one persistent `isDemo` deck.
-- [x] No group/shared-snapshot field remains in the 1.0 Domain or backup contract.
+- [ ] Behavior contract tests agree across in-memory and on-disk adapters.
+- [ ] Relaunch preserves all user state.
+- [ ] Production composition contains no InMemoryLibrary or InMemoryMediaStore fallback.
+- [ ] Repeated demo installation produces exactly one persistent isDemo deck and no group/shared-snapshot field remains in the 1.0 contract.
 
 ## Verification
 
@@ -76,8 +74,4 @@ The complete app surface already consumes LibraryRepository, so the adapter can 
 
 ## Notes / Handoff
 
-- Accepted after independent correctness and security/data-safety review.
-- The V1 model remains immutable; V2 is current and a checked-in V1 store migrates through
-  staging before a clean V2 relaunch.
-- Real Apple account, CloudKit schema/container, signing, device and TestFlight evidence
-  remains `HUMAN_REQUIRED` or `UNVERIFIED`.
+- Worker must report files changed, behavior implemented, verification results, unresolved questions, and follow-up beads.

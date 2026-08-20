@@ -1,6 +1,6 @@
 # Task Bead: sas-01-data-foundation Build the versioned private-store foundation
 
-Status: Done
+Status: Open
 Priority: P0
 Type: task
 Depends On: sas-00-contract
@@ -55,11 +55,10 @@ No Core Data model or persistence controller exists; this is the first productio
 
 ## Acceptance Criteria
 
-- [x] Model lint is CloudKit-compatible and versioned.
-- [x] V1 contains `CDStudySettings` with the approved singleton/dedup fields; it contains no session/tutorial/system-authorization entity.
-- [x] On-disk data survives close/reopen.
-- [x] Corrupt/migration failure preserves original store files and never deletes them.
-- [x] Account-dependent evidence remains UNVERIFIED.
+- [ ] Model lint is CloudKit-compatible and versioned, including CDStudySettings but no session/tutorial/system-authorization entity.
+- [ ] On-disk data survives close/reopen.
+- [ ] Corrupt/migration failure preserves original store files and never deletes them.
+- [ ] Account-dependent evidence remains UNVERIFIED.
 
 ## Verification
 

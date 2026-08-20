@@ -1,6 +1,6 @@
 # Worker Profile: app-store-release-governor
 
-Generated: 2026-08-19
+Generated: 2026-08-20
 Source task: `docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md`
 
 ## Reuse Trigger
@@ -27,9 +27,6 @@ Out of scope:
 
 Read first:
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- applicable `specs/flash-app-store-v1/slices/` file
-- `docs/testing/app-store-v1-gates.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`
 - `docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md`
@@ -37,8 +34,7 @@ Read first:
 
 Current-doc research:
 
-- Required for volatile App Store requirements; use primary Apple sources and date every
-  claim.
+- not needed
 
 ## Allowed Files
 
@@ -62,7 +58,6 @@ Do not edit:
 
 - Files outside the bead's approved scope.
 - Files reserved by another active worker.
-- `assets/emma-avatar/`.
 
 ## Forbidden Decisions
 
@@ -88,12 +83,11 @@ Stop and report back before deciding:
 Run:
 
 ```bash
-ci/test.sh
-ci/l10n-check.sh
+`ci/test.sh`: expected to pass or produce documented output
+`l10n check`: expected to pass or produce documented output
+`release matrix inspection`: expected to pass or produce documented output
+`Semantic release review`: expected to pass or produce documented output
 ```
-
-Archive/TestFlight/App Store operations are evidence entries, not local commands, and stay
-`HUMAN_REQUIRED` until the account holder supplies primary evidence.
 
 If verification cannot run, report the reason and the narrowest manual check completed.
 
@@ -108,7 +102,47 @@ Return:
 - unresolved questions;
 - recommended next worker or review step.
 
-## Independent Semantic Review Gate
+## Task Contract (verbatim)
 
-A separate release reviewer must confirm that every PASS has primary evidence and that
-every missing external input remains blocking.
+### Goal / Outcome
+
+
+
+### Context
+
+
+
+### Allowed Scope
+
+- <none>
+
+### Forbidden Scope
+
+- Unrelated refactors.
+- Changing public behavior outside the task acceptance criteria.
+- Making product, architecture, prompt-policy, or data-model decisions reserved for the orchestrator.
+
+### Invariants
+
+- <none>
+
+### Acceptance Criteria
+
+- <none>
+
+### Verification
+
+- `ci/test.sh`: expected to pass or produce documented output
+- `l10n check`: expected to pass or produce documented output
+- `release matrix inspection`: expected to pass or produce documented output
+- `Semantic release review`: expected to pass or produce documented output
+
+If a verification command cannot run, state why and what remains unverified.
+
+### Stop Conditions
+
+- Stop and report when a required decision or verification cannot be completed.
+
+### Independent Semantic Review Gate
+
+A separate reviewer must confirm the diff remains within this contract before dispatch is closed.

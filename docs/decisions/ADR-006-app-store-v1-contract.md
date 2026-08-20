@@ -5,6 +5,11 @@ Date: 2026-08-19
 Run: `flash-app-store-v1`
 Decider: product owner (explicit decisions recorded 2026-08-19)
 
+Amendment (2026-08-20): ADR-007 supersedes the single global `Private.sqlite` URL and the
+prohibition on a shipping local-only store. The logical one-private-store model remains,
+but it is instantiated per isolated Anonymous, Legacy or identified Apple Account profile;
+only an identified profile receives CloudKit options.
+
 ## Context
 
 The approved brief originally made collaborative Groups, a shared CloudKit store,

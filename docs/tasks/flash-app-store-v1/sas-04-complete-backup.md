@@ -3,7 +3,7 @@
 Status: Open
 Priority: P0
 Type: task
-Depends On: sas-02-persistent-library, sas-03-private-sync
+Depends On: sas-03b-sync-convergence
 Run ID: `flash-app-store-v1`
 Spec: `docs/specs/flashapp-1-0-app-store-hardening.md`
 
@@ -28,11 +28,11 @@ Fresh Context Fit: yes
 
 ## Worker Profile
 
-create app-store-portability-engineer
+reuse app-store-data-engineer
 
 Rationale:
 
-Portable manifest contracts and deterministic merge fixtures reuse domain/import expertise while Data owns archive I/O.
+The serialized Data owner integrates archive I/O without opening two account stores or conflicting with AppEnvironment.
 
 ## Context
 
@@ -40,9 +40,9 @@ ADR-004 reference-only backup behavior is superseded by ADR-006.
 
 ## What To Do
 
-- Version the manifest/archive layout, include media bytes, hash and validate every reference, stage restore before mutation, and merge UUID/log/media state idempotently.
+- Version the scope-neutral manifest/archive layout, include media bytes, hash and validate every reference, stage restore before mutation, and merge UUID/log/media state idempotently.
 - Preserve size/decompression limits and typed errors.
-- Define `BackupArchiveServicing` in Domain, implement it in Data, inject it from `AppEnvironment`, and replace the production legacy JSON export/restore dependency.
+- Define the Domain BackupArchiveServicing port, implement it in Data, inject it from AppEnvironment, and replace the production legacy JSON path.
 
 ## Likely Files / Packages
 
@@ -60,7 +60,7 @@ ADR-004 reference-only backup behavior is superseded by ADR-006.
 - [ ] Image/audio bytes round-trip and render.
 - [ ] Second restore adds nothing and overwrites nothing.
 - [ ] Corrupt/truncated/missing/hash-mismatched archives cause zero partial mutations.
-- [ ] Production Settings resolves the injected archive port and contains no direct legacy `BackupDocument` JSON path.
+- [ ] Production Settings resolves the injected archive port and contains no legacy direct JSON path.
 
 ## Verification
 
@@ -70,7 +70,7 @@ ADR-004 reference-only backup behavior is superseded by ADR-006.
 
 ## Out Of Scope
 
-- Settings visual redesign, CloudKit schema operations, Groups snapshots.
+- Profile transfer orchestration, Settings visual redesign, CloudKit schema operations, Groups snapshots.
 
 ## Notes / Handoff
 

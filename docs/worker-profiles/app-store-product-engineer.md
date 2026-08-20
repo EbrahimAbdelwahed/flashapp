@@ -1,6 +1,6 @@
 # Worker Profile: app-store-product-engineer
 
-Generated: 2026-08-19
+Generated: 2026-08-20
 Source task: `docs/tasks/flash-app-store-v1/sas-05-release-surface.md`
 
 ## Reuse Trigger
@@ -27,9 +27,6 @@ Out of scope:
 
 Read first:
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- `docs/ux-principles.md`
-- `specs/flash-app-store-v1/slices/05-release-surface.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`
 - `docs/tasks/flash-app-store-v1/sas-05-release-surface.md`
@@ -59,7 +56,6 @@ Do not edit:
 
 - Files outside the bead's approved scope.
 - Files reserved by another active worker.
-- `assets/emma-avatar/`.
 
 ## Forbidden Decisions
 
@@ -86,12 +82,11 @@ Stop and report back before deciding:
 Run:
 
 ```bash
-ci/test.sh
-ci/lint.sh
+`Focused XCUITests on iPhone/iPad`: expected to pass or produce documented output
+`Production-route screenshot diff`: expected to pass or produce documented output
+`Unprimed screenshot critique`: expected to pass or produce documented output
+`ci/test.sh`: expected to pass or produce documented output
 ```
-
-Visual evidence additionally requires the production-route screenshot/diff and the
-`screenshot-critique` gate named by the slice.
 
 If verification cannot run, report the reason and the narrowest manual check completed.
 
@@ -106,7 +101,47 @@ Return:
 - unresolved questions;
 - recommended next worker or review step.
 
-## Independent Semantic Review Gate
+## Task Contract (verbatim)
 
-A separate reviewer and an unprimed screenshot critique must approve the release surface
-before dispatch is closed.
+### Goal / Outcome
+
+
+
+### Context
+
+
+
+### Allowed Scope
+
+- <none>
+
+### Forbidden Scope
+
+- Unrelated refactors.
+- Changing public behavior outside the task acceptance criteria.
+- Making product, architecture, prompt-policy, or data-model decisions reserved for the orchestrator.
+
+### Invariants
+
+- <none>
+
+### Acceptance Criteria
+
+- <none>
+
+### Verification
+
+- `Focused XCUITests on iPhone/iPad`: expected to pass or produce documented output
+- `Production-route screenshot diff`: expected to pass or produce documented output
+- `Unprimed screenshot critique`: expected to pass or produce documented output
+- `ci/test.sh`: expected to pass or produce documented output
+
+If a verification command cannot run, state why and what remains unverified.
+
+### Stop Conditions
+
+- Stop and report when a required decision or verification cannot be completed.
+
+### Independent Semantic Review Gate
+
+A separate reviewer must confirm the diff remains within this contract before dispatch is closed.

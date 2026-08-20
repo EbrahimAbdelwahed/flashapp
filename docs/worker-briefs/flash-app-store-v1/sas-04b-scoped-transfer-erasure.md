@@ -1,15 +1,15 @@
-# Worker Brief: sas-04-complete-backup
+# Worker Brief: sas-04b-scoped-transfer-erasure
 
 ## Assignment
 
-Implement `sas-04-complete-backup` from `docs/specs/flashapp-1-0-app-store-hardening.md`.
+Implement `sas-04b-scoped-transfer-erasure` from `docs/specs/flashapp-1-0-app-store-hardening.md`.
 
-Task title: sas-04-complete-backup Ship complete media backups and safe restore
+Task title: sas-04b-scoped-transfer-erasure Copy profiles and erase only the active scope
 
 ## Read First
 
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
-- `docs/tasks/flash-app-store-v1/sas-04-complete-backup.md`
+- `docs/tasks/flash-app-store-v1/sas-04b-scoped-transfer-erasure.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`
 - `docs/worker-profiles/app-store-data-engineer.md`
 - Project `AGENTS.md` files that apply to touched paths.

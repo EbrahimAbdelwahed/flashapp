@@ -41,7 +41,7 @@ This task is expected to remain HUMAN_REQUIRED until membership and identifiers 
 
 ## What To Do
 
-- Configure/verify team, App ID, bundle/container, schema, legal URLs, signing and price schedule; archive/validate/upload; execute same-account CloudKit including deletion propagation, internal TestFlight, iPhone/iPad, and Apple-Silicon-Mac iPad-app matrices; complete App Store Connect and submit only with explicit authorization.
+- Configure/verify team, App ID, bundle/container, schema, legal URLs, signing and price schedule; archive/validate/upload; execute same-account CloudKit (including deletion propagation), internal TestFlight, iPhone/iPad, and Apple-Silicon-Mac iPad-app matrices; complete App Store Connect and submit only with explicit authorization.
 
 ## Likely Files / Packages
 
@@ -60,8 +60,8 @@ This task is expected to remain HUMAN_REQUIRED until membership and identifiers 
 
 - `Signed entitlement/profile dump`: expected to pass or produce documented output
 - `Validate App result`: expected to pass or produce documented output
-- `CloudKit same-account device checklist incl. deletion propagation`: expected to remain HUMAN_REQUIRED until real evidence
-- `Processed internal TestFlight iPhone/iPad/Apple-Silicon-Mac smoke matrix`: expected to remain HUMAN_REQUIRED until real evidence
+- `CloudKit same-account device checklist incl. deletion propagation`: expected to pass or produce documented output
+- `Processed internal TestFlight iPhone/iPad/Apple-Silicon-Mac smoke matrix`: expected to pass or produce documented output
 - `ASC checklist`: expected to pass or produce documented output
 
 ## Out Of Scope

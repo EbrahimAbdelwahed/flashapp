@@ -4,16 +4,14 @@
 
 Implement `sas-03-private-sync` from `docs/specs/flashapp-1-0-app-store-hardening.md`.
 
-Task title: sas-03-private-sync Implement automatic personal CloudKit sync
+Task title: sas-03-private-sync Rejected initial private-sync pass
 
 ## Read First
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- `specs/flash-app-store-v1/slices/03-private-sync.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/tasks/flash-app-store-v1/sas-03-private-sync.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`
-- `docs/worker-profiles/app-store-data-engineer.md`
+- No reusable worker profile linked for this bead.
 - Project `AGENTS.md` files that apply to touched paths.
 
 ## Scope

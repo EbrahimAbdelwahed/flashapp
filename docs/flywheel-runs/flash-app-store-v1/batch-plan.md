@@ -1,8 +1,9 @@
 # FlashApp App Store 1.0 — batch graph
 
-Status: blocked at sas-03 account-switch safety decision
-Date: 2026-08-19
-Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
+Status: active — sas-03a ready
+Date: 2026-08-20
+Decisions: `docs/decisions/ADR-006-app-store-v1-contract.md`,
+`docs/decisions/ADR-007-account-scoped-stores.md`
 
 ## Graph
 
@@ -10,18 +11,20 @@ Decision: `docs/decisions/ADR-006-app-store-v1-contract.md`
 flowchart LR
   A[sas-00 Contract] --> B[sas-01 Data foundation]
   B --> C[sas-02 Persistent library]
-  C --> D[sas-03 Private sync]
-  D --> E[sas-04 Complete backup]
-  E --> F[sas-05 Release surface]
-  F --> G[sas-06 Quality evidence]
+  C --> X[sas-03 Rejected evidence]
+  C --> D[sas-03a Account routing]
+  D --> E[sas-03b Sync convergence]
+  E --> F[sas-04 Complete backup]
+  F --> I[sas-04b Transfer + erasure]
+  I --> J[sas-05 Release surface]
+  J --> G[sas-06 Quality evidence]
   G --> H[sas-07 Human release]
 ```
 
 ## Dispatch policy
 
 - One owner at a time for `FlashUpData`, the Core Data model and `AppEnvironment`.
-- Slices 03 and 04 are logically separable but are serialized because both integrate with
-  the persistent repository and user data.
+- Slices 03a, 03b, 04 and 04b are serialized under the same Data/AppEnvironment owner.
 - The UI batch starts only after sync and backup contracts are stable.
 - Release audit never runs in parallel with feature work.
 - Every worker uses a scoped branch/worktree, reports completion, receives semantic review,
@@ -42,8 +45,11 @@ blocker even if every repository-only test passes.
 | sas-00-contract | Done | worker report + approved semantic review + validation |
 | sas-01-data-foundation | Done | worker report + correctness/security approvals + tests |
 | sas-02-persistent-library | Done | worker report + correctness/security approvals + tests |
-| sas-03-private-sync | Blocked | implementation tests green; correctness/security reviews blocked; account boundary decision open |
-| sas-04-complete-backup | Pending | waits for accepted sas-03; no dispatch while blocking decision is open |
-| sas-05-release-surface | Pending | waits for sas-04 |
+| sas-03-private-sync | Superseded | rejected implementation retained as review evidence only |
+| sas-03a-account-routing | Ready | owner resolved account boundary; ADR-007 accepted |
+| sas-03b-sync-convergence | Pending | waits for accepted sas-03a |
+| sas-04-complete-backup | Pending | waits for accepted sas-03b |
+| sas-04b-scoped-transfer-erasure | Pending | waits for accepted sas-04 |
+| sas-05-release-surface | Pending | waits for accepted sas-04b |
 | sas-06-quality-evidence | Pending | waits for sas-05 |
 | sas-07-human-release | HUMAN_REQUIRED | waits for sas-06 and Apple account evidence |

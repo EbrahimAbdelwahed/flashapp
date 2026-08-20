@@ -8,9 +8,6 @@ Task title: sas-06-quality-evidence Build the App Store quality and evidence gat
 
 ## Read First
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- `specs/flash-app-store-v1/slices/06-quality-evidence.md`
-- `docs/testing/app-store-v1-gates.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/tasks/flash-app-store-v1/sas-06-quality-evidence.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`

@@ -28,6 +28,9 @@ Rules:
 | Final App ID/bundle/container | HUMAN_REQUIRED | owner freezes identifiers |
 | CloudKit development/production schema | HUMAN_REQUIRED | real container evidence |
 | Same-account multi-device CloudKit E2E | HUMAN_REQUIRED | two-device checklist incl. offline/reconnect/delete/restore/erase |
+| Apple Account profile isolation | HUMAN_REQUIRED | signed-build sign-out/return and A→B checklist with Dashboard inspection |
+| Anonymous/Legacy consent boundary | HUMAN_REQUIRED | signed-build no-auto-export, explicit transfer and upgrade-quarantine checklist |
+| Account-scoped remote erasure | HUMAN_REQUIRED | interruption/sign-out/reconnect propagation evidence for the named account only |
 | Legal identity/support/privacy URLs | HUMAN_REQUIRED | final public values/HTTPS pages |
 | Signing/profile/entitlements | HUMAN_REQUIRED | signed archive dump |
 | Validate App | HUMAN_REQUIRED | Xcode/App Store Connect result |

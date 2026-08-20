@@ -8,9 +8,6 @@ Task title: sas-05-release-surface Expose only the honest 1.0 product surface
 
 ## Read First
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- `docs/ux-principles.md`
-- `specs/flash-app-store-v1/slices/05-release-surface.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/tasks/flash-app-store-v1/sas-05-release-surface.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`

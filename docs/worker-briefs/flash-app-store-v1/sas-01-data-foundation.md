@@ -8,8 +8,6 @@ Task title: sas-01-data-foundation Build the versioned private-store foundation
 
 ## Read First
 
-- `docs/decisions/ADR-006-app-store-v1-contract.md`
-- `specs/flash-app-store-v1/slices/01-data-foundation.md`
 - `docs/specs/flashapp-1-0-app-store-hardening.md`
 - `docs/tasks/flash-app-store-v1/sas-01-data-foundation.md`
 - `docs/flywheel-runs/flash-app-store-v1/context-pack.md`

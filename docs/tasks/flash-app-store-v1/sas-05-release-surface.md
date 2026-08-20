@@ -3,7 +3,7 @@
 Status: Open
 Priority: P0
 Type: task
-Depends On: sas-03-private-sync, sas-04-complete-backup
+Depends On: sas-04b-scoped-transfer-erasure
 Run ID: `flash-app-store-v1`
 Spec: `docs/specs/flashapp-1-0-app-store-hardening.md`
 

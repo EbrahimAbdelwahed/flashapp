@@ -1,4 +1,11 @@
-# Slice 03 — Automatic private CloudKit sync
+# Slice 03 — Rejected initial private CloudKit sync pass
+
+Status: superseded by ADR-007; retained as review evidence, never dispatch directly.
+
+The first implementation pass proved useful fixtures but failed correctness and
+security/data-loss review. Its accepted requirements are resliced into
+`03a-account-routing.md` and `03b-sync-convergence.md`; account-neutral archive transfer
+continues in `04-complete-backup.md` and `04b-scoped-transfer-erasure.md`.
 
 ## Contract unlocked
 

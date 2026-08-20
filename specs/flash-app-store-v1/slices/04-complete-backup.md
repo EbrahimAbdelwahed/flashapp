@@ -12,6 +12,8 @@ layout, staging, media hashing, atomic export and transaction orchestration. `Me
 remains the single blob owner. A Domain `BackupArchiveServicing` port is injected by
 `AppEnvironment`; Settings may consume only this port. This slice owns the port, Data
 implementation, composition wiring, and removal of the legacy direct JSON export path.
+The archive is profile-neutral and contains no raw account identity, fingerprint, profile
+path or CloudKit metadata. Source and destination are explicit and never loaded together.
 
 ## Runnable artifact
 
@@ -36,4 +38,4 @@ Existing CSV/`.apkg` import, media content addressing and reference rendering.
 ## Feedback that changes this slice
 
 If archive format choices materially affect interoperable backups or size limits, update
-ADR-006/backup-format docs before committing the public format.
+ADR-006/ADR-007/backup-format docs before committing the public format.
