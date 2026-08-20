@@ -1,4 +1,5 @@
 import CoreData
+import CloudKit
 import FlashUpDomain
 import Foundation
 
@@ -21,19 +22,42 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
     private let persistence: PersistenceController?
     private let scheduler: FSRSService
     private let sessionURL: URL
-    private let status: SyncStatus
+    private let syncMonitor: SyncMonitor
+    private let historyProcessor: RemoteChangeProcessor
+    private var remoteChangeObserver: NSObjectProtocol?
+    private var cloudKitEventObserver: NSObjectProtocol?
     private var failure: LibraryRepositoryError?
+    private enum Lifecycle {
+        case open
+        case revoked
+        case closed
+    }
+    private var lifecycle: Lifecycle = .open
+    private var closeStarted = false
 
     public init(
         persistenceController: PersistenceController,
         scheduler: FSRSService = SwiftFSRSAdapter(),
         sessionURL: URL? = nil,
-        status: SyncStatus = .upToDate(lastSyncedAt: nil)
+        status: SyncStatus = .accountUnavailable,
+        syncMonitor: SyncMonitor? = nil
     ) {
         self.persistence = persistenceController
         self.scheduler = scheduler
         self.sessionURL = sessionURL ?? Self.defaultSessionURL(for: persistenceController)
-        self.status = status
+        let monitor = syncMonitor ?? Self.monitor(for: status)
+        let processor = Self.historyProcessor(for: persistenceController, scheduler: scheduler)
+        self.syncMonitor = monitor
+        self.historyProcessor = processor
+        self.remoteChangeObserver = Self.observeRemoteChanges(
+            for: persistenceController,
+            processor: processor,
+            monitor: monitor
+        )
+        self.cloudKitEventObserver = Self.observeCloudKitEvents(
+            for: persistenceController.container,
+            monitor: monitor
+        )
         self.failure = nil
     }
 
@@ -41,14 +65,16 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
         configuration: PersistenceConfiguration,
         scheduler: FSRSService = SwiftFSRSAdapter(),
         sessionURL: URL? = nil,
-        status: SyncStatus = .upToDate(lastSyncedAt: nil)
+        status: SyncStatus = .accountUnavailable,
+        syncMonitor: SyncMonitor? = nil
     ) throws {
         let persistence = try PersistenceController(configuration: configuration)
         self.init(
             persistenceController: persistence,
             scheduler: scheduler,
             sessionURL: sessionURL,
-            status: status
+            status: status,
+            syncMonitor: syncMonitor
         )
     }
 
@@ -57,8 +83,22 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
         self.scheduler = scheduler
         self.sessionURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("FlashApp-unavailable-session.json")
-        self.status = .failed(reason: error.localizedDescription)
+        self.syncMonitor = SyncMonitor(initialAccountState: .couldNotDetermine)
+        self.historyProcessor = RemoteChangeProcessor(
+            tokenURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("FlashApp-unavailable-history.token"),
+            fetchHistory: { _ in [] },
+            replay: { _ in }
+        )
+        self.remoteChangeObserver = nil
+        self.cloudKitEventObserver = nil
         self.failure = error
+    }
+
+    deinit {
+        let center = NotificationCenter.default
+        if let remoteChangeObserver { center.removeObserver(remoteChangeObserver) }
+        if let cloudKitEventObserver { center.removeObserver(cloudKitEventObserver) }
     }
 
     public static func unavailable(_ error: LibraryRepositoryError) -> CoreDataLibraryRepository {
@@ -89,23 +129,53 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
         return try CoreDataLibraryRepository(
             configuration: configuration,
             sessionURL: sessionURL,
-            status: .accountUnavailable
+            status: .accountUnavailable,
+            syncMonitor: .cloudKit(containerIdentifier: containerIdentifier)
         )
     }
 
     public func repositoryState() async -> LibraryRepositoryState {
-        failure.map(LibraryRepositoryState.failed) ?? .ready
+        guard lifecycle == .open else { return .failed(.persistenceUnavailable) }
+        return failure.map(LibraryRepositoryState.failed) ?? .ready
     }
 
     /// Quiesces the owned coordinator before a composition root replaces this repository.
     /// A retry must never leave two live SQLite/CloudKit owners attached to the same URL.
     public func close() async throws {
+        guard !closeStarted else { return }
+        closeStarted = true
+        lifecycle = .revoked
+        failure = .persistenceUnavailable
+        persistence?.beginWriteFence()
+        removeObservers()
+        await historyProcessor.close()
         guard let persistence else { return }
         do {
             try persistence.close()
+            lifecycle = .closed
         } catch {
-            failure = .writeFailed
             throw LibraryRepositoryError.writeFailed
+        }
+    }
+
+    /// Fences the owned persistence controller before an account transition starts. The
+    /// coordinator then calls `close()` to drain and unload this owner.
+    public func beginAccountTransition() {
+        guard lifecycle == .open else { return }
+        lifecycle = .revoked
+        failure = .persistenceUnavailable
+        persistence?.beginWriteFence()
+    }
+
+    private func removeObservers() {
+        let center = NotificationCenter.default
+        if let remoteChangeObserver {
+            center.removeObserver(remoteChangeObserver)
+            self.remoteChangeObserver = nil
+        }
+        if let cloudKitEventObserver {
+            center.removeObserver(cloudKitEventObserver)
+            self.cloudKitEventObserver = nil
         }
     }
 
@@ -172,12 +242,58 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
     }
 
     public func syncStatus() async throws -> SyncStatus {
+        guard lifecycle == .open else { throw LibraryRepositoryError.persistenceUnavailable }
         guard persistence != nil else {
             failure = .persistenceUnavailable
             throw LibraryRepositoryError.persistenceUnavailable
         }
         if let failure { throw failure }
-        return status
+        return await syncMonitor.snapshot().status
+    }
+
+    public func retrySync() async throws {
+        guard lifecycle == .open else { throw LibraryRepositoryError.persistenceUnavailable }
+        guard let persistence else {
+            failure = .persistenceUnavailable
+            throw LibraryRepositoryError.persistenceUnavailable
+        }
+        if let failure { throw failure }
+
+        let snapshot = await syncMonitor.refreshAccountStatus()
+        guard snapshot.accountState == .available else {
+            // No account, restricted, temporarily unavailable and indeterminate states are
+            // truthful availability outcomes, not successful syncs and not repository errors.
+            return
+        }
+
+        do {
+            _ = await syncMonitor.markSyncing()
+            try persistence.save()
+            _ = try await historyProcessor.processNow()
+        } catch {
+            _ = await syncMonitor.markFailed(reason: "iCloud sync could not be refreshed.")
+            throw LibraryRepositoryError.writeFailed
+        }
+    }
+
+    /// Processes already-imported persistent history without replacing the local store.
+    @discardableResult
+    public func refreshRemoteChanges() async throws -> RemoteProcessingResult {
+        guard lifecycle == .open else { throw LibraryRepositoryError.persistenceUnavailable }
+        do {
+            let result = try await historyProcessor.processNow()
+            return result
+        } catch let error as RemoteChangeProcessorError {
+            throw error
+        } catch {
+            throw LibraryRepositoryError.readFailed
+        }
+    }
+
+    /// Debounces Core Data remote-change notifications into one history pass.
+    public func notifyRemoteChange() async {
+        guard lifecycle == .open else { return }
+        await historyProcessor.notifyRemoteChange()
     }
 
     // MARK: Studying
@@ -267,6 +383,7 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
     }
 
     public func storedSession() async throws -> SessionState? {
+        guard lifecycle == .open else { throw LibraryRepositoryError.sessionFailed }
         let data: Data
         do {
             data = try Data(contentsOf: sessionURL)
@@ -290,6 +407,7 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
     }
 
     public func storeSession(_ state: SessionState?) async throws {
+        guard lifecycle == .open else { throw LibraryRepositoryError.sessionFailed }
         guard let state else {
             do {
                 try FileManager.default.removeItem(at: sessionURL)
@@ -535,6 +653,62 @@ public actor CoreDataLibraryRepository: LibraryRepository { // swiftlint:disable
 private extension CoreDataLibraryRepository {
     static var emptyMetrics: StudyMetrics { MetricsCalculator.metrics(logs: [], now: Date()) }
 
+    static func historyProcessor(
+        for persistence: PersistenceController,
+        scheduler: FSRSService
+    ) -> RemoteChangeProcessor {
+        RemoteChangeProcessor(
+            tokenURL: persistence.historyTokenURL,
+            fetchHistory: { tokenData in
+                try persistence.fetchPersistentHistory(after: tokenData)
+            },
+            replay: { transactions in
+                try persistence.reconcileRemoteHistory(transactions, using: scheduler)
+            },
+            replaySchedule: { _ in
+                // Schedule replay is applied transactionally by `reconcileRemoteHistory` above.
+                // Keep this hook for the processor contract and for deterministic fixture
+                // instrumentation; it receives metadata only and never card content.
+            },
+            postReplay: {
+                // Checkpoint the token first; only then is it safe to prune older history.
+                try persistence.deletePersistentHistory(olderThan: Date().addingTimeInterval(-7 * 86_400))
+            }
+        )
+    }
+
+    static func observeRemoteChanges(
+        for persistence: PersistenceController,
+        processor: RemoteChangeProcessor,
+        monitor: SyncMonitor
+    ) -> NSObjectProtocol {
+        NotificationCenter.default.addObserver(
+            forName: .NSPersistentStoreRemoteChange,
+            object: persistence.container.persistentStoreCoordinator,
+            queue: nil
+        ) { _ in
+            Task {
+                _ = await monitor.markSyncing()
+                await processor.notifyRemoteChange()
+            }
+        }
+    }
+
+    static func monitor(for status: SyncStatus) -> SyncMonitor {
+        switch status {
+        case let .upToDate(lastSyncedAt):
+            return SyncMonitor(initialAccountState: .available, lastSyncedAt: lastSyncedAt)
+        case .syncing:
+            return SyncMonitor(initialAccountState: .available)
+        case .offline:
+            return SyncMonitor(initialAccountState: .temporarilyUnavailable)
+        case .accountUnavailable:
+            return SyncMonitor(initialAccountState: .noAccount)
+        case .failed:
+            return SyncMonitor(initialAccountState: .couldNotDetermine)
+        }
+    }
+
     static func defaultSessionURL(for persistence: PersistenceController) -> URL {
         if let storeURL = persistence.configuration.storeURL {
             return storeURL.deletingLastPathComponent().appendingPathComponent("session-state.json")
@@ -546,6 +720,7 @@ private extension CoreDataLibraryRepository {
     }
 
     func read<T>(_ body: (LibraryStore) -> T) throws -> T {
+        guard lifecycle == .open else { throw LibraryRepositoryError.readFailed }
         guard let persistence else {
             failure = .persistenceUnavailable
             throw LibraryRepositoryError.persistenceUnavailable
@@ -569,6 +744,7 @@ private extension CoreDataLibraryRepository {
     }
 
     func mutate<T>(_ body: (inout LibraryStore) -> T, attempt: Int = 0) throws -> T {
+        guard lifecycle == .open else { throw LibraryRepositoryError.writeFailed }
         guard let persistence else {
             failure = .persistenceUnavailable
             throw LibraryRepositoryError.persistenceUnavailable

@@ -43,10 +43,20 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
     /// protocol — injected through the environment so `CardFaceView` can render a picture.
     var mediaStore: any MediaStore
     enum StorageState: Equatable {
+        case bootstrapping
+        case switching
         case ready
         case failed(LibraryRepositoryError)
     }
     private(set) var storageState: StorageState = .ready
+    /// Identity for the mounted feature tree. A new ready bundle gets a new root identity so
+    /// feature @State models cannot retain repository/session state from a prior profile.
+    private(set) var storageGeneration: UInt64 = 0
+
+    /// A remote-sync retry may fail while the local private replica remains usable. Keep
+    /// that diagnostic separate from `storageState`, which is reserved for failures that
+    /// prevent authoring/study from opening the local repository.
+    private(set) var syncRetryError: LibraryRepositoryError?
 
     /// Retry is deliberately serialized at the composition root. Setting this before the
     /// first suspension closes the re-entrancy window where two recovery taps could otherwise
@@ -58,6 +68,12 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
     let isRetryProbeEnabled: Bool
     private let storageRetryProbe: StorageRetryProbe
     private let storageFactory: StorageFactory?
+    private let accountStoreCoordinator: AccountStoreCoordinator?
+    private let productionStorageUnavailable: Bool
+    private var productionStorageBootstrapped = false
+    private var productionBootstrapTask: Task<StorageBundle, Error>?
+    private var accountTransitionTask: Task<Void, Never>?
+    private var latestAccountTransitionGeneration: UInt64 = 0
 
     /// Details retained when opening the persistent store fails. The artifact is deliberately
     /// typed and opaque to the UI: support can receive a raw recovery directory without
@@ -84,6 +100,7 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
 
     func loadAppearance() async {
         do {
+            try await ensureProductionStorage()
             appearance = try await library.settings().appearance
         } catch let error as LibraryRepositoryError {
             storageState = .failed(error)
@@ -94,6 +111,7 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
 
     func installDemoDeck() async throws {
         do {
+            try await ensureProductionStorage()
             try await library.installDemoDeck()
         } catch let error as LibraryRepositoryError {
             storageState = .failed(error)
@@ -101,6 +119,19 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
         } catch {
             storageState = .failed(.writeFailed)
             throw LibraryRepositoryError.writeFailed
+        }
+    }
+
+    /// Public sync retry seam used by Settings and recovery UI. The repository owns account
+    /// mapping and history refresh; this composition root only exposes the outcome.
+    func retrySync() async {
+        do {
+            try await library.retrySync()
+            syncRetryError = nil
+        } catch let error as LibraryRepositoryError {
+            syncRetryError = error
+        } catch {
+            syncRetryError = .writeFailed
         }
     }
 
@@ -136,8 +167,9 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
         return failures
     }
 
-    func retryStorage() async {
-        guard case .failed = storageState, DemoMode.allFromEnvironment() == nil else { return }
+    func retryStorage() async { // swiftlint:disable:this cyclomatic_complexity function_body_length
+        let bootstrapPending = accountStoreCoordinator != nil && !productionStorageBootstrapped
+        guard (bootstrapPending || (ifFailedStorageState())) && DemoMode.allFromEnvironment() == nil else { return }
         guard !isStorageRetrying else { return }
 #if DEBUG
         let environment = ProcessInfo.processInfo.environment
@@ -154,6 +186,19 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
             }
         }
 
+        if accountStoreCoordinator != nil {
+            storageState = .switching
+            revokeProductionPorts()
+            do {
+                try await ensureProductionStorage()
+                guard storageRetryGeneration == generation else { return }
+            } catch {
+                storageState = .failed(.persistenceUnavailable)
+                storageRecovery = Self.recoveryContext(from: error)
+            }
+            return
+        }
+
         if let oldLibrary = library as? CoreDataLibraryRepository {
             do {
                 try await oldLibrary.close()
@@ -162,6 +207,7 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
                 return
             }
         }
+        storageState = .failed(.persistenceUnavailable)
         do {
             let replacement = try await openStorage()
             guard storageRetryGeneration == generation else {
@@ -170,10 +216,7 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
                 }
                 return
             }
-            mediaStore = replacement.mediaStore
-            library = replacement.library
-            storageState = .ready
-            storageRecovery = nil
+            installProductionBundle(replacement)
         } catch {
             library = CoreDataLibraryRepository.unavailable(.persistenceUnavailable)
             mediaStore = UnavailableMediaStore()
@@ -187,15 +230,17 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
         if let storageFactory {
             return try await storageFactory()
         }
-        let mediaStore = try FileMediaStore()
-        let library = try CoreDataLibraryRepository.production()
-        return StorageBundle(
-            library: library,
-            mediaStore: mediaStore
-        )
+        if let accountStoreCoordinator {
+            let bundle = try await accountStoreCoordinator.open()
+            return StorageBundle(library: bundle.library, mediaStore: bundle.mediaStore)
+        }
+        if productionStorageUnavailable {
+            throw LibraryRepositoryError.persistenceUnavailable
+        }
+        throw LibraryRepositoryError.persistenceUnavailable
     }
 
-    init(
+    init( // swiftlint:disable:this function_body_length
         library: (any LibraryRepository)? = nil,
         reminders: (any ReminderScheduling)? = nil,
         mediaStore: (any MediaStore)? = nil,
@@ -213,29 +258,146 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
 #endif
         let demoModes = DemoMode.allFromEnvironment()
         let localUITest = Self.localUITestConfiguration()
+        let usesProductionAccountRouting = library == nil
+            && demoModes == nil
+            && localUITest.root == nil
+            && !localUITest.failed
         let libraryResolution = Self.resolveLibrary(
             explicit: library,
             demoModes: demoModes,
             localUITest: localUITest,
             logger: logger
         )
-        self.library = libraryResolution.library
+        if usesProductionAccountRouting {
+            self.library = CoreDataLibraryRepository.unavailable(.persistenceUnavailable)
+        } else {
+            self.library = libraryResolution.library
+        }
         // A recording session must never schedule a real notification: a banner dropping
         // into frame ruins a take that is otherwise finished (spec §3.1).
         let liveReminders: any ReminderScheduling = demoModes == nil && localUITest.root == nil
             ? ReminderScheduler()
             : StubReminderScheduler(grantsPermission: true)
         self.reminders = reminders ?? StubReminderScheduler.fromEnvironment() ?? liveReminders
-        let mediaResolution = Self.resolveMediaStore(
-            explicit: mediaStore,
-            demoModes: demoModes,
-            localUITestRoot: localUITest.root
-        )
+        let mediaResolution = usesProductionAccountRouting
+            ? MediaResolution(store: UnavailableMediaStore(), failed: false)
+            : Self.resolveMediaStore(
+                explicit: mediaStore,
+                demoModes: demoModes,
+                localUITestRoot: localUITest.root
+            )
         self.mediaStore = mediaResolution.store
-        self.storageState = mediaResolution.failed
+        self.storageState = usesProductionAccountRouting ? .ready : mediaResolution.failed
             ? .failed(.persistenceUnavailable)
             : libraryResolution.state
-        self.storageRecovery = libraryResolution.recovery
+        if usesProductionAccountRouting {
+            self.storageState = .bootstrapping
+        }
+        self.storageRecovery = usesProductionAccountRouting ? nil : libraryResolution.recovery
+        if usesProductionAccountRouting,
+           let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            let coordinator = AccountStoreCoordinator(
+                rootURL: support.appendingPathComponent("FlashApp", isDirectory: true),
+                containerIdentifier: "iCloud.com.flashup.app"
+            )
+            self.accountStoreCoordinator = coordinator
+            self.productionStorageUnavailable = false
+            self.productionBootstrapTask = nil
+            self.accountTransitionTask = Task { @MainActor [weak self, coordinator] in
+                for await event in coordinator.transitionEvents() {
+                    self?.consumeAccountTransition(event)
+                }
+            }
+        } else {
+            self.accountStoreCoordinator = nil
+            self.productionStorageUnavailable = usesProductionAccountRouting
+            self.productionBootstrapTask = nil
+            self.accountTransitionTask = nil
+        }
+    }
+
+    private func ifFailedStorageState() -> Bool {
+        if case .failed = storageState { return true }
+        return false
+    }
+
+    private func ensureProductionStorage() async throws {
+        guard accountStoreCoordinator != nil, !productionStorageBootstrapped else { return }
+        if let productionBootstrapTask {
+            _ = try await productionBootstrapTask.value
+            return
+        }
+        storageState = .bootstrapping
+        revokeProductionPorts()
+        let task = Task { @MainActor [weak self] in
+            guard let self else { throw LibraryRepositoryError.persistenceUnavailable }
+            let replacement = try await self.openStorage()
+            // The joiner awaits this task, so installation is part of the single-flight
+            // operation rather than a follow-up scheduled by the event consumer.
+            self.installProductionBundle(replacement)
+            return replacement
+        }
+        productionBootstrapTask = task
+        defer { productionBootstrapTask = nil }
+        do {
+            _ = try await task.value
+        } catch let error as AccountStoreRoutingError where error == .transitionSuperseded {
+            // A newer account transition owns the outcome; its generation-bound stream will
+            // install the replacement or publish the real failure.
+        } catch {
+            storageState = .failed(.persistenceUnavailable)
+            storageRecovery = Self.recoveryContext(from: error)
+            throw error
+        }
+    }
+
+    private func installProductionBundle(_ replacement: StorageBundle, generation: UInt64? = nil) {
+        library = replacement.library
+        mediaStore = replacement.mediaStore
+        productionStorageBootstrapped = true
+        if let generation {
+            storageGeneration = max(storageGeneration, generation)
+        } else {
+            storageGeneration &+= 1
+        }
+        storageState = .ready
+        storageRecovery = nil
+    }
+
+    private func revokeProductionPorts() {
+        guard accountStoreCoordinator != nil else { return }
+        productionStorageBootstrapped = false
+        library = CoreDataLibraryRepository.unavailable(.persistenceUnavailable)
+        mediaStore = UnavailableMediaStore()
+    }
+
+    private func consumeAccountTransition(_ event: AccountStoreTransitionEvent) {
+        let generation: UInt64
+        switch event {
+        case let .bootstrapping(value), let .switching(value), let .ready(value, _), let .failed(value, _):
+            generation = value
+        }
+        guard generation >= latestAccountTransitionGeneration else { return }
+        latestAccountTransitionGeneration = generation
+
+        switch event {
+        case .bootstrapping:
+            storageState = .bootstrapping
+            revokeProductionPorts()
+        case .switching:
+            storageState = .switching
+            revokeProductionPorts()
+        case let .ready(readyGeneration, bundle):
+            installProductionBundle(
+                StorageBundle(library: bundle.library, mediaStore: bundle.mediaStore),
+                generation: readyGeneration
+            )
+        case let .failed(_, error):
+            guard error != .transitionSuperseded else { return }
+            revokeProductionPorts()
+            storageState = .failed(.persistenceUnavailable)
+            storageRecovery = nil
+        }
     }
 
     private struct LibraryResolution {
@@ -296,7 +458,7 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
 #endif
     }
 
-    private static func resolveLibrary( // swiftlint:disable:this function_body_length
+    private static func resolveLibrary(
         explicit: (any LibraryRepository)?,
         demoModes: [DemoMode]?,
         localUITest: LocalUITestConfiguration,
@@ -341,21 +503,14 @@ final class AppEnvironment { // swiftlint:disable:this type_body_length
             }
             return LibraryResolution(library: library, state: .ready, recovery: nil)
         }
-        do {
-            return LibraryResolution(
-                library: try CoreDataLibraryRepository.production(),
-                state: .ready,
-                recovery: nil
-            )
-        } catch {
-            // A production launch enters a recoverable state. It never substitutes an
-            // in-memory oracle, which could make a successful-looking session lose work.
-            return LibraryResolution(
-                library: CoreDataLibraryRepository.unavailable(.persistenceUnavailable),
-                state: .failed(.persistenceUnavailable),
-                recovery: recoveryContext(from: error)
-            )
-        }
+        // The production path is opened asynchronously by AccountStoreCoordinator after
+        // identity preflight. This branch is retained only for explicit failure injection;
+        // it never opens a CloudKit store or substitutes an in-memory repository.
+        return LibraryResolution(
+            library: CoreDataLibraryRepository.unavailable(.persistenceUnavailable),
+            state: .failed(.persistenceUnavailable),
+            recovery: nil
+        )
     }
 
     private static func resolveMediaStore(

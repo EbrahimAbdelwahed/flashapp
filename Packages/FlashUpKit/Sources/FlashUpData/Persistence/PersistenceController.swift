@@ -1,3 +1,5 @@
+// swiftlint:disable file_length
+
 import CloudKit
 import CoreData
 import Foundation
@@ -35,6 +37,9 @@ public final class PersistenceController: @unchecked Sendable {
     /// a second, committed context win the race deterministically.
     internal var saveConflictHook: ((Int) throws -> Void)?
     internal private(set) var saveConflictAttemptCount = 0
+    /// Test-only terminal-close injection. A failed close keeps the write fence engaged so a
+    /// stale repository cannot be made usable by retrying against the same controller.
+    internal var closeFailureHook: (() throws -> Void)?
 
     public convenience init(
         configuration: PersistenceConfiguration = .inMemory,
@@ -168,6 +173,15 @@ public final class PersistenceController: @unchecked Sendable {
         }
     }
 
+    /// Rejects new writes immediately while the account coordinator closes this owner. The
+    /// existing store remains intact until `close()` finishes its drain and unload sequence.
+    public func beginWriteFence() {
+        lifecycleCondition.withLock {
+            if !closed { closing = true }
+            lifecycleCondition.broadcast()
+        }
+    }
+
     /// Rejects new background work, waits for active operations, then unloads the store.
     public func close() throws {
         lifecycleCondition.lock()
@@ -179,18 +193,9 @@ public final class PersistenceController: @unchecked Sendable {
         while activeBackgroundOperations > 0 { lifecycleCondition.wait() }
         lifecycleCondition.unlock()
 
-        var didClose = false
-        defer {
-            if !didClose {
-                lifecycleCondition.lock()
-                closing = false
-                lifecycleCondition.broadcast()
-                lifecycleCondition.unlock()
-            }
-        }
-
         do {
             try save()
+            try closeFailureHook?()
             for store in container.persistentStoreCoordinator.persistentStores {
                 try container.persistentStoreCoordinator.remove(store)
             }
@@ -199,8 +204,9 @@ public final class PersistenceController: @unchecked Sendable {
             closing = false
             lifecycleCondition.broadcast()
             lifecycleCondition.unlock()
-            didClose = true
         } catch {
+            // Keep `closing` true. The repository has already revoked its public ports, and
+            // the controller must not reopen the old owner after a terminal close failure.
             throw PersistenceError.storeCloseFailed
         }
     }

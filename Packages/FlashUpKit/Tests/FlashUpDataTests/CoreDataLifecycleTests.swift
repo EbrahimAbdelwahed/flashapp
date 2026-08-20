@@ -82,4 +82,43 @@ struct CoreDataLifecycleTests {
             _ = try await library.decks()
         }
     }
+
+    @Test("A failed close permanently revokes repository, session and sync ports")
+    func failedCloseDoesNotReenableStaleReferences() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("flashup-terminal-revocation", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let controller = try PersistenceController(
+            configuration: .onDisk(storeURL: root.appendingPathComponent("Private.sqlite"))
+        )
+        let library = CoreDataLibraryRepository(
+            persistenceController: controller,
+            sessionURL: root.appendingPathComponent("session-state.json")
+        )
+        _ = try await library.createDeck(named: "Before failed close")
+        controller.closeFailureHook = { throw PersistenceError.storeCloseFailed }
+
+        await #expect(throws: LibraryRepositoryError.writeFailed) {
+            try await library.close()
+        }
+        #expect(controller.isClosingForTesting)
+        await #expect(throws: LibraryRepositoryError.readFailed) {
+            _ = try await library.decks()
+        }
+        await #expect(throws: LibraryRepositoryError.sessionFailed) {
+            _ = try await library.storedSession()
+        }
+        await #expect(throws: LibraryRepositoryError.persistenceUnavailable) {
+            _ = try await library.syncStatus()
+        }
+
+        // The underlying controller can be unloaded for fixture cleanup, but the repository
+        // remains terminally revoked and cannot use it again.
+        controller.closeFailureHook = nil
+        try controller.close()
+        await #expect(throws: LibraryRepositoryError.writeFailed) {
+            try await library.createDeck(named: "Must remain revoked")
+        }
+    }
 }

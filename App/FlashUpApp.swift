@@ -14,10 +14,18 @@ struct FlashUpApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if case .failed = environment.storageState {
+                if case .bootstrapping = environment.storageState {
+                    StorageTransitionView()
+                } else if case .switching = environment.storageState {
+                    StorageTransitionView()
+                } else if case .failed = environment.storageState {
                     StorageRecoveryView()
                 } else if tutorial.didFinishOnboarding {
+                    // Recreate every feature model for each account-scoped bundle. This also
+                    // dismisses any sheet/full-screen study session while a transition is in
+                    // flight because the old root is removed from the hierarchy.
                     RootTabView()
+                        .id(environment.storageGeneration)
                 } else {
                     OnboardingView {
                         Task {
@@ -49,6 +57,15 @@ struct FlashUpApp: App {
                 Text(installErrorMessage ?? "storage.error.unavailable")
             }
         }
+    }
+}
+
+private struct StorageTransitionView: View {
+    var body: some View {
+        ProgressView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .screenCanvas()
+            .accessibilityIdentifier("storage.transition")
     }
 }
 
