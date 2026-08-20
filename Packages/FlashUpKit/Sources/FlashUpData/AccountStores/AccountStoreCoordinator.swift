@@ -5,7 +5,7 @@ import CryptoKit
 import FlashUpDomain
 import Foundation
 
-/// The only identity information that leaves the account-routing seam.  The record name is
+/// The only identity information that leaves the account-routing seam. The record name is
 /// intentionally kept inside the resolver/registry boundary and is never carried by UI or
 /// repository values.
 public enum CloudAccountIdentityResolution: Sendable, Equatable {
@@ -21,8 +21,8 @@ public protocol CloudAccountIdentityResolver: Sendable {
     func resolve() async -> CloudAccountIdentityResolution
 }
 
-/// Production resolver.  CloudKit identity is resolved before the first persistent store is
-/// constructed.  A transient failure is represented as indeterminate rather than guessed from
+/// Production resolver. CloudKit identity is resolved before the first persistent store is
+/// constructed. A transient failure is represented as indeterminate rather than guessed from
 /// a previously opened profile.
 public struct CloudKitAccountIdentityResolver: CloudAccountIdentityResolver {
     private let containerIdentifier: String
@@ -92,47 +92,90 @@ public enum AccountStoreRoutingError: Error, Equatable, LocalizedError, Sendable
 #if canImport(Security)
 import Security
 
-/// A non-synchronizable, device-only Keychain secret.  The service/account labels are stable
+internal enum KeychainSecretAddOutcome: Sendable {
+    case added
+    case duplicate
+}
+
+internal struct KeychainDeviceSecretOperations: @unchecked Sendable {
+    let read: @Sendable () throws -> Data?
+    let random: @Sendable () throws -> Data
+    let add: @Sendable (Data) throws -> KeychainSecretAddOutcome
+}
+
+/// A non-synchronizable, device-only Keychain secret. The service/account labels are stable
 /// implementation constants and contain no user identity.
 public struct KeychainDeviceSecretStore: DeviceSecretStore {
     private static let service = "com.flashup.app.device-store-key"
     private static let account = "routing-key"
+    private let operations: KeychainDeviceSecretOperations
 
-    public init() {}
+    public init() {
+        operations = Self.liveOperations()
+    }
+
+    internal init(operations: KeychainDeviceSecretOperations) {
+        self.operations = operations
+    }
 
     public func read() throws -> Data? {
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(Self.lookupQuery() as CFDictionary, &result)
-        switch status {
-        case errSecSuccess:
-            guard let data = result as? Data, data.count == 32 else {
-                throw AccountStoreRoutingError.keychainUnavailable
-            }
-            return data
-        case errSecItemNotFound:
-            return nil
-        default:
-            throw AccountStoreRoutingError.keychainUnavailable
-        }
+        let value = try operations.read()
+        guard let value else { return nil }
+        guard value.count == 32 else { throw AccountStoreRoutingError.keychainUnavailable }
+        return value
     }
 
     public func createIfMissing() throws -> Data {
         if let existing = try read() { return existing }
-        var bytes = [UInt8](repeating: 0, count: 32)
-        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-            throw AccountStoreRoutingError.keychainUnavailable
-        }
-        let data = Data(bytes)
-        let item = Self.addAttributes(data: data)
-        let status = SecItemAdd(item as CFDictionary, nil)
-        if status == errSecDuplicateItem {
+        let generated = try operations.random()
+        guard generated.count == 32 else { throw AccountStoreRoutingError.keychainUnavailable }
+        switch try operations.add(generated) {
+        case .added:
+            return generated
+        case .duplicate:
             guard let reread = try read(), reread.count == 32 else {
                 throw AccountStoreRoutingError.keychainUnavailable
             }
             return reread
         }
-        guard status == errSecSuccess else { throw AccountStoreRoutingError.keychainUnavailable }
-        return data
+    }
+
+    private static func liveOperations() -> KeychainDeviceSecretOperations {
+        KeychainDeviceSecretOperations(
+            read: {
+                var result: CFTypeRef?
+                let status = SecItemCopyMatching(Self.lookupQuery() as CFDictionary, &result)
+                switch status {
+                case errSecSuccess:
+                    guard let data = result as? Data else {
+                        throw AccountStoreRoutingError.keychainUnavailable
+                    }
+                    return data
+                case errSecItemNotFound:
+                    return nil
+                default:
+                    throw AccountStoreRoutingError.keychainUnavailable
+                }
+            },
+            random: {
+                var bytes = [UInt8](repeating: 0, count: 32)
+                guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
+                    throw AccountStoreRoutingError.keychainUnavailable
+                }
+                return Data(bytes)
+            },
+            add: { data in
+                let status = SecItemAdd(Self.addAttributes(data: data) as CFDictionary, nil)
+                switch status {
+                case errSecSuccess:
+                    return .added
+                case errSecDuplicateItem:
+                    return .duplicate
+                default:
+                    throw AccountStoreRoutingError.keychainUnavailable
+                }
+            }
+        )
     }
 
     private static func lookupQuery() -> [String: Any] {
@@ -164,7 +207,7 @@ public struct KeychainDeviceSecretStore: DeviceSecretStore {
 }
 #endif
 
-/// Test/preview secret store.  It is deliberately not used by the production composition root.
+/// Test/preview secret store. It is deliberately not used by the production composition root.
 public final class InMemoryDeviceSecretStore: @unchecked Sendable, DeviceSecretStore {
     private let lock = NSLock()
     private var value: Data?
@@ -189,7 +232,7 @@ public enum AccountProfileKind: String, Equatable, Sendable {
     case legacy
 }
 
-/// Sanitized public profile information.  The underlying profile identifier and URLs are
+/// Sanitized public profile information. The underlying profile identifier and URLs are
 /// internal routing data and cannot leak into UI, defaults, logs or exports.
 public struct AccountStoreProfile: Equatable, Sendable {
     public let kind: AccountProfileKind
@@ -199,7 +242,6 @@ public struct AccountStoreBundle: Sendable {
     public let library: CoreDataLibraryRepository
     public let mediaStore: FileMediaStore
     public let profile: AccountStoreProfile
-
 }
 
 public enum AccountStoreTransitionEvent: Sendable {
@@ -209,7 +251,27 @@ public enum AccountStoreTransitionEvent: Sendable {
     case failed(generation: UInt64, error: AccountStoreRoutingError)
 }
 
-/// Registry and lifecycle coordinator for exactly one open profile.  It owns all profile-side
+/// A synchronous fence holder used only to close the avoidable gap between CKAccountChanged
+/// delivery and the coordinator actor hop. It stores no account identity or filesystem path.
+private final class ImmediateWriteFence: @unchecked Sendable {
+    private let lock = NSLock()
+    private var action: (@Sendable () -> Void)?
+
+    func install(_ action: @escaping @Sendable () -> Void) {
+        lock.withLock { self.action = action }
+    }
+
+    func arm() {
+        let current = lock.withLock { action }
+        current?()
+    }
+
+    func clear() {
+        lock.withLock { action = nil }
+    }
+}
+
+/// Registry and lifecycle coordinator for exactly one open profile. It owns all profile-side
 /// paths; callers receive only repository/media ports and a sanitized profile kind.
 public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_length
     internal typealias ProfileOpener = @Sendable (
@@ -249,11 +311,18 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
         let configuration: PersistenceConfiguration
     }
 
+    private struct OpenedStore {
+        let library: CoreDataLibraryRepository
+        let mediaStore: FileMediaStore
+        let writeFence: @Sendable () -> Void
+    }
+
     private struct ActiveStore {
         let generation: UInt64
         let descriptor: ProfileDescriptor
         let library: CoreDataLibraryRepository
         let mediaStore: FileMediaStore
+        let writeFence: @Sendable () -> Void
     }
 
     internal struct RoutingDescriptor: Equatable, Sendable {
@@ -272,6 +341,7 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
     private let profileOpener: ProfileOpener?
     private let transitionStream: AsyncStream<AccountStoreTransitionEvent>
     private let transitionContinuation: AsyncStream<AccountStoreTransitionEvent>.Continuation
+    private nonisolated let immediateWriteFence = ImmediateWriteFence()
     private var catalog: Catalog?
     private var secret: Data?
     private var active: ActiveStore?
@@ -324,6 +394,8 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
     }
 
     deinit {
+        immediateWriteFence.arm()
+        immediateWriteFence.clear()
         accountChangeTask?.cancel()
         if let accountChangeObserver {
             NotificationCenter.default.removeObserver(accountChangeObserver)
@@ -335,20 +407,26 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
         transitionStream
     }
 
+    /// Deterministic seam for testing the exact synchronous operation used by CKAccountChanged.
+    /// It reveals no routing metadata.
+    internal nonisolated func armAccountChangeWriteFenceForTesting() {
+        immediateWriteFence.arm()
+    }
+
     public func currentProfile() -> AccountStoreProfile? {
         active.map { AccountStoreProfile(kind: $0.descriptor.kind) }
     }
 
-    /// Opens the profile selected by a fresh identity preflight.  No persistent Core Data
-    /// container is created until this method has resolved account state and catalog safety.
+    /// Opens the profile selected by a fresh identity preflight. AppEnvironment owns bootstrap
+    /// installation, so the initial open deliberately does not also publish transition events.
     public func open() async throws -> AccountStoreBundle {
-        try await performTransition(phase: .bootstrapping)
+        try await performTransition(phase: .bootstrapping, publishEvents: false)
     }
 
-    /// Closes the current owner before resolving and opening the next profile.  Generation
+    /// Closes the current owner before resolving and opening the next profile. Generation
     /// checks ensure a stale asynchronous result can never replace a newer transition.
     public func transition() async throws -> AccountStoreBundle {
-        try await performTransition(phase: .switching)
+        try await performTransition(phase: .switching, publishEvents: true)
     }
 
     private enum TransitionPhase {
@@ -356,17 +434,21 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
         case switching
     }
 
-    private func performTransition(phase: TransitionPhase) async throws -> AccountStoreBundle {
+    private func performTransition(
+        phase: TransitionPhase,
+        publishEvents: Bool
+    ) async throws -> AccountStoreBundle {
         generation &+= 1
         let transitionGeneration = generation
         do {
+            immediateWriteFence.arm()
             if let active {
-                // Seal media before publishing the transition state. The old bundle can no
-                // longer serve bytes while the repository write fence is installed.
+                // Media is sealed before Core Data teardown. The immediate write fence may
+                // already be armed by CKAccountChanged before this actor begins executing.
                 await active.mediaStore.close()
                 await active.library.beginAccountTransition()
             }
-            emit(phase: phase, generation: transitionGeneration)
+            if publishEvents { emit(phase: phase, generation: transitionGeneration) }
             try await closeActive()
 
             try prepareRegistry()
@@ -377,38 +459,46 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
             let descriptor = try descriptor(for: identity)
             let opened = try open(descriptor: descriptor)
             guard generation == transitionGeneration else {
+                opened.writeFence()
                 try? await opened.library.close()
                 await opened.mediaStore.close()
                 throw AccountStoreRoutingError.transitionSuperseded
             }
+            immediateWriteFence.install(opened.writeFence)
             active = ActiveStore(
                 generation: transitionGeneration,
                 descriptor: descriptor,
                 library: opened.library,
-                mediaStore: opened.mediaStore
+                mediaStore: opened.mediaStore,
+                writeFence: opened.writeFence
             )
             let bundle = AccountStoreBundle(
                 library: opened.library,
                 mediaStore: opened.mediaStore,
                 profile: AccountStoreProfile(kind: descriptor.kind)
             )
-            transitionContinuation.yield(.ready(generation: transitionGeneration, bundle: bundle))
+            if publishEvents {
+                transitionContinuation.yield(.ready(generation: transitionGeneration, bundle: bundle))
+            }
             return bundle
         } catch let error as AccountStoreRoutingError {
-            if error != .transitionSuperseded {
+            if publishEvents, error != .transitionSuperseded {
                 transitionContinuation.yield(.failed(generation: transitionGeneration, error: error))
             }
             throw error
         } catch {
-            transitionContinuation.yield(
-                .failed(generation: transitionGeneration, error: .invalidProfile)
-            )
+            if publishEvents {
+                transitionContinuation.yield(
+                    .failed(generation: transitionGeneration, error: .invalidProfile)
+                )
+            }
             throw AccountStoreRoutingError.invalidProfile
         }
     }
 
     public func close() async throws {
         generation &+= 1
+        immediateWriteFence.arm()
         accountChangeTask?.cancel()
         accountChangeTask = nil
         if let accountChangeObserver {
@@ -429,7 +519,7 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
     }
 
     /// Returns a sanitized descriptor for tests/recovery tooling without exposing it through the
-    /// public bundle.  This method is internal to FlashUpData and never used by UI/export.
+    /// public bundle. This method is internal to FlashUpData and never used by UI/export.
     internal func profileDescriptor(for identity: CloudAccountIdentityResolution) throws -> RoutingDescriptor {
         try prepareRegistry()
         let descriptor = try descriptor(for: identity)
@@ -461,15 +551,21 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
     }
 
     private func closeActive() async throws {
-        guard let active else { return }
+        guard let active else {
+            immediateWriteFence.clear()
+            return
+        }
+        active.writeFence()
         await active.mediaStore.close()
         do {
             try await active.library.close()
             self.active = nil
+            immediateWriteFence.clear()
         } catch {
             // The repository is terminally revoked even when its underlying close fails. Do
             // not retain it as an active owner and never proceed to opening profile B.
             self.active = nil
+            immediateWriteFence.clear()
             throw LibraryRepositoryError.writeFailed
         }
     }
@@ -498,16 +594,14 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
             if hasAccountProfiles {
                 guard let loadedSecret else { throw AccountStoreRoutingError.keyUnavailable }
                 secret = loadedSecret
+            } else if let loadedSecret {
+                secret = loadedSecret
             } else {
-                if let loadedSecret {
-                    secret = loadedSecret
-                } else {
-                    let created = try secretStore.createIfMissing()
-                    guard created.count == 32 else {
-                        throw AccountStoreRoutingError.keychainUnavailable
-                    }
-                    secret = created
+                let created = try secretStore.createIfMissing()
+                guard created.count == 32 else {
+                    throw AccountStoreRoutingError.keychainUnavailable
                 }
+                secret = created
             }
             catalog = loaded
             try quarantineLegacyIfNeeded()
@@ -525,6 +619,9 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
             object: nil,
             queue: nil
         ) { [weak self] _ in
+            // This call is nonisolated and synchronous. No new Core Data write can enter after
+            // CKAccountChanged returns merely because the coordinator actor has not run yet.
+            self?.armAccountChangeWriteFenceForTesting()
             Task { await self?.scheduleAccountTransition() }
         }
     }
@@ -543,7 +640,10 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
             let catalog = try JSONDecoder().decode(Catalog.self, from: Data(contentsOf: url))
             guard catalog.version == 1,
                   catalog.accountFingerprints.allSatisfy(Self.isValidFingerprint),
-                  catalog.legacyMigrationIDs.allSatisfy(Self.isValidMigrationID) else {
+                  catalog.legacyMigrationIDs.allSatisfy(Self.isValidMigrationID),
+                  Set(catalog.accountFingerprints).count == catalog.accountFingerprints.count,
+                  Set(catalog.legacyMigrationIDs).count == catalog.legacyMigrationIDs.count,
+                  catalog.legacyMigrationIDs.count <= 1 else {
                 throw AccountStoreRoutingError.catalogCorrupt
             }
             return catalog
@@ -624,30 +724,41 @@ public actor AccountStoreCoordinator { // swiftlint:disable:this type_body_lengt
         )
     }
 
-    private func open(
-        descriptor: ProfileDescriptor
-    ) throws -> (library: CoreDataLibraryRepository, mediaStore: FileMediaStore) {
+    private func open(descriptor: ProfileDescriptor) throws -> OpenedStore {
         try fileManager.createDirectory(at: descriptor.directoryURL, withIntermediateDirectories: true)
         do {
             if let profileOpener {
-                return try profileOpener(
+                let opened = try profileOpener(
                     descriptor.configuration,
                     descriptor.sessionURL,
                     descriptor.mediaURL,
                     descriptor.kind
                 )
+                // Injected fixture openers do not participate in the framework-level
+                // CKAccountChanged timing assertion. Explicit transition() still revokes their
+                // repository/media actors before teardown.
+                return OpenedStore(
+                    library: opened.library,
+                    mediaStore: opened.mediaStore,
+                    writeFence: {}
+                )
             }
             let mediaStore = try FileMediaStore(directory: descriptor.mediaURL)
-            let library = try CoreDataLibraryRepository(
-                configuration: descriptor.configuration,
+            let persistence = try PersistenceController(configuration: descriptor.configuration)
+            let library = CoreDataLibraryRepository(
+                persistenceController: persistence,
                 sessionURL: descriptor.sessionURL,
                 status: descriptor.kind == .account
                     ? .failed(reason: "iCloud account status is being resolved.")
                     : .offline
             )
-            return (library, mediaStore)
+            return OpenedStore(
+                library: library,
+                mediaStore: mediaStore,
+                writeFence: { persistence.beginWriteFence() }
+            )
         } catch {
-            // Persistence errors may carry a filesystem recovery URL.  Keep the artifact on
+            // Persistence errors may carry a filesystem recovery URL. Keep the artifact on
             // disk for support, but do not let an account fingerprint/path reach App/UI export.
             throw AccountStoreRoutingError.invalidProfile
         }
