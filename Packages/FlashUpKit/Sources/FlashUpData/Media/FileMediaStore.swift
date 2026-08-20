@@ -6,12 +6,13 @@ import Foundation
 ///
 /// The index is loaded and validated before the actor escapes. A missing or corrupt index,
 /// missing blob, and unreadable/mutated blob are all typed failures; none becomes a false nil.
-public actor FileMediaStore: MediaStore {
+public actor FileMediaStore: MediaStore { // swiftlint:disable:this type_body_length
     private let directory: URL
     private let indexURL: URL
     private let maxBytes: Int
     private var index: [UUID: MediaAsset]
     private var loadError: MediaStoreError?
+    private var closed = false
 
     /// Explicit directories are used by tests and import sandboxes. The constructor performs
     /// the same health check as the production constructor so an invalid store cannot escape.
@@ -42,6 +43,7 @@ public actor FileMediaStore: MediaStore {
     // MARK: - MediaStore
 
     public func store(_ data: Data, filename: String, kind: MediaAsset.Kind) async throws -> MediaAsset {
+        try ensureOpen()
         guard data.count <= maxBytes else {
             throw MediaStoreError.tooLarge(bytes: data.count, limit: maxBytes)
         }
@@ -85,12 +87,14 @@ public actor FileMediaStore: MediaStore {
     }
 
     public func asset(for id: UUID) async throws -> MediaAsset? {
+        try ensureOpen()
         guard let asset = index[id] else { return nil }
         _ = try verifyStoredAsset(asset)
         return asset
     }
 
     public func data(for id: UUID) async throws -> Data? {
+        try ensureOpen()
         guard let asset = index[id] else { return nil }
         let url = try verifyStoredAsset(asset)
         do {
@@ -109,6 +113,7 @@ public actor FileMediaStore: MediaStore {
     }
 
     public func url(for id: UUID) async throws -> URL? {
+        try ensureOpen()
         guard let asset = index[id] else { return nil }
         return try verifyStoredAsset(asset)
     }
@@ -117,6 +122,7 @@ public actor FileMediaStore: MediaStore {
     /// fails, the new manifest remains authoritative but the operation reports failure so the
     /// caller cannot present erase/sweep as complete while bytes remain.
     public func removeAll(except keeping: Set<UUID>) async throws {
+        try ensureOpen()
         let survivors = index.filter { keeping.contains($0.key) }
         do {
             try persistIndex(survivors)
@@ -143,6 +149,7 @@ public actor FileMediaStore: MediaStore {
     }
 
     public func removeAll() async throws {
+        try ensureOpen()
         guard FileManager.default.fileExists(atPath: directory.path) else {
             index = [:]
             loadError = nil
@@ -161,7 +168,19 @@ public actor FileMediaStore: MediaStore {
     /// Stable diagnostic seam for the composition root and recovery UI.
     public func storageError() async -> MediaStoreError? { loadError }
 
+    /// Seals a profile's media sidecar before account routing opens another profile.  The
+    /// directory remains on disk for the profile that owns it; stale references only receive a
+    /// typed unavailable error and cannot read the previous account's bytes.
+    public func close() {
+        closed = true
+        index.removeAll()
+    }
+
     // MARK: - Health and index
+
+    private func ensureOpen() throws {
+        guard !closed else { throw MediaStoreError.unavailable }
+    }
 
     private static func readIndex(from directory: URL, indexURL: URL) throws -> [UUID: MediaAsset] {
         guard FileManager.default.fileExists(atPath: indexURL.path) else { return [:] }

@@ -36,6 +36,8 @@
       "docs/worker-briefs/flash-app-store-v1/sas-06-quality-evidence.md",
       "docs/worker-briefs/flash-app-store-v1/sas-07-human-release.md"
     ],
+    "worker_dispatch": "docs/flywheel-runs/flash-app-store-v1/dispatch/worker-dispatch.json",
+    "worker_dispatch_report": "docs/flywheel-runs/flash-app-store-v1/dispatch/worker-dispatch.md",
     "worker_profiles": {
       "app-store-data-engineer": "docs/worker-profiles/app-store-data-engineer.md",
       "app-store-product-engineer": "docs/worker-profiles/app-store-product-engineer.md",
@@ -105,6 +107,12 @@
       "status": "resolved",
       "updated_at": "2026-08-20T09:04:19+00:00"
     },
+    "dispatch": {
+      "packets": 1,
+      "path": "docs/flywheel-runs/flash-app-store-v1/dispatch/worker-dispatch.json",
+      "status": "prepared",
+      "updated_at": "2026-08-20T09:19:47+00:00"
+    },
     "intake": {
       "path": "docs/flywheel-runs/flash-app-store-v1/intake.md",
       "status": "complete",
@@ -157,5 +165,5 @@
   "project": "/Users/ebrahimabdelwahed/Desktop/Dev/flashapp",
   "run_id": "flash-app-store-v1",
   "schema_version": 1,
-  "updated_at": "2026-08-20T09:18:52+00:00"
+  "updated_at": "2026-08-20T09:19:47+00:00"
 }

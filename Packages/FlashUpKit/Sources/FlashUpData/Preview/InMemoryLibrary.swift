@@ -100,6 +100,10 @@ public actor InMemoryLibrary: LibraryRepository {
         status
     }
 
+    /// The in-memory oracle has no remote owner to refresh. Keeping this a no-op preserves the
+    /// current fixture status instead of fabricating a successful CloudKit round trip.
+    public func retrySync() async throws {}
+
     public func repositoryState() async -> LibraryRepositoryState { .ready }
 
     // MARK: - Writing

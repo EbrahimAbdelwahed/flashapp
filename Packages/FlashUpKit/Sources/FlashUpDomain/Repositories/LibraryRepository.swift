@@ -81,6 +81,8 @@ public protocol LibraryRepository: Sendable {
     func contentHashes(in deckID: UUID) async throws -> [UUID: String]
     func settings() async throws -> StudySettings
     func syncStatus() async throws -> SyncStatus
+    /// Requests a sync/account refresh without replacing the local store or claiming success.
+    func retrySync() async throws
 
     // MARK: Studying
 
