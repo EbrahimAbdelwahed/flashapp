@@ -31,7 +31,7 @@ raw idea
 -> reusable worker profile when needed
 -> worker brief
 -> code change
--> review report
+-> PR review evidence
 -> ADR or docs update when needed
 ```
 
@@ -162,7 +162,9 @@ installed by the workflow.
 - Use `worker-profile-factory` when the orchestrator identifies reusable specialization needs.
 - Use `study-prompt-system-designer` for course profiles, prompt registries, and evals.
 - Use `study-rag-architect` for retrieval, indexing, citation, and RAG framework choices.
-- Use `code-quality-governor` before merge or handoff.
+- Follow the repository-root `AGENTS.md` Git delivery and review policy.
+  Automatic Codex GitHub review is the ordinary semantic gate; add a specialist
+  only for a concrete risk or an explicitly requested acceptance criterion.
 - Use `workflow-optimizer` at the end of meaningful sessions to identify improvements to AGENTS.md, skills, templates, worker profiles, prompts, and quality gates.
 
 Write user-facing explanations in clear, concise language without reducing technical precision. Prefer concrete wording over unexplained jargon. Use established domain terminology when it is the most precise choice, and briefly define it when the intended audience may not know it. Preserve material evidence, constraints, tradeoffs, caveats, and uncertainty. Do not rewrite code, identifiers, commands, quoted text, or prescribed formats merely to satisfy this style rule.
