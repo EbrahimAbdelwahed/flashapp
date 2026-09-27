@@ -406,7 +406,7 @@ Use this after reading each worker's final response. Publication gates require o
 
 Captures verified GitHub Actions CI outside the versioned tree. Without a CI run, it can prepare an explicitly empty report.
 
-This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. The canonical workflow ID, event and prescribed job set are checked. CI receipts, final validation and readiness lane reports live under the Git common directory (`codex-ci-receipts/`), outside versioned source; commit planning and implementation artifacts before publishing the draft. Final validation and PR readiness recheck the live run; Local verification command execution is unsupported; older green commits cannot satisfy those gates. A report without a CI run exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
+This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. The workflow path/name and required jobs come from the target repository’s committed `.github/ci-contract.json`; the canonical workflow ID and event are also checked. CI receipts, final validation and readiness lane reports live under the Git common directory (`codex-ci-receipts/`), outside versioned source; commit planning and implementation artifacts before publishing the draft. Final validation and PR readiness recheck the live run. Local verification command execution is unsupported; older green commits cannot satisfy those gates. A report without a CI run exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
 
 ### `optimize`
 
@@ -426,7 +426,7 @@ When `--execute` is used, the runner checks local lane artifact overwrite safety
 
 ### `run`
 
-Chains deterministic phases. It stops when an agent judgment artifact is missing, such as `--beads-json` for the task graph, and propagates child phase failures such as incomplete `status`. When linked `br` beads exist, the dispatch phase uses ready-only routing automatically.
+Chains deterministic phases, preparing the git and draft lanes before CI capture. It pauses for authorized draft publication and resumes with `run --phase review --github-actions-run <id>`; it never publishes implicitly. It stops when an agent judgment artifact is missing, such as `--beads-json` for the task graph, and propagates child phase failures such as incomplete `status`. When linked `br` beads exist, the dispatch phase uses ready-only routing automatically.
 
 ### `status`
 

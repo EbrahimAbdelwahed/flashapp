@@ -1047,15 +1047,6 @@ def decision_summary(project: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-REQUIRED_CI_JOBS = {
-    "EbrahimAbdelwahed/flashapp": {"apple", "flywheel (3.12)", "flywheel (3.13)"},
-    "EbrahimAbdelwahed/cardine": {"python (3.12)", "python (3.13)",
-        "recall (3.12)", "recall (3.13)", "pdf (3.12)", "pdf (3.13)",
-        "anydoc (3.12)", "anydoc (3.13)"},
-    "EbrahimAbdelwahed/study-agent-harness": {"python (3.12)", "python (3.13)"},
-}
-
-
 def ci_receipt_dir(project: Path, run_id: str) -> Path:
     """Volatile verification receipts never change the submitted source tree."""
     result = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], project)
@@ -1070,14 +1061,25 @@ def github_actions_evidence(project: Path, run_id: str) -> dict[str, Any]:
     if repository.returncode != 0 or not repository.stdout.strip():
         raise ValueError("Cannot identify the project's GitHub repository")
     repo = repository.stdout.strip()
-    required_jobs = REQUIRED_CI_JOBS.get(repo)
-    if not required_jobs:
-        raise ValueError("No approved required-job contract for this repository")
-    identity = command(["gh", "api", f"repos/{repo}/actions/workflows/ci.yml"], cwd=project)
+    configured = git(["show", "HEAD:.github/ci-contract.json"], project)
+    if configured.returncode != 0:
+        raise ValueError("Commit .github/ci-contract.json with the required CI workflow and jobs")
+    contract = json.loads(configured.stdout)
+    names = contract.get("required_jobs")
+    workflow_path = contract.get("workflow", "")
+    workflow_name = contract.get("name")
+    if (not isinstance(names, list) or not names
+            or any(not isinstance(name, str) or not name.strip() for name in names)
+            or not isinstance(workflow_name, str) or not workflow_name.strip()
+            or not isinstance(workflow_path, str)
+            or not re.fullmatch(r"\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml", workflow_path)):
+        raise ValueError("Invalid repository-local CI contract")
+    required_jobs = set(names)
+    identity = command(["gh", "api", f"repos/{repo}/actions/workflows/{Path(workflow_path).name}"], cwd=project)
     if identity.returncode != 0:
         raise ValueError("Cannot read the canonical CI workflow identity")
     workflow = json.loads(identity.stdout)
-    if workflow.get("path") != ".github/workflows/ci.yml":
+    if workflow.get("path") != workflow_path:
         raise ValueError("Canonical CI workflow path does not match")
     result = command(["gh", "run", "view", run_id, "--repo", repo, "--json",
                       "headSha,status,conclusion,workflowName,workflowDatabaseId,event,url,jobs"], cwd=project)
@@ -1087,7 +1089,7 @@ def github_actions_evidence(project: Path, run_id: str) -> dict[str, Any]:
     head = git(["rev-parse", "HEAD"], project).stdout.strip()
     if not head or run.get("headSha") != head:
         raise ValueError("GitHub Actions evidence belongs to a different commit")
-    if run.get("workflowName") != "CI":
+    if run.get("workflowName") != workflow_name:
         raise ValueError("Evidence must come from the repository's complete CI workflow")
     if run.get("workflowDatabaseId") != workflow.get("id") or run.get("event") not in {"pull_request", "push"}:
         raise ValueError("CI workflow identity or triggering event does not match")
@@ -1098,7 +1100,7 @@ def github_actions_evidence(project: Path, run_id: str) -> dict[str, Any]:
             or not jobs or any(job.get("conclusion") != "success" for job in jobs)):
         raise ValueError("GitHub Actions CI is missing, pending, skipped, or failing")
     return {"run_id": run_id, "repository": repo, "head_sha": head,
-            "url": run["url"], "workflow": "CI", "workflow_id": workflow["id"],
+            "url": run["url"], "workflow": workflow_name, "workflow_id": workflow["id"],
             "event": run["event"], "required_jobs": sorted(required_jobs), "jobs_count": len(jobs)}
 
 
@@ -2095,7 +2097,7 @@ def command_run(args: argparse.Namespace) -> int:
     else:
         run_id = resolve_run_id(project, run_id or "latest")
 
-    phases = args.phase or ["context", "spec", "beads", "profiles", "briefs", "validate", "dispatch", "review", "optimize", "git-lane", "pr-lane", "status"]
+    phases = args.phase or ["context", "spec", "beads", "profiles", "briefs", "validate", "dispatch", "optimize", "git-lane", "pr-lane", "review", "status"]
     for phase in phases:
         if phase == "intake":
             continue
@@ -2147,7 +2149,13 @@ def command_run(args: argparse.Namespace) -> int:
             if args.force:
                 argv.append("--force")
         elif phase == "review":
-            argv = ["review", "--project", str(project), "--run-id", str(run_id)]
+            if not args.github_actions_run and not args.dry_run:
+                print_json({"ok": False, "run_id": run_id, "stopped_at": "review",
+                            "reason": "Publish the authorized draft, then resume with --github-actions-run <id>",
+                            "outputs": outputs})
+                return 2
+            argv = ["review", "--project", str(project), "--run-id", str(run_id),
+                    "--github-actions-run", args.github_actions_run or "<successful-ci-run-id>"]
             if args.force:
                 argv.append("--force")
         elif phase == "optimize":
@@ -3251,6 +3259,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--create-br-beads", action="store_true")
     run.add_argument("--ready-only", action="store_true", help="Force ready-only dispatch during the run. Runs with linked br beads use ready-only automatically.")
     run.add_argument("--phase", action="append", help="Phase to run, repeated in order. Defaults to the full lane.")
+    run.add_argument("--github-actions-run", help="Resume CI capture after publishing the authorized draft.")
     run.add_argument("--skip-validate", action="store_true")
     add_common_write(run)
     run.set_defaults(func=command_run)

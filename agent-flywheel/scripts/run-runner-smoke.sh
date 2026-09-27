@@ -374,7 +374,7 @@ mkdir -p "$TMPROOT/fake-bin"
 cat >"$TMPROOT/fake-bin/gh" <<'GH'
 #!/bin/sh
 case "$*" in
-  *"repo view"*) echo EbrahimAbdelwahed/flashapp ;;
+  *"repo view"*) echo "${FAKE_GH_REPO:-EbrahimAbdelwahed/flashapp}" ;;
   *"api repos/"*) echo '{"id":1,"path":".github/workflows/ci.yml"}' ;;
   *"run view"*)
     echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"workflowDatabaseId\":1,\"event\":\"pull_request\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":$FAKE_GH_JOBS}" ;;
@@ -391,6 +391,12 @@ case "$*" in
 esac
 GH
 chmod +x "$TMPROOT/fake-bin/gh"
+mkdir -p "$PUBLISH/.github"
+cat > "$PUBLISH/.github/ci-contract.json" <<'JSON_CONTRACT'
+{"workflow":".github/workflows/ci.yml","name":"CI","required_jobs":["apple","flywheel (3.12)","flywheel (3.13)"]}
+JSON_CONTRACT
+git -C "$PUBLISH" add .github/ci-contract.json
+git -C "$PUBLISH" commit -m "Define CI contract" >/dev/null
 export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
 export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
 export FAKE_GH_CONCLUSION=success
@@ -403,7 +409,9 @@ expect_failure "local command success cannot replace CI" "$RUNNER" validate --pr
 expect_failure "older CI commit is rejected" env FAKE_GH_SHA=older "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "failed CI is rejected" env FAKE_GH_CONCLUSION=failure "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "incomplete CI job set is rejected" env FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"}]' "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "sequenced run pauses after preparing draft" "$RUNNER" run --project "$PUBLISH" --run-id publish --phase git-lane --phase pr-lane --phase review --force
 BEFORE_CI_STATUS="$(git -C "$PUBLISH" status --porcelain)"
+env FAKE_GH_REPO=another-owner/renamed-project "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
 "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
 expect_failure "captured CI is rechecked before readiness" env FAKE_GH_CONCLUSION=failure "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
@@ -516,4 +524,14 @@ draft = next(i for i, c in enumerate(commands) if "pr-lane " in c and "--draft" 
 ci = next(i for i, c in enumerate(commands) if "review " in c and "--github-actions-run" in c)
 ready = next(i for i, c in enumerate(commands) if "pr-lane " in c and "--draft" not in c)
 assert draft < ci < ready
+
 PY_PLAN
+
+"$RUNNER" run --project "$PUBLISH" --run-id publish --dry-run --beads-json "$PUBLISH/tasks.json" > "$TMPROOT/run-plan.json"
+python3 - "$TMPROOT/run-plan.json" <<'PY_RUN_PLAN'
+import json, sys
+commands = [item['command'] for item in json.load(open(sys.argv[1]))['outputs']]
+draft = next(i for i, c in enumerate(commands) if 'pr-lane ' in c)
+ci = next(i for i, c in enumerate(commands) if 'review ' in c)
+assert draft < ci
+PY_RUN_PLAN

@@ -55,7 +55,7 @@ jobs:
 
   apple:
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       STRICT_LINT: "1"
@@ -101,4 +101,32 @@ jobs:
           -destination "platform=iOS Simulator,id=$FLASHUP_SIMULATOR_ID"
           -parallel-testing-enabled NO
           -derivedDataPath DerivedData -resultBundlePath TestResults.xcresult
+          CODE_SIGNING_ALLOWED=NO
+      - name: Install minimum supported iOS runtime
+        run: xcodebuild -downloadPlatform iOS -buildVersion 17.5
+      - name: Create iOS 17 fallback simulator
+        run: |
+          xcrun simctl list runtimes --json > /tmp/flashup-runtimes.json
+          python3 - <<'PY'
+          import json, os, subprocess
+          with open('/tmp/flashup-runtimes.json') as stream:
+              runtimes = json.load(stream)['runtimes']
+          runtime = next((item for item in runtimes
+                          if item.get('isAvailable') and item['version'] == '17.5'
+                          and 'iOS' in item['identifier']), None)
+          if runtime is None:
+              raise SystemExit('iOS 17.5 must be available for fallback verification')
+          device = subprocess.check_output([
+              'xcrun', 'simctl', 'create', 'FlashUp iOS 17 fallback',
+              'com.apple.CoreSimulator.SimDeviceType.iPhone-15', runtime['identifier']
+          ], text=True).strip()
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              stream.write(f'FLASHUP_FALLBACK_SIMULATOR_ID={device}\n')
+          PY
+      - name: App and UI tests on iOS 17 fallback
+        run: >-
+          xcodebuild test -project FlashUp.xcodeproj -scheme FlashUp
+          -destination "platform=iOS Simulator,id=$FLASHUP_FALLBACK_SIMULATOR_ID"
+          -parallel-testing-enabled NO
+          -derivedDataPath DerivedData -resultBundlePath FallbackTestResults.xcresult
           CODE_SIGNING_ALLOWED=NO
