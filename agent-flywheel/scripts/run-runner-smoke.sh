@@ -312,7 +312,7 @@ Date: 2026-06-25
 
 ## Goal
 
-Verify final validation requires worker reports and approved semantic review.
+Verify final validation requires worker reports and technical verification.
 
 ## Problem
 
@@ -328,7 +328,7 @@ Publication should not rely only on artifact presence.
 
 ## Acceptance Criteria
 
-- [ ] Status is green only after worker report, approved review, optimization, git lane, and PR lane exist.
+- [ ] Status is green only after worker report, verification, optimization, git lane, and PR lane exist.
 
 ## Verification
 
@@ -364,23 +364,29 @@ expect_failure "final validation requires reports for all task beads" "$RUNNER" 
   --file-changed "No product files changed." \
   --behavior "All-task worker report coverage verified." \
   --verification "test -f README.md: passed" >/dev/null
+"$RUNNER" git-lane --project "$PUBLISH" --run-id publish >/dev/null
+mkdir -p "$TMPROOT/fake-bin"
+cat >"$TMPROOT/fake-bin/gh" <<'GH'
+#!/bin/sh
+case "$*" in
+  *"pr create"*"--draft"*) echo 'https://github.com/example/example/pull/1' ;;
+  *) echo 'unexpected gh invocation' >&2; exit 1 ;;
+esac
+GH
+chmod +x "$TMPROOT/fake-bin/gh"
+PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --execute >/dev/null
+expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" review --project "$PUBLISH" --run-id publish --command "test -f README.md" >/dev/null
-expect_failure "final validation requires approved semantic review" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
-"$RUNNER" review \
-  --project "$PUBLISH" \
-  --run-id publish \
-  --command "test -f README.md" \
-  --semantic-verdict approved \
-  --finding "No correctness issues found in the synthetic publication gate run." \
-  --test-gap "No residual test gap for the smoke scenario." \
-  --force >/dev/null
+"$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
+expect_failure "local semantic approval is unsupported" "$RUNNER" review \
+  --project "$PUBLISH" --run-id publish --semantic-verdict approved --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage auto >/dev/null
 "$RUNNER" optimize --project "$PUBLISH" --run-id publish >/dev/null
-"$RUNNER" git-lane --project "$PUBLISH" --run-id publish >/dev/null
-"$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft >/dev/null
+"$RUNNER" git-lane --project "$PUBLISH" --run-id publish --force >/dev/null
+"$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --force >/dev/null
 "$RUNNER" status --project "$PUBLISH" --run-id publish >/dev/null
-log "PASS: publication gate requires worker report and approved semantic review"
+log "PASS: final verification requires worker reports and technical evidence, not local review"
 
 BEFORE_BRANCH="$(git -C "$PUBLISH" branch --show-current)"
 expect_failure "git-lane execute preflights artifact overwrite before branch mutation" \

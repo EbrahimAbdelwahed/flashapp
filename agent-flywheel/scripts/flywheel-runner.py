@@ -1123,7 +1123,6 @@ def review_evidence_summary(project: Path, manifest: dict[str, Any]) -> dict[str
         and summary["commands_count"] > 0
         and not summary["failed_commands"]
         and not summary["placeholder_scaffold"]
-        and summary["semantic_verdict"] == "approved"
     )
     return summary
 
@@ -1189,9 +1188,15 @@ def run_should_use_ready_only(project: Path, run_id: str) -> bool:
     return bool(manifest.get("br_beads"))
 
 
-def publication_gate_issues(project: Path, paths: RunnerPaths, manifest: dict[str, Any], *, require_git_lane: bool) -> list[str]:
+def publication_gate_issues(
+    project: Path, paths: RunnerPaths, manifest: dict[str, Any], *,
+    require_git_lane: bool, require_verification: bool = False,
+) -> list[str]:
     issues: list[str] = []
-    validation_issues = validate_run(project, paths, manifest, stage="final")
+    # A draft must exist before GitHub Actions and automatic Codex review can run.
+    # Scope/decision gates apply to submission; technical evidence gates readiness.
+    stage = "final" if require_verification else "dispatch"
+    validation_issues = validate_run(project, paths, manifest, stage=stage)
     for issue in validation_issues:
         if issue["severity"] == "error":
             issues.append(f"{issue['code']} at {issue['path']}: {issue['message']}")
@@ -1206,9 +1211,10 @@ def publication_gate_issues(project: Path, paths: RunnerPaths, manifest: dict[st
     if decisions["missing"]:
         issues.append(f"missing decision request files: {decisions['missing']}")
 
-    review = review_evidence_summary(project, manifest)
-    if not review["ok"]:
-        issues.append("review evidence is incomplete or failing")
+    if require_verification:
+        review = review_evidence_summary(project, manifest)
+        if not review["ok"]:
+            issues.append("technical verification evidence is incomplete or failing")
 
     if require_git_lane and not manifest.get("artifacts", {}).get("git_lane"):
         issues.append("git lane artifact is missing")
@@ -1349,8 +1355,6 @@ def _validate_dispatch_cli_specific(
                 add_issue(issues, "error", "review-command-failed", review["results"], f"Review command failed: {item.get('command')}")
         if review["placeholder_scaffold"]:
             add_issue(issues, "error", "review-placeholder", review["review"], "Review report still contains placeholder scaffold markers.")
-        if review["semantic_verdict"] != "approved":
-            add_issue(issues, "error", "semantic-review-not-approved", review["review"] or "manifest", "Semantic code-quality-governor review is not approved.")
 
         worker_reports = worker_report_summary(project, manifest)
         if not worker_reports["expected"]:
@@ -1699,8 +1703,8 @@ def command_optimize(args: argparse.Namespace) -> int:
         proposals.append(
             {
                 "classification": "review-first",
-                "target": "code-quality-governor",
-                "proposal": "Capture verification commands in the review phase before git publication.",
+                "target": "ci-verification",
+                "proposal": "Capture the PR's GitHub Actions verification evidence before readiness; use automatic Codex GitHub review for semantic findings.",
                 "why": "Makes merge readiness auditable.",
             }
         )
@@ -1708,9 +1712,9 @@ def command_optimize(args: argparse.Namespace) -> int:
         proposals.append(
             {
                 "classification": "apply-now",
-                "target": "code-quality-governor",
-                "proposal": "Require passing command evidence and an explicit approved semantic code-quality-governor verdict before status, git, or PR publication.",
-                "why": "Command output alone does not prove that correctness, maintainability, prompt/eval safety, and open-source readiness were reviewed.",
+                "target": "ci-verification",
+                "proposal": "Require passing technical command evidence before readiness; allow draft submission before CI and automatic Codex review.",
+                "why": "Technical verification and external automatic review are separate gates; submission is not merge approval.",
             }
         )
     if worker_reports["missing"] or worker_reports["blocked"]:
@@ -1862,7 +1866,10 @@ See `{manifest.get('artifacts', {}).get('review_command_results', 'review comman
         raise SystemExit(f"Refusing to execute remote PR creation before overwriting existing local lane without --force: {pr_lane_path}")
 
     if args.execute and not args.override_gates:
-        gate_issues = publication_gate_issues(project, paths, manifest, require_git_lane=True)
+        gate_issues = publication_gate_issues(
+            project, paths, manifest, require_git_lane=True,
+            require_verification=not args.draft,
+        )
         if gate_issues:
             raise SystemExit("PR execution blocked by publication gates:\n" + "\n".join(f"- {item}" for item in gate_issues))
 
@@ -2560,7 +2567,6 @@ def command_review(args: argparse.Namespace) -> int:
     result_json_path = paths.run_dir / "review-command-results.json"
     has_commands = bool(results)
     failed = [item for item in results if item["exit_code"] != 0]
-    verdict_label = args.semantic_verdict.replace("-", " ").title()
     findings = args.finding or ["No semantic findings recorded." if args.semantic_verdict == "approved" else "Semantic review is pending."]
     test_gaps = args.test_gap or ["No additional test gaps recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded test gaps yet."]
     architecture_notes = args.architecture_note or ["No architecture notes recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded architecture notes yet."]
@@ -2569,7 +2575,7 @@ def command_review(args: argparse.Namespace) -> int:
         f"# Review Report: {manifest['feature']['title']}",
         "",
         f"Date: {today()}",
-        "Reviewer: code-quality-governor",
+        "Semantic review: automatic Codex GitHub review (external)",
         f"Run ID: `{run_id}`",
         "",
         "## Inputs",
@@ -2584,7 +2590,7 @@ def command_review(args: argparse.Namespace) -> int:
         "",
         "## Required Fixes",
         "",
-        "- None detected by captured commands or semantic review." if has_commands and not failed and args.semantic_verdict == "approved" else "- Review is incomplete until verification commands pass and semantic review is approved.",
+        "- None detected by captured commands or semantic review." if has_commands and not failed and args.semantic_verdict == "approved" else "- Technical verification is incomplete until captured CI commands pass. Semantic review is external on GitHub.",
         "",
         "## Test Gaps",
         "",
@@ -2612,7 +2618,7 @@ def command_review(args: argparse.Namespace) -> int:
             "",
             "## Verdict",
             "",
-            f"Semantic verdict: {verdict_label}",
+            "Semantic verdict: external (automatic Codex GitHub review)",
         ]
     )
     if args.dry_run:
@@ -2628,7 +2634,7 @@ def command_review(args: argparse.Namespace) -> int:
     exit_code = 0 if has_commands and not failed else 1
     if args.allow_empty and not has_commands:
         exit_code = 0
-    print_json({"run_id": run_id, "review": rel(review_path, project), "commands_exit_ok": exit_code == 0, "semantic_verdict": args.semantic_verdict})
+    print_json({"run_id": run_id, "review": rel(review_path, project), "commands_exit_ok": exit_code == 0, "semantic_review": "external-codex-github"})
     return exit_code
 
 
@@ -2854,6 +2860,13 @@ def command_status(args: argparse.Namespace) -> int:
         "decision_requests": decisions,
         "validation_issues": validation_issues,
         "review_evidence": review,
+        "automatic_review": {
+            "provider": "codex-github",
+            "state": "external",
+            "required": True,
+            "note": "Inspect the current PR's automatic review and CI before an authorized merge.",
+        },
+        "merge_ready": False,
         "worker_reports": worker_reports,
         "phases": manifest.get("phases", {}),
         "br_beads": manifest.get("br_beads", {}),
@@ -2887,7 +2900,7 @@ def command_plan(args: argparse.Namespace) -> int:
         f"{runner} validate --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --stage dispatch",
         f"{runner} dispatch --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --ready-only",
         f"{runner} worker-report --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --task '<task-id>' --file-changed '<path>: <summary>' --behavior '<summary>' --verification '<command>: passed'",
-        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --command '<verification command>' --semantic-verdict approved",
+        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --command '<verification command>'",
         f"{runner} optimize --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} git-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} pr-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --draft",
@@ -2905,7 +2918,7 @@ def command_plan(args: argparse.Namespace) -> int:
                 "Use decision-request for material blockers instead of chat-only questions.",
                 "Use dispatch output with multi_agent_v1.spawn_agent to launch real Codex workers.",
                 "Use worker-report once per dispatched task after reading worker final reports.",
-                "Use --semantic-verdict approved only after a real code-quality-governor review.",
+                "Semantic review is automatic on GitHub; local verification artifacts do not approve a merge.",
                 "Use git-lane --execute only when branch/stage/commit/push intent is explicit.",
                 "Use pr-lane --execute only after push and GitHub auth intent are explicit.",
             ],
@@ -3057,7 +3070,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_run(review)
     review.add_argument("--command", action="append", default=[], help="Verification command to run from the target project.")
     review.add_argument("--allow-empty", action="store_true", help="Allow a scaffold-only review report. This is not merge-ready.")
-    review.add_argument("--semantic-verdict", choices=["pending", "approved", "changes-requested", "blocked"], default="pending")
+    review.add_argument("--semantic-verdict", choices=["pending"], default="pending", help="Compatibility flag; semantic review is external on GitHub, never a local verdict.")
     review.add_argument("--finding", action="append", default=[], help="Semantic review finding. Repeatable.")
     review.add_argument("--test-gap", action="append", default=[], help="Semantic review test gap. Repeatable.")
     review.add_argument("--architecture-note", action="append", default=[], help="Semantic review architecture note. Repeatable.")

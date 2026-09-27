@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flywheel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: agent-flywheel
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Install runner test dependencies
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Runner contract tests
+        run: python -m pytest tests/flywheel
+      - name: Submission and verification smoke
+        run: bash scripts/run-runner-smoke.sh
+
+  apple:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      STRICT_LINT: "1"
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Record toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          swiftlint version
+      - name: SwiftLint
+        run: bash ci/lint.sh
+      - name: Domain and data tests
+        working-directory: Packages/FlashUpKit
+        run: swift test
+      - name: Unsigned simulator build
+        run: >-
+          xcodebuild build -project FlashUp.xcodeproj -scheme FlashUp
+          -configuration Release -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO

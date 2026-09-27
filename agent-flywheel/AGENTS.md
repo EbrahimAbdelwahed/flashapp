@@ -163,19 +163,17 @@ installed by the workflow.
 - Use `study-prompt-system-designer` for course profiles, prompt registries, and evals.
 - Use `study-rag-architect` for retrieval, indexing, citation, and RAG framework choices.
 - Follow the repository-root `AGENTS.md` Git delivery and review policy.
-  Automatic Codex GitHub review is the ordinary semantic review after publication.
-- For a run published through `scripts/flywheel-runner.py`, retain the existing
-  pre-publication `code-quality-governor` review. `publication_gate_issues`
-  invokes final validation, and `pr-lane --execute` requires passing command
-  evidence plus an approved semantic verdict before creating even a draft PR.
-  Capture that evidence through the existing review workflow; do not fabricate
-  an approved verdict, use `--override-gates`, or bypass the runner to trigger
-  GitHub review. A later GitHub review cannot satisfy a gate before PR creation.
-  This runner compatibility requirement is the exception to the root policy;
-  additional specialist reviews still need a concrete risk or acceptance gate.
-  Remove the pre-publication semantic gate only with a separately verified
-  runner change that allows PR submission and consumes GitHub review evidence
-  while preserving CI, scope, and merge readiness requirements.
+  Semantic review comes only from automatic Codex GitHub review. Do not launch
+  code-quality-governor or another local semantic reviewer.
+- `git-lane --execute` and `pr-lane --draft --execute` enforce approved scope,
+  required artifacts, and blocking decisions, without requiring a local review
+  or completed CI. This allows a PR to exist before cloud verification starts.
+  Ready PR publication and final validation still require passing technical
+  command evidence and complete worker reports. Capture GitHub Actions results
+  through the runner's verification report; do not run repository tests locally.
+  The legacy `--semantic-verdict approved` option is unsupported. Runner status
+  reports external review separately and never claims merge approval. Inspect
+  current CI and automatic review on GitHub before an authorized merge.
 - Use `workflow-optimizer` at the end of meaningful sessions to identify improvements to AGENTS.md, skills, templates, worker profiles, prompts, and quality gates.
 
 Write user-facing explanations in clear, concise language without reducing technical precision. Prefer concrete wording over unexplained jargon. Use established domain terminology when it is the most precise choice, and briefly define it when the intended audience may not know it. Preserve material evidence, constraints, tradeoffs, caveats, and uncertainty. Do not rewrite code, identifiers, commands, quoted text, or prescribed formats merely to satisfy this style rule.
