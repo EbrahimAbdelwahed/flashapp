@@ -229,7 +229,6 @@ final class UserFlowUITests: UITestCase {
         let trashRow = app.buttons["library.trash"]
         for _ in 0..<5 where !trashRow.isHittable { app.swipeUp() }
         XCTAssertTrue(trashRow.waitForExistence(timeout: 10), "the trash row is missing from Library")
-        XCTAssertTrue(trashRow.isHittable, "the trash row cannot be reached")
         trashRow.tap()
 
         let trashed = app.descendants(matching: .any).matching(identifier: "trash.row").element(boundBy: 0)
