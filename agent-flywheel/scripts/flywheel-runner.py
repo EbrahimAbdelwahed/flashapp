@@ -1387,8 +1387,8 @@ def _validate_dispatch_cli_specific(
         review = review_evidence_summary(project, manifest)
         if review["missing"]:
             add_issue(issues, "error", "missing-review-evidence", "manifest", f"Review evidence is missing: {review['missing']}")
-        elif review["commands_count"] == 0:
-            add_issue(issues, "error", "review-no-commands", review["results"], "Review captured no verification commands.")
+        if review["github_actions"] is None:
+            add_issue(issues, "error", "github-actions-not-verified", review["results"] or "manifest", "Complete CI for exact HEAD is not verified: " + "; ".join(review["ci_errors"]))
         if review["failed_commands"]:
             for item in review["failed_commands"]:
                 add_issue(issues, "error", "review-command-failed", review["results"], f"Review command failed: {item.get('command')}")
@@ -2966,7 +2966,7 @@ def command_plan(args: argparse.Namespace) -> int:
         f"{runner} validate --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --stage dispatch",
         f"{runner} dispatch --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --ready-only",
         f"{runner} worker-report --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --task '<task-id>' --file-changed '<path>: <summary>' --behavior '<summary>' --verification '<command>: passed'",
-        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --command '<verification command>'",
+        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --github-actions-run '<successful-ci-run-id>'",
         f"{runner} optimize --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} git-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} pr-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --draft",

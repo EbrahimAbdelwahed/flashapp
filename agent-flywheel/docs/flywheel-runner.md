@@ -222,8 +222,7 @@ After publishing a draft so GitHub Actions can run, capture technical verificati
 study-agent-devkit/scripts/flywheel-runner.py review \
   --project study-agent-platform \
   --run-id latest \
-  --github-actions-run <successful-ci-run-id> \
-  \
+  --github-actions-run 123456789 \
   --finding "Technical verification captured; semantic review is automatic on GitHub."
 ```
 

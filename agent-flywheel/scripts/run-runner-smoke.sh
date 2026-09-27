@@ -294,6 +294,8 @@ PUBLISH="$TMPROOT/publish"
 mkdir -p "$PUBLISH"
 git -C "$PUBLISH" init >/dev/null 2>&1
 printf '%s\n' '# Publish smoke' >"$PUBLISH/README.md"
+git -C "$PUBLISH" add README.md
+git -C "$PUBLISH" -c user.name=Smoke -c user.email=smoke@example.invalid commit -m 'Synthetic fixture' >/dev/null
 "$RUNNER" intake --project "$PUBLISH" --run-id publish --feature "Publication gate smoke" >/dev/null
 "$RUNNER" context --project "$PUBLISH" --run-id publish >/dev/null
 "$RUNNER" spec --project "$PUBLISH" --run-id publish >/dev/null
