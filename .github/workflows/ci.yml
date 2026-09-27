@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      run_ui_tests:
+        description: "Temporarily opt in to full iOS 26/17 UI suites while app development is paused"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -79,6 +85,7 @@ jobs:
           -configuration Release -destination 'generic/platform=iOS Simulator'
           -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO
       - name: Select an installed iPhone simulator
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
         run: |
           xcrun simctl list devices available --json > /tmp/flashup-simulators.json
           python3 - <<'PY'
@@ -96,6 +103,7 @@ jobs:
               stream.write(f"FLASHUP_SIMULATOR_ID={device['udid']}\n")
           PY
       - name: App and UI tests
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
         run: >-
           xcodebuild test -project FlashUp.xcodeproj -scheme FlashUp
           -destination "platform=iOS Simulator,id=$FLASHUP_SIMULATOR_ID"
@@ -103,8 +111,10 @@ jobs:
           -derivedDataPath DerivedData -resultBundlePath TestResults.xcresult
           CODE_SIGNING_ALLOWED=NO
       - name: Install minimum supported iOS runtime
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
         run: xcodebuild -downloadPlatform iOS -buildVersion 17.5
       - name: Create iOS 17 fallback simulator
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
         run: |
           xcrun simctl list runtimes --json > /tmp/flashup-runtimes.json
           python3 - <<'PY'
@@ -124,6 +134,7 @@ jobs:
               stream.write(f'FLASHUP_FALLBACK_SIMULATOR_ID={device}\n')
           PY
       - name: App and UI tests on iOS 17 fallback
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
         run: >-
           xcodebuild test -project FlashUp.xcodeproj -scheme FlashUp
           -destination "platform=iOS Simulator,id=$FLASHUP_FALLBACK_SIMULATOR_ID"

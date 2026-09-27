@@ -120,7 +120,7 @@ RUNNER_COMMANDS: dict[str, dict[str, Any]] = {
     },
     "review": {
         "summary": "Capture verified GitHub Actions CI or prepare an empty report.",
-        "side_effects": ["local_write", "executes_user_commands_optional"],
+        "side_effects": ["local_write", "network_read_optional"],
         "supports_dry_run": True,
         "output": "json",
     },
@@ -146,7 +146,7 @@ RUNNER_COMMANDS: dict[str, dict[str, Any]] = {
     },
     "run": {
         "summary": "Run a sequenced orchestration lane until judgment or missing inputs are required.",
-        "side_effects": ["local_write", "executes_user_commands_optional", "local_task_graph_write_optional"],
+        "side_effects": ["local_write", "network_read_optional", "local_task_graph_write_optional"],
         "supports_dry_run": True,
         "output": "json",
     },

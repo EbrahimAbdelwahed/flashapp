@@ -235,7 +235,7 @@ The orchestrator should maintain a small registry of proven profiles, such as:
 - implementation profile for a specific package or subsystem;
 - framework/library research profile;
 - test/eval profile;
-- review profile;
+- automatic Codex GitHub review (external; no local reviewer profile);
 - documentation/ADR profile;
 - flywheel-improvement profile.
 
@@ -258,10 +258,8 @@ Keeps quality from degrading under parallelism.
 
 Review gates:
 
-- self-review by implementing worker;
-- peer review by a review-capable worker profile;
-- code-quality-governor review;
-- relevant test/lint/typecheck/build/eval gates;
+- automatic Codex GitHub semantic review, with fixes returned to the task owner;
+- relevant test/lint/typecheck/build/eval gates in GitHub Actions;
 - human approval for product/architecture-sensitive changes.
 
 Review output becomes:
@@ -428,7 +426,7 @@ Outputs:
 
 Important rule:
 
-The workflow optimizer proposes changes. A separate reviewer or the user approves them before they become canonical.
+The workflow optimizer proposes changes. Automatic Codex GitHub review assesses code changes; the user approves product and workflow decisions before they become canonical.
 
 ## 5. End-to-End Flows
 

@@ -44,7 +44,7 @@ The key rule is to keep decisions in the right place:
 - `feature-spec-architect`: turns a rough feature idea into an implementable spec.
 - `implementation-orchestrator`: converts a spec into task beads and invokes worker-profile generation when specialization is useful.
 - `worker-profile-factory`: generates reusable worker profiles from the current graph, constraints, and implementation patterns instead of relying on a fixed role taxonomy.
-- `code-quality-governor`: reviews output against project quality bars.
+- `code-quality-governor`: retained legacy skill; do not invoke it in this repository. Semantic code review is automatic on GitHub.
 - `simplify-and-refactor-code-isomorphically`: guides expert behavior-preserving simplification and refactoring.
 - `workflow-optimizer`: reviews sessions and proposes reusable improvements to skills, worker profiles, templates, prompts, AGENTS rules, and quality gates.
 - `study-prompt-system-designer`: designs course-aware prompts and eval fixtures.
@@ -72,7 +72,7 @@ study-agent-devkit/
 5. Let the orchestrator call `worker-profile-factory` for reusable worker profiles when the work needs specialization.
 6. Assign or spawn workers from the generated task beads and profiles.
 7. Invoke `simplify-and-refactor-code-isomorphically` for behavior-preserving cleanup before or during implementation when complexity blocks safe change.
-8. Run `code-quality-governor` before merging.
+8. Publish a scoped draft, capture its GitHub Actions CI and use automatic Codex GitHub review. Fix actionable findings in the same PR; merge only when authorized.
 9. Run `workflow-optimizer` at the end of meaningful sessions or repeated friction.
 
 ## Tool Adoption Path
