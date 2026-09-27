@@ -72,8 +72,11 @@ Read the assigned batch bead before changing code. A batch may contain several o
   accurate as scope changes. Routine documentation-only changes need diff and
   link inspection, not invented runtime tests; applicable CI still runs.
 - Use automatic Codex GitHub review as the ordinary semantic review after
-  publication. Do not duplicate it with a mandatory local reviewer chain.
-  Add specialist review only for a concrete risk or requested acceptance gate,
+  publication. Do not duplicate it with a mandatory local reviewer chain,
+  except where the current Flywheel runner requires approved pre-publication
+  evidence. For those runs, follow `agent-flywheel/AGENTS.md`; changing prose
+  does not remove the runner's gate. Add specialist review otherwise only for
+  a concrete risk or requested acceptance gate,
   especially authentication, untrusted input, persistence, migration, or data
   loss. Explain the added gate. Do not weaken existing product acceptance rules.
 - Before an authorized merge, require applicable CI and review evidence for the
