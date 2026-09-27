@@ -396,7 +396,7 @@ cat > "$PUBLISH/.github/ci-contract.json" <<'JSON_CONTRACT'
 {"workflow":".github/workflows/ci.yml","name":"CI","required_jobs":["apple","flywheel (3.12)","flywheel (3.13)"]}
 JSON_CONTRACT
 git -C "$PUBLISH" add .github/ci-contract.json
-git -C "$PUBLISH" commit -m "Define CI contract" >/dev/null
+git -C "$PUBLISH" -c user.name="Runner Smoke" -c user.email="runner-smoke@example.invalid" commit -m "Define CI contract" >/dev/null
 export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
 export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
 export FAKE_GH_CONCLUSION=success
