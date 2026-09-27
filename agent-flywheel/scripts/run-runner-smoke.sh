@@ -377,7 +377,7 @@ case "$*" in
     echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"workflowDatabaseId\":1,\"event\":\"pull_request\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":$FAKE_GH_JOBS}" ;;
   *"pr list"*)
     if test -f "$FAKE_GH_STATE"; then
-      echo '[{"url":"https://github.com/example/example/pull/1","isDraft":true,"baseRefName":"main"}]'
+      echo "[{\"url\":\"https://github.com/example/example/pull/1\",\"isDraft\":true,\"baseRefName\":\"main\",\"headRefOid\":\"${FAKE_GH_REMOTE_SHA:-$FAKE_GH_SHA}\"}]"
     else
       echo '[]'
     fi ;;
@@ -404,6 +404,7 @@ BEFORE_CI_STATUS="$(git -C "$PUBLISH" status --porcelain)"
 "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
 expect_failure "captured CI is rechecked before readiness" env FAKE_GH_CONCLUSION=failure "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
+expect_failure "different remote PR head blocks readiness" env FAKE_GH_REMOTE_SHA=newer "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force >/dev/null
 test "$(cat "$FAKE_GH_STATE")" = ready
 test "$(git -C "$PUBLISH" status --porcelain)" = "$BEFORE_CI_STATUS"
@@ -503,3 +504,13 @@ else
 fi
 
 log "PASS: flywheel runner smoke passed"
+
+"$RUNNER" plan --project "$PUBLISH" --feature "Plan CI sequence" > "$TMPROOT/plan.json"
+python3 - "$TMPROOT/plan.json" <<'PY_PLAN'
+import json, sys
+commands = json.load(open(sys.argv[1]))["commands"]
+draft = next(i for i, c in enumerate(commands) if "pr-lane " in c and "--draft" in c)
+ci = next(i for i, c in enumerate(commands) if "review " in c and "--github-actions-run" in c)
+ready = next(i for i, c in enumerate(commands) if "pr-lane " in c and "--draft" not in c)
+assert draft < ci < ready
+PY_PLAN

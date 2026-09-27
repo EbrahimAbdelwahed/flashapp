@@ -1974,15 +1974,22 @@ def command_pr_lane(args: argparse.Namespace) -> int:
         if not branch:
             raise SystemExit("PR execution requires a named branch.")
         lookup_args = ["gh", "pr", "list", "--head", branch, "--state", "open",
-                       "--json", "url,isDraft,baseRefName"]
+                       "--json", "url,isDraft,baseRefName,headRefOid"]
         lookup = command(lookup_args, cwd=project)
         if lookup.returncode != 0:
             raise SystemExit(lookup.stderr.strip() or "Cannot inspect existing PRs")
         existing = json.loads(lookup.stdout)
         if len(existing) > 1:
             raise SystemExit("Multiple open PRs for this branch; select the intended PR explicitly.")
+        if external and not existing:
+            raise SystemExit("Publish the scoped draft before capturing CI and marking it ready.")
         if existing:
             pr = existing[0]
+            if external:
+                submitted_head = pr.get("headRefOid")
+                local_head = git(["rev-parse", "HEAD"], project).stdout.strip()
+                if submitted_head != local_head or not evidence["github_actions"] or submitted_head != evidence["github_actions"]["head_sha"]:
+                    raise SystemExit("Open PR remote head, local HEAD and verified CI commit must match.")
             if args.base and pr["baseRefName"] != args.base:
                 raise SystemExit("Existing PR base differs from the requested base.")
             if pr["isDraft"] and not args.draft:
@@ -3041,10 +3048,12 @@ def command_plan(args: argparse.Namespace) -> int:
         f"{runner} validate --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --stage dispatch",
         f"{runner} dispatch --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --ready-only",
         f"{runner} worker-report --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --task '<task-id>' --file-changed '<path>: <summary>' --behavior '<summary>' --verification '<command>: passed'",
-        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --github-actions-run '<successful-ci-run-id>'",
         f"{runner} optimize --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} git-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} pr-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --draft",
+        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --github-actions-run '<successful-ci-run-id>'",
+        f"{runner} validate --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --stage final",
+        f"{runner} pr-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --force",
         f"{runner} status --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
     ]
     print_json(
@@ -3061,7 +3070,8 @@ def command_plan(args: argparse.Namespace) -> int:
                 "Use worker-report once per dispatched task after reading worker final reports.",
                 "Semantic review is automatic on GitHub; local verification artifacts do not approve a merge.",
                 "Use git-lane --execute only when branch/stage/commit/push intent is explicit.",
-                "Use pr-lane --execute only after push and GitHub auth intent are explicit.",
+                "Commit implementation and planning artifacts, push the branch, then execute the draft PR lane before requesting its GitHub Actions run ID.",
+                "Use pr-lane --execute only after push and GitHub auth intent are explicit; the final non-draft lane reuses the PR and verifies its remote head.",
             ],
         }
     )
