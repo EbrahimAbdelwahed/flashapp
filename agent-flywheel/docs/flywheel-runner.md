@@ -396,7 +396,7 @@ Use this after reading each worker's final response. Publication gates require o
 
 Creates `docs/reviews/<run-id>.md` and captures verification command outputs in `review-command-results.json`.
 
-This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. Final validation and PR readiness recheck the live run; arbitrary local commands and older green commits cannot satisfy those gates. A report without commands exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
+This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. The canonical workflow ID, event and prescribed job set are checked. CI receipts, final validation and readiness lane reports live under the Git common directory (`codex-ci-receipts/`), outside versioned source; commit planning and implementation artifacts before publishing the draft. Final validation and PR readiness recheck the live run; arbitrary local commands and older green commits cannot satisfy those gates. A report without commands exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
 
 ### `optimize`
 

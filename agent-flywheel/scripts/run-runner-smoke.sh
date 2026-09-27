@@ -371,9 +371,10 @@ mkdir -p "$TMPROOT/fake-bin"
 cat >"$TMPROOT/fake-bin/gh" <<'GH'
 #!/bin/sh
 case "$*" in
-  *"repo view"*) echo example/example ;;
+  *"repo view"*) echo EbrahimAbdelwahed/flashapp ;;
+  *"api repos/"*) echo '{"id":1,"path":".github/workflows/ci.yml"}' ;;
   *"run view"*)
-    echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":[{\"conclusion\":\"$FAKE_GH_CONCLUSION\"}]}" ;;
+    echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"workflowDatabaseId\":1,\"event\":\"pull_request\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":$FAKE_GH_JOBS}" ;;
   *"pr list"*)
     if test -f "$FAKE_GH_STATE"; then
       echo '[{"url":"https://github.com/example/example/pull/1","isDraft":true,"baseRefName":"main"}]'
@@ -381,7 +382,8 @@ case "$*" in
       echo '[]'
     fi ;;
   *"pr create"*"--draft"*) touch "$FAKE_GH_STATE"; echo 'https://github.com/example/example/pull/1' ;;
-  *"pr ready"*) echo ready > "$FAKE_GH_STATE" ;;
+  *"pr edit"*) touch "$FAKE_GH_STATE.edited" ;;
+  *"pr ready"*) test -f "$FAKE_GH_STATE.edited" || exit 1; echo ready > "$FAKE_GH_STATE" ;;
   *) echo 'unexpected gh invocation' >&2; exit 1 ;;
 esac
 GH
@@ -389,6 +391,7 @@ chmod +x "$TMPROOT/fake-bin/gh"
 export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
 export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
 export FAKE_GH_CONCLUSION=success
+export FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"},{"name":"flywheel (3.12)","conclusion":"success"},{"name":"flywheel (3.13)","conclusion":"success"}]'
 export PATH="$TMPROOT/fake-bin:$PATH"
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --execute >/dev/null
 expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
@@ -396,11 +399,14 @@ expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lan
 expect_failure "local command success cannot replace CI" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
 expect_failure "older CI commit is rejected" env FAKE_GH_SHA=older "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "failed CI is rejected" env FAKE_GH_CONCLUSION=failure "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "incomplete CI job set is rejected" env FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"}]' "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+BEFORE_CI_STATUS="$(git -C "$PUBLISH" status --porcelain)"
 "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
 expect_failure "captured CI is rechecked before readiness" env FAKE_GH_CONCLUSION=failure "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force >/dev/null
 test "$(cat "$FAKE_GH_STATE")" = ready
+test "$(git -C "$PUBLISH" status --porcelain)" = "$BEFORE_CI_STATUS"
 rg 'Captured technical verification passed' "$PUBLISH/docs/reviews/publish.md" >/dev/null
 log "PASS: existing verified draft becomes ready without a second PR"
 expect_failure "local semantic approval is unsupported" "$RUNNER" review \
