@@ -26,6 +26,8 @@ jobs:
           python-version: "3.12"
       - name: Install runner test dependencies
         run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Install smoke dependencies
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Runner contract tests
         run: python -m pytest tests/flywheel
       - name: Submission and verification smoke
@@ -39,6 +41,8 @@ jobs:
       STRICT_LINT: "1"
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Install SwiftLint
+        run: brew install swiftlint
       - name: Record toolchain
         run: |
           xcodebuild -version
