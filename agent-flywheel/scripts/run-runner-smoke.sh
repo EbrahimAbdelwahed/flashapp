@@ -369,6 +369,9 @@ mkdir -p "$TMPROOT/fake-bin"
 cat >"$TMPROOT/fake-bin/gh" <<'GH'
 #!/bin/sh
 case "$*" in
+  *"repo view"*) echo example/example ;;
+  *"run view"*)
+    echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":[{\"conclusion\":\"$FAKE_GH_CONCLUSION\"}]}" ;;
   *"pr list"*)
     if test -f "$FAKE_GH_STATE"; then
       echo '[{"url":"https://github.com/example/example/pull/1","isDraft":true,"baseRefName":"main"}]'
@@ -382,9 +385,17 @@ esac
 GH
 chmod +x "$TMPROOT/fake-bin/gh"
 export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
+export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
+export FAKE_GH_CONCLUSION=success
+export PATH="$TMPROOT/fake-bin:$PATH"
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --execute >/dev/null
 expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
-"$RUNNER" review --project "$PUBLISH" --run-id publish --command "test -f README.md" >/dev/null
+"$RUNNER" review --project "$PUBLISH" --run-id publish --command "true" >/dev/null
+expect_failure "local command success cannot replace CI" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
+expect_failure "older CI commit is rejected" env FAKE_GH_SHA=older "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "failed CI is rejected" env FAKE_GH_CONCLUSION=failure "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+"$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
+expect_failure "captured CI is rechecked before readiness" env FAKE_GH_CONCLUSION=failure "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force >/dev/null
 test "$(cat "$FAKE_GH_STATE")" = ready

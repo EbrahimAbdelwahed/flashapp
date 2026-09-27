@@ -222,8 +222,7 @@ After publishing a draft so GitHub Actions can run, capture technical verificati
 study-agent-devkit/scripts/flywheel-runner.py review \
   --project study-agent-platform \
   --run-id latest \
-  --command "pnpm -w typecheck" \
-  --command "pnpm -w test" \
+  --github-actions-run <successful-ci-run-id> \
   \
   --finding "Technical verification captured; semantic review is automatic on GitHub."
 ```
@@ -398,7 +397,7 @@ Use this after reading each worker's final response. Publication gates require o
 
 Creates `docs/reviews/<run-id>.md` and captures verification command outputs in `review-command-results.json`.
 
-This command captures technical verification, not semantic approval. A report without commands exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
+This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. Final validation and PR readiness recheck the live run; arbitrary local commands and older green commits cannot satisfy those gates. A report without commands exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
 
 ### `optimize`
 

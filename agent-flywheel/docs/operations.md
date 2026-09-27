@@ -104,7 +104,7 @@ scripts/flywheel-runner.py briefs --project ../study-agent-platform --run-id lat
 scripts/flywheel-runner.py validate --project ../study-agent-platform --run-id latest --stage dispatch
 scripts/flywheel-runner.py dispatch --project ../study-agent-platform --run-id latest --ready-only
 scripts/flywheel-runner.py worker-report --project ../study-agent-platform --run-id latest --task "<task-id>" --file-changed "<path>: <summary>" --behavior "<summary>" --verification "pnpm -w typecheck: passed"
-scripts/flywheel-runner.py review --project ../study-agent-platform --run-id latest --command "pnpm -w typecheck"
+scripts/flywheel-runner.py review --project ../study-agent-platform --run-id latest --github-actions-run <successful-ci-run-id>
 scripts/flywheel-runner.py optimize --project ../study-agent-platform --run-id latest
 scripts/flywheel-runner.py git-lane --project ../study-agent-platform --run-id latest
 scripts/flywheel-runner.py pr-lane --project ../study-agent-platform --run-id latest --draft
