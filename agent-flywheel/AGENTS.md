@@ -31,7 +31,7 @@ raw idea
 -> reusable worker profile when needed
 -> worker brief
 -> code change
--> review report
+-> PR review evidence
 -> ADR or docs update when needed
 ```
 
@@ -162,7 +162,18 @@ installed by the workflow.
 - Use `worker-profile-factory` when the orchestrator identifies reusable specialization needs.
 - Use `study-prompt-system-designer` for course profiles, prompt registries, and evals.
 - Use `study-rag-architect` for retrieval, indexing, citation, and RAG framework choices.
-- Use `code-quality-governor` before merge or handoff.
+- Follow the repository-root `AGENTS.md` Git delivery and review policy.
+  Semantic review comes only from automatic Codex GitHub review. Do not launch
+  code-quality-governor or another local semantic reviewer.
+- `git-lane --execute` and `pr-lane --draft --execute` enforce approved scope,
+  required artifacts, and blocking decisions, without requiring a local review
+  or completed CI. This allows a PR to exist before cloud verification starts.
+  Ready PR publication and final validation still require passing technical
+  command evidence and complete worker reports. Capture GitHub Actions results
+  through the runner's verification report; do not run repository tests locally.
+  The legacy `--semantic-verdict approved` option is unsupported. Runner status
+  reports external review separately and never claims merge approval. Inspect
+  current CI and automatic review on GitHub before an authorized merge.
 - Use `workflow-optimizer` at the end of meaningful sessions to identify improvements to AGENTS.md, skills, templates, worker profiles, prompts, and quality gates.
 
 Write user-facing explanations in clear, concise language without reducing technical precision. Prefer concrete wording over unexplained jargon. Use established domain terminology when it is the most precise choice, and briefly define it when the intended audience may not know it. Preserve material evidence, constraints, tradeoffs, caveats, and uncertainty. Do not rewrite code, identifiers, commands, quoted text, or prescribed formats merely to satisfy this style rule.

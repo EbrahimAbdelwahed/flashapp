@@ -1,0 +1,9 @@
+{
+  "workflow": ".github/workflows/ci.yml",
+  "name": "CI",
+  "required_jobs": [
+    "apple",
+    "flywheel (3.12)",
+    "flywheel (3.13)"
+  ]
+}

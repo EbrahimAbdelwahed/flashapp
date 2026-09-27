@@ -224,12 +224,11 @@ final class UserFlowUITests: UITestCase {
             "the deleted note is still listed in the deck"
         )
 
-        // …and is waiting in the trash, reached from Settings so the test never depends on
-        // the back button's localized label.
-        openTab("tab.settings")
-        let trashRow = app.buttons["settings.trash"]
-        XCTAssertTrue(trashRow.waitForExistence(timeout: 10), "the trash row is missing from Settings")
-        if !trashRow.isHittable { app.swipeUp() }
+        // …and is waiting in the trash, reached from the Library's tools section.
+        goBack()
+        let trashRow = app.buttons["library.trash"]
+        for _ in 0..<5 where !trashRow.isHittable { app.swipeUp() }
+        XCTAssertTrue(trashRow.waitForExistence(timeout: 10), "the trash row is missing from Library")
         trashRow.tap()
 
         let trashed = app.descendants(matching: .any).matching(identifier: "trash.row").element(boundBy: 0)

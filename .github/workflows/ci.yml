@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_ui_tests:
+        description: "Temporarily opt in to full iOS 26/17 UI suites while app development is paused"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flywheel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: agent-flywheel
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install runner test dependencies
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Install smoke dependencies
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: Verify pinned harness contract and provenance
+        run: |
+          python -c "from study_agent.feedback.outbox import OUTBOX_SCHEMA_VERSION; assert OUTBOX_SCHEMA_VERSION == 2"
+          python -c "import importlib.metadata as m, json; d=m.distribution('study-agent-harness').read_text('direct_url.json'); assert json.loads(d or '{}').get('vcs_info', {}).get('commit_id') == 'e74c4da9c737f97dd460c606dbb7afcc66137b84'"
+      - name: Full devkit tests
+        run: python -m pytest
+      - name: Ruff
+        run: python -m ruff check .
+      - name: Mypy
+        run: python -m mypy
+      - name: Scaffold, validators and submission smoke
+        if: matrix.python-version == '3.13'
+        run: bash scripts/check-flywheel.sh
+      - name: Build distribution
+        run: python -m build
+      - name: Clean wheel import
+        run: |
+          python -m venv /tmp/study-agent-devkit-wheel
+          /tmp/study-agent-devkit-wheel/bin/python -m pip install dist/*.whl
+          /tmp/study-agent-devkit-wheel/bin/python -c "from study_agent_devkit.capability_gap import SQLiteCapabilityGapStore; from study_agent.feedback.outbox import OUTBOX_SCHEMA_VERSION; assert OUTBOX_SCHEMA_VERSION == 2"
+
+  apple:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      STRICT_LINT: "1"
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Record toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          swiftlint version
+      - name: SwiftLint
+        run: bash ci/lint.sh
+      - name: Domain and data tests
+        working-directory: Packages/FlashUpKit
+        run: swift test
+      - name: Unsigned simulator build
+        run: >-
+          xcodebuild build -project FlashUp.xcodeproj -scheme FlashUp
+          -configuration Release -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO
+      - name: Select an installed iPhone simulator
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
+        run: |
+          xcrun simctl list devices available --json > /tmp/flashup-simulators.json
+          python3 - <<'PY'
+          import json, os
+          with open('/tmp/flashup-simulators.json') as stream:
+              devices = json.load(stream)['devices']
+          candidates = [(runtime, device) for runtime, entries in devices.items()
+                        if 'iOS-26' in runtime for device in entries
+                        if device.get('isAvailable') and device['name'].startswith('iPhone')]
+          if not candidates:
+              raise SystemExit('An installed iOS 26 iPhone simulator is required')
+          runtime, device = sorted(candidates, key=lambda item: (item[0], item[1]['name']))[-1]
+          print(f"Testing on {device['name']} ({runtime})")
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              stream.write(f"FLASHUP_SIMULATOR_ID={device['udid']}\n")
+          PY
+      - name: App and UI tests
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
+        run: >-
+          xcodebuild test -project FlashUp.xcodeproj -scheme FlashUp
+          -destination "platform=iOS Simulator,id=$FLASHUP_SIMULATOR_ID"
+          -parallel-testing-enabled NO
+          -derivedDataPath DerivedData -resultBundlePath TestResults.xcresult
+          CODE_SIGNING_ALLOWED=NO
+      - name: Install minimum supported iOS runtime
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
+        run: xcodebuild -downloadPlatform iOS -buildVersion 17.5
+      - name: Create iOS 17 fallback simulator
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
+        run: |
+          xcrun simctl list runtimes --json > /tmp/flashup-runtimes.json
+          python3 - <<'PY'
+          import json, os, subprocess
+          with open('/tmp/flashup-runtimes.json') as stream:
+              runtimes = json.load(stream)['runtimes']
+          runtime = next((item for item in runtimes
+                          if item.get('isAvailable') and item['version'] == '17.5'
+                          and 'iOS' in item['identifier']), None)
+          if runtime is None:
+              raise SystemExit('iOS 17.5 must be available for fallback verification')
+          device = subprocess.check_output([
+              'xcrun', 'simctl', 'create', 'FlashUp iOS 17 fallback',
+              'com.apple.CoreSimulator.SimDeviceType.iPhone-15', runtime['identifier']
+          ], text=True).strip()
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              stream.write(f'FLASHUP_FALLBACK_SIMULATOR_ID={device}\n')
+          PY
+      - name: App and UI tests on iOS 17 fallback
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
+        run: >-
+          xcodebuild test -project FlashUp.xcodeproj -scheme FlashUp
+          -destination "platform=iOS Simulator,id=$FLASHUP_FALLBACK_SIMULATOR_ID"
+          -parallel-testing-enabled NO
+          -derivedDataPath DerivedData -resultBundlePath FallbackTestResults.xcresult
+          CODE_SIGNING_ALLOWED=NO

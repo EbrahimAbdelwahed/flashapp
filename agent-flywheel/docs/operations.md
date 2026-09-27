@@ -90,7 +90,7 @@ Use `--project <path>` to inspect another file-based flywheel project. The CLI i
 
 ## Orchestrator Runner
 
-Use `scripts/flywheel-runner.py` as the canonical workflow surface for a complete implementation lane:
+Use `scripts/flywheel-runner.py` as the canonical workflow surface for a complete implementation lane. The git and draft lanes below prepare artifacts; execute the authorized commit/push and draft publication before capturing its GitHub Actions run:
 
 ```bash
 scripts/flywheel-runner.py plan --project ../study-agent-platform --feature "Describe the next feature"
@@ -104,10 +104,12 @@ scripts/flywheel-runner.py briefs --project ../study-agent-platform --run-id lat
 scripts/flywheel-runner.py validate --project ../study-agent-platform --run-id latest --stage dispatch
 scripts/flywheel-runner.py dispatch --project ../study-agent-platform --run-id latest --ready-only
 scripts/flywheel-runner.py worker-report --project ../study-agent-platform --run-id latest --task "<task-id>" --file-changed "<path>: <summary>" --behavior "<summary>" --verification "pnpm -w typecheck: passed"
-scripts/flywheel-runner.py review --project ../study-agent-platform --run-id latest --command "pnpm -w typecheck" --semantic-verdict approved
 scripts/flywheel-runner.py optimize --project ../study-agent-platform --run-id latest
 scripts/flywheel-runner.py git-lane --project ../study-agent-platform --run-id latest
 scripts/flywheel-runner.py pr-lane --project ../study-agent-platform --run-id latest --draft
+scripts/flywheel-runner.py review --project ../study-agent-platform --run-id latest --github-actions-run 123456789
+scripts/flywheel-runner.py validate --project ../study-agent-platform --run-id latest --stage final
+scripts/flywheel-runner.py pr-lane --project ../study-agent-platform --run-id latest
 scripts/flywheel-runner.py status --project ../study-agent-platform --run-id latest
 ```
 
@@ -123,7 +125,7 @@ The runner is built for an agent orchestrator:
 - it emits `multi_agent_v1.spawn_agent` packets for the Codex orchestrator;
 - it requires complete worker reports for every task bead before publication;
 - it uses `br ready` automatically during sequenced `run` dispatch when linked beads exist;
-- it requires passing review commands and an approved semantic review before publication;
+- it allows draft publication before CI, requires passing technical verification for readiness, and uses only automatic Codex GitHub review for semantic findings;
 - it prepares review and git lanes but does not silently push;
 - it prepares PR creation but does not call GitHub unless `--execute` is explicit;
 - it blocks git/PR execution on failed final gates unless `--override-gates` is explicit;

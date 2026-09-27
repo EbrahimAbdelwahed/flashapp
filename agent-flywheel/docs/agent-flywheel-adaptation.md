@@ -45,8 +45,8 @@ rough product request
 -> worker briefs
 -> implementation
 -> worker reports
--> code-quality-governor
--> approved review evidence
+-> draft PR / GitHub Actions
+-> automatic Codex GitHub review
 -> docs/ADR/update
 ```
 
@@ -63,10 +63,12 @@ intake
 -> validate --stage dispatch
 -> dispatch
 -> worker-report
--> review --semantic-verdict approved
 -> optimize
 -> git-lane
--> pr-lane
+-> pr-lane --draft
+-> GitHub Actions CI
+-> review --github-actions-run <actual-run-id>
+-> pr-lane (existing draft becomes ready)
 -> status
 ```
 

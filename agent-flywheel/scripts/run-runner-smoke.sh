@@ -169,8 +169,11 @@ expect_failure "open blocking decision blocks dispatch" "$RUNNER" dispatch --pro
 log "PASS: resolved decision unblocks dispatch validation"
 
 expect_failure "review without commands is not merge-ready" "$RUNNER" review --project "$READYONLY" --run-id readyonly
-"$RUNNER" review --project "$READYONLY" --run-id readyonly --command "test -f docs/flywheel-runs/readyonly/manifest.json" --force >/dev/null
-log "PASS: review requires command evidence"
+expect_failure "local verification commands are unsupported" "$RUNNER" review --project "$READYONLY" --run-id readyonly --command "touch $TMPROOT/forbidden-local-command" --force
+test ! -e "$TMPROOT/forbidden-local-command"
+expect_failure "run cannot forward local verification" "$RUNNER" run --project "$READYONLY" --run-id readyonly --phase review --command "touch $TMPROOT/forbidden-local-command"
+test ! -e "$TMPROOT/forbidden-local-command"
+log "PASS: verification requires GitHub Actions evidence"
 
 expect_failure "ready-only dispatch skips tasks without br ids" "$RUNNER" dispatch --project "$READYONLY" --run-id readyonly --ready-only
 
@@ -294,6 +297,8 @@ PUBLISH="$TMPROOT/publish"
 mkdir -p "$PUBLISH"
 git -C "$PUBLISH" init >/dev/null 2>&1
 printf '%s\n' '# Publish smoke' >"$PUBLISH/README.md"
+git -C "$PUBLISH" add README.md
+git -C "$PUBLISH" -c user.name=Smoke -c user.email=smoke@example.invalid commit -m 'Synthetic fixture' >/dev/null
 "$RUNNER" intake --project "$PUBLISH" --run-id publish --feature "Publication gate smoke" >/dev/null
 "$RUNNER" context --project "$PUBLISH" --run-id publish >/dev/null
 "$RUNNER" spec --project "$PUBLISH" --run-id publish >/dev/null
@@ -312,7 +317,7 @@ Date: 2026-06-25
 
 ## Goal
 
-Verify final validation requires worker reports and approved semantic review.
+Verify final validation requires worker reports and technical verification.
 
 ## Problem
 
@@ -328,7 +333,7 @@ Publication should not rely only on artifact presence.
 
 ## Acceptance Criteria
 
-- [ ] Status is green only after worker report, approved review, optimization, git lane, and PR lane exist.
+- [ ] Status is green only after worker report, verification, optimization, git lane, and PR lane exist.
 
 ## Verification
 
@@ -364,23 +369,87 @@ expect_failure "final validation requires reports for all task beads" "$RUNNER" 
   --file-changed "No product files changed." \
   --behavior "All-task worker report coverage verified." \
   --verification "test -f README.md: passed" >/dev/null
-"$RUNNER" review --project "$PUBLISH" --run-id publish --command "test -f README.md" >/dev/null
-expect_failure "final validation requires approved semantic review" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
-"$RUNNER" review \
-  --project "$PUBLISH" \
-  --run-id publish \
-  --command "test -f README.md" \
-  --semantic-verdict approved \
-  --finding "No correctness issues found in the synthetic publication gate run." \
-  --test-gap "No residual test gap for the smoke scenario." \
-  --force >/dev/null
+"$RUNNER" git-lane --project "$PUBLISH" --run-id publish >/dev/null
+mkdir -p "$TMPROOT/fake-bin"
+cat >"$TMPROOT/fake-bin/gh" <<'GH'
+#!/bin/sh
+case "$*" in
+  *"repo view"*) echo "${FAKE_GH_REPO:-EbrahimAbdelwahed/flashapp}" ;;
+  *"contents/.github/ci-contract.json"*) test -n "$FAKE_GH_BASE_CONTRACT" || exit 1; echo "$FAKE_GH_BASE_CONTRACT" ;;
+  *"api repos/"*) echo '{"id":1,"path":".github/workflows/ci.yml"}' ;;
+  *"run view"*)
+    echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"workflowDatabaseId\":1,\"event\":\"pull_request\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":$FAKE_GH_JOBS}" ;;
+  *"pr list"*)
+    if test -f "$FAKE_GH_STATE"; then
+      echo "[{\"url\":\"https://github.com/example/example/pull/1\",\"isDraft\":true,\"baseRefName\":\"main\",\"headRefOid\":\"${FAKE_GH_REMOTE_SHA:-$FAKE_GH_SHA}\"}]"
+    else
+      echo '[]'
+    fi ;;
+  *"pr create"*"--draft"*) touch "$FAKE_GH_STATE"; echo 'https://github.com/example/example/pull/1' ;;
+  *"pr edit"*) touch "$FAKE_GH_STATE.edited" ;;
+  *"pr ready"*) test -f "$FAKE_GH_STATE.edited" || exit 1; echo ready > "$FAKE_GH_STATE" ;;
+  *) echo 'unexpected gh invocation' >&2; exit 1 ;;
+esac
+GH
+chmod +x "$TMPROOT/fake-bin/gh"
+mkdir -p "$PUBLISH/.github"
+cat > "$PUBLISH/.github/ci-contract.json" <<'JSON_CONTRACT'
+{"workflow":".github/workflows/ci.yml","name":"CI","required_jobs":["apple","flywheel (3.12)","flywheel (3.13)"]}
+JSON_CONTRACT
+git -C "$PUBLISH" add .github/ci-contract.json docs
+git -C "$PUBLISH" -c user.name="Runner Smoke" -c user.email="runner-smoke@example.invalid" commit -m "Define CI contract" >/dev/null
+export FAKE_GH_BASE_CONTRACT="$(base64 < "$PUBLISH/.github/ci-contract.json" | tr -d '\n')"
+export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
+export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
+export FAKE_GH_CONCLUSION=success
+export FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"},{"name":"flywheel (3.12)","conclusion":"success"},{"name":"flywheel (3.13)","conclusion":"success"}]'
+export PATH="$TMPROOT/fake-bin:$PATH"
+PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --execute >/dev/null
+expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
+expect_failure "local commands are unsupported" "$RUNNER" review --project "$PUBLISH" --run-id publish --command "true"
+expect_failure "local command success cannot replace CI" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
+expect_failure "unapproved default-branch CI contract is rejected" env FAKE_GH_BASE_CONTRACT= "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "older CI commit is rejected" env FAKE_GH_SHA=older "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "failed CI is rejected" env FAKE_GH_CONCLUSION=failure "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "incomplete CI job set is rejected" env FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"}]' "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
+expect_failure "sequenced run pauses after preparing draft" "$RUNNER" run --project "$PUBLISH" --run-id publish --phase git-lane --phase pr-lane --phase review --force
+BEFORE_CI_STATUS="$(git -C "$PUBLISH" status --porcelain)"
+env FAKE_GH_REPO=another-owner/renamed-project "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
+"$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --finding "Captured finding" --test-gap "Captured gap" --architecture-note "Captured architecture" --prompt-eval-note "Captured eval" --force >/dev/null
+python3 - "$PUBLISH/.git/codex-ci-receipts/publish/evidence.json" <<'PY_ANNOTATIONS'
+import json, sys
+annotations = json.load(open(sys.argv[1]))['annotations']
+assert annotations == {'findings':['Captured finding'], 'test_gaps':['Captured gap'],
+                       'architecture_notes':['Captured architecture'], 'prompt_eval_notes':['Captured eval']}
+PY_ANNOTATIONS
+REPORT="$PUBLISH/docs/worker-reports/publish/publish-second-task.md"
+cp "$REPORT" "$TMPROOT/committed-report.md"
+printf '\nUncommitted post-CI worker evidence.\n' >> "$REPORT"
+expect_failure "post-CI uncommitted worker evidence is rejected" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
+cp "$TMPROOT/committed-report.md" "$REPORT"
+expect_failure "captured CI is rechecked before readiness" env FAKE_GH_CONCLUSION=failure "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
+"$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
+expect_failure "different remote PR head blocks readiness" env FAKE_GH_REMOTE_SHA=newer "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
+PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force >/dev/null
+test "$(cat "$FAKE_GH_STATE")" = ready
+test "$(git -C "$PUBLISH" status --porcelain)" = "$BEFORE_CI_STATUS"
+rg 'Current final validation: 0 errors' "$PUBLISH/.git/codex-ci-receipts/publish/pr-body.md" >/dev/null
+log "PASS: existing verified draft becomes ready without a second PR"
+expect_failure "local semantic approval is unsupported" "$RUNNER" review \
+  --project "$PUBLISH" --run-id publish --semantic-verdict approved --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage auto >/dev/null
 "$RUNNER" optimize --project "$PUBLISH" --run-id publish >/dev/null
-"$RUNNER" git-lane --project "$PUBLISH" --run-id publish >/dev/null
-"$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft >/dev/null
-"$RUNNER" status --project "$PUBLISH" --run-id publish >/dev/null
-log "PASS: publication gate requires worker report and approved semantic review"
+"$RUNNER" git-lane --project "$PUBLISH" --run-id publish --force >/dev/null
+"$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --force >/dev/null
+"$RUNNER" status --project "$PUBLISH" --run-id publish > "$TMPROOT/status.json"
+python3 - "$TMPROOT/status.json" <<'PY_STATUS'
+import json, sys
+status = json.load(open(sys.argv[1]))
+assert status["merge_ready"] is False
+assert status["automatic_review"]["state"] == "external"
+PY_STATUS
+log "PASS: final verification requires worker reports and technical evidence, not local review"
 
 BEFORE_BRANCH="$(git -C "$PUBLISH" branch --show-current)"
 expect_failure "git-lane execute preflights artifact overwrite before branch mutation" \
@@ -460,3 +529,23 @@ else
 fi
 
 log "PASS: flywheel runner smoke passed"
+
+"$RUNNER" plan --project "$PUBLISH" --feature "Plan CI sequence" > "$TMPROOT/plan.json"
+python3 - "$TMPROOT/plan.json" <<'PY_PLAN'
+import json, sys
+commands = json.load(open(sys.argv[1]))["commands"]
+draft = next(i for i, c in enumerate(commands) if "pr-lane " in c and "--draft" in c)
+ci = next(i for i, c in enumerate(commands) if "review " in c and "--github-actions-run" in c)
+ready = next(i for i, c in enumerate(commands) if "pr-lane " in c and "--draft" not in c)
+assert draft < ci < ready
+
+PY_PLAN
+
+"$RUNNER" run --project "$PUBLISH" --run-id publish --dry-run --beads-json "$PUBLISH/tasks.json" > "$TMPROOT/run-plan.json"
+python3 - "$TMPROOT/run-plan.json" <<'PY_RUN_PLAN'
+import json, sys
+commands = [item['command'] for item in json.load(open(sys.argv[1]))['outputs']]
+draft = next(i for i, c in enumerate(commands) if 'pr-lane ' in c)
+ci = next(i for i, c in enumerate(commands) if 'review ' in c)
+assert draft < ci
+PY_RUN_PLAN

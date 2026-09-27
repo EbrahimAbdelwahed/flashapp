@@ -119,8 +119,8 @@ RUNNER_COMMANDS: dict[str, dict[str, Any]] = {
         "output": "json",
     },
     "review": {
-        "summary": "Prepare a review report and optionally capture verification command results.",
-        "side_effects": ["local_write", "executes_user_commands_optional"],
+        "summary": "Capture verified GitHub Actions CI or prepare an empty report.",
+        "side_effects": ["local_write", "network_read_optional"],
         "supports_dry_run": True,
         "output": "json",
     },
@@ -146,7 +146,7 @@ RUNNER_COMMANDS: dict[str, dict[str, Any]] = {
     },
     "run": {
         "summary": "Run a sequenced orchestration lane until judgment or missing inputs are required.",
-        "side_effects": ["local_write", "executes_user_commands_optional", "local_task_graph_write_optional"],
+        "side_effects": ["local_write", "network_read_optional", "local_task_graph_write_optional"],
         "supports_dry_run": True,
         "output": "json",
     },
@@ -287,24 +287,6 @@ def command(args: list[str], cwd: Path | None = None, check: bool = False) -> su
             + f"\nexit={completed.returncode}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
         )
     return completed
-
-
-def shell_command(command_text: str, cwd: Path) -> dict[str, Any]:
-    completed = subprocess.run(
-        command_text,
-        cwd=str(cwd),
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
-    return {
-        "command": command_text,
-        "exit_code": completed.returncode,
-        "stdout": completed.stdout[-COMMAND_OUTPUT_LIMIT:],
-        "stderr": completed.stderr[-COMMAND_OUTPUT_LIMIT:],
-    }
 
 
 def ensure_project_dirs(paths: RunnerPaths) -> None:
@@ -1065,6 +1047,70 @@ def decision_summary(project: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def ci_receipt_dir(project: Path, run_id: str) -> Path:
+    """Volatile verification receipts never change the submitted source tree."""
+    result = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], project)
+    if result.returncode != 0 or not result.stdout.strip():
+        raise ValueError("CI receipts require a Git repository")
+    return Path(result.stdout.strip()) / "codex-ci-receipts" / slugify(run_id)
+
+
+def github_actions_evidence(project: Path, run_id: str) -> dict[str, Any]:
+    """Read the real CI run for this repository and exact submitted commit."""
+    repository = command(["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"], cwd=project)
+    if repository.returncode != 0 or not repository.stdout.strip():
+        raise ValueError("Cannot identify the project's GitHub repository")
+    repo = repository.stdout.strip()
+    configured = git(["show", "HEAD:.github/ci-contract.json"], project)
+    if configured.returncode != 0:
+        raise ValueError("Commit .github/ci-contract.json with the required CI workflow and jobs")
+    contract = json.loads(configured.stdout)
+    trusted = command(["gh", "api", f"repos/{repo}/contents/.github/ci-contract.json",
+                       "--jq", ".content"], cwd=project)
+    if trusted.returncode != 0:
+        raise ValueError("Approve the initial CI contract on the GitHub default branch before runner readiness")
+    approved = json.loads(base64.b64decode(trusted.stdout).decode("utf-8"))
+    if contract != approved:
+        raise ValueError("The submitted CI contract differs from the approved default-branch contract")
+    names = approved.get("required_jobs")
+    workflow_path = contract.get("workflow", "")
+    workflow_name = contract.get("name")
+    if (not isinstance(names, list) or not names
+            or any(not isinstance(name, str) or not name.strip() for name in names)
+            or not isinstance(workflow_name, str) or not workflow_name.strip()
+            or not isinstance(workflow_path, str)
+            or not re.fullmatch(r"\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml", workflow_path)):
+        raise ValueError("Invalid repository-local CI contract")
+    required_jobs = set(names)
+    identity = command(["gh", "api", f"repos/{repo}/actions/workflows/{Path(workflow_path).name}"], cwd=project)
+    if identity.returncode != 0:
+        raise ValueError("Cannot read the canonical CI workflow identity")
+    workflow = json.loads(identity.stdout)
+    if workflow.get("path") != workflow_path:
+        raise ValueError("Canonical CI workflow path does not match")
+    result = command(["gh", "run", "view", run_id, "--repo", repo, "--json",
+                      "headSha,status,conclusion,workflowName,workflowDatabaseId,event,url,jobs"], cwd=project)
+    if result.returncode != 0:
+        raise ValueError("Cannot read the requested GitHub Actions run")
+    run = json.loads(result.stdout)
+    head = git(["rev-parse", "HEAD"], project).stdout.strip()
+    if not head or run.get("headSha") != head:
+        raise ValueError("GitHub Actions evidence belongs to a different commit")
+    if run.get("workflowName") != workflow_name:
+        raise ValueError("Evidence must come from the repository's complete CI workflow")
+    if run.get("workflowDatabaseId") != workflow.get("id") or run.get("event") not in {"pull_request", "push"}:
+        raise ValueError("CI workflow identity or triggering event does not match")
+    jobs = run.get("jobs", [])
+    if not required_jobs.issubset({job.get("name") for job in jobs}):
+        raise ValueError("CI run omits prescribed required jobs")
+    if (run.get("status") != "completed" or run.get("conclusion") != "success"
+            or not jobs or any(job.get("conclusion") != "success" for job in jobs)):
+        raise ValueError("GitHub Actions CI is missing, pending, skipped, or failing")
+    return {"run_id": run_id, "repository": repo, "head_sha": head,
+            "url": run["url"], "workflow": workflow_name, "workflow_id": workflow["id"],
+            "event": run["event"], "required_jobs": sorted(required_jobs), "jobs_count": len(jobs)}
+
+
 def review_evidence_summary(project: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     artifacts = manifest.get("artifacts", {})
     review_ref = artifacts.get("review")
@@ -1078,7 +1124,24 @@ def review_evidence_summary(project: Path, manifest: dict[str, Any]) -> dict[str
         "missing": [],
         "placeholder_scaffold": False,
         "semantic_verdict": "missing",
+        "github_actions": None,
+        "ci_errors": [],
     }
+
+    try:
+        receipt = ci_receipt_dir(project, manifest["run_id"]) / "evidence.json"
+    except ValueError:
+        receipt = None
+    if receipt is not None and receipt.exists():
+        try:
+            evidence = load_json(receipt)["github_actions"]
+            actual = github_actions_evidence(project, str(evidence["run_id"]))
+            if actual != evidence:
+                raise ValueError("Captured CI identity no longer matches the live run")
+            summary.update(ok=True, github_actions=actual, review=actual["url"], results=str(receipt))
+        except (OSError, ValueError, KeyError) as error:
+            summary["ci_errors"].append(str(error))
+        return summary
 
     if not review_ref:
         summary["missing"].append("review")
@@ -1114,16 +1177,28 @@ def review_evidence_summary(project: Path, manifest: dict[str, Any]) -> dict[str
         if not results_path.exists():
             summary["missing"].append(results_ref)
         else:
-            results = load_json(results_path).get("results", [])
+            payload = load_json(results_path)
+            results = payload.get("results", [])
             summary["commands_count"] = len(results)
             summary["failed_commands"] = [item for item in results if int(item.get("exit_code", 1)) != 0]
+            evidence = payload.get("github_actions")
+            if not isinstance(evidence, dict) or not evidence.get("run_id"):
+                summary["ci_errors"].append("No GitHub Actions CI run captured")
+            else:
+                try:
+                    actual = github_actions_evidence(project, str(evidence["run_id"]))
+                    if actual != evidence:
+                        raise ValueError("Captured CI identity no longer matches the live run")
+                    summary["github_actions"] = actual
+                except (OSError, ValueError, KeyError) as error:
+                    summary["ci_errors"].append(str(error))
 
     summary["ok"] = (
         not summary["missing"]
-        and summary["commands_count"] > 0
+        and summary["github_actions"] is not None
+        and not summary["ci_errors"]
         and not summary["failed_commands"]
         and not summary["placeholder_scaffold"]
-        and summary["semantic_verdict"] == "approved"
     )
     return summary
 
@@ -1189,9 +1264,15 @@ def run_should_use_ready_only(project: Path, run_id: str) -> bool:
     return bool(manifest.get("br_beads"))
 
 
-def publication_gate_issues(project: Path, paths: RunnerPaths, manifest: dict[str, Any], *, require_git_lane: bool) -> list[str]:
+def publication_gate_issues(
+    project: Path, paths: RunnerPaths, manifest: dict[str, Any], *,
+    require_git_lane: bool, require_verification: bool = False,
+) -> list[str]:
     issues: list[str] = []
-    validation_issues = validate_run(project, paths, manifest, stage="final")
+    # A draft must exist before GitHub Actions and automatic Codex review can run.
+    # Scope/decision gates apply to submission; technical evidence gates readiness.
+    stage = "final" if require_verification else "dispatch"
+    validation_issues = validate_run(project, paths, manifest, stage=stage)
     for issue in validation_issues:
         if issue["severity"] == "error":
             issues.append(f"{issue['code']} at {issue['path']}: {issue['message']}")
@@ -1206,9 +1287,10 @@ def publication_gate_issues(project: Path, paths: RunnerPaths, manifest: dict[st
     if decisions["missing"]:
         issues.append(f"missing decision request files: {decisions['missing']}")
 
-    review = review_evidence_summary(project, manifest)
-    if not review["ok"]:
-        issues.append("review evidence is incomplete or failing")
+    if require_verification:
+        review = review_evidence_summary(project, manifest)
+        if not review["ok"]:
+            issues.append("technical verification evidence is incomplete or failing")
 
     if require_git_lane and not manifest.get("artifacts", {}).get("git_lane"):
         issues.append("git lane artifact is missing")
@@ -1320,6 +1402,54 @@ def shared_materialization_issues(
     ]
 
 
+def committed_validation_issues(
+    project: Path, paths: RunnerPaths, manifest: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Scope, decisions and worker evidence must exist in the submitted commit."""
+    issues: list[dict[str, Any]] = []
+    keys = {"intake", "context", "spec", "task_beads", "worker_briefs",
+            "worker_profiles", "worker_reports", "worker_dispatch",
+            "worker_dispatch_report", "decision_requests", "decisions", "implementation_goal"}
+    committed = git(["show", f"HEAD:{rel(paths.manifest, project)}"], project)
+    try:
+        original = json.loads(committed.stdout) if committed.returncode == 0 else None
+    except json.JSONDecodeError:
+        original = None
+    def inputs(value: dict[str, Any]) -> dict[str, Any]:
+        return {"feature": value.get("feature"), "br_beads": value.get("br_beads"),
+                "artifacts": {key: ref for key, ref in value.get("artifacts", {}).items() if key in keys}}
+    if original is None or inputs(original) != inputs(manifest):
+        add_issue(issues, "error", "uncommitted-validation-manifest", "manifest",
+                  "Commit the current scope, decision and worker-evidence references before CI.")
+    refs: set[str] = set()
+    def collect(value: Any) -> None:
+        if isinstance(value, str):
+            refs.add(value)
+        elif isinstance(value, dict):
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+    for key, value in manifest.get("artifacts", {}).items():
+        if key in keys:
+            collect(value)
+    for ref in sorted(refs):
+        path = project / ref
+        try:
+            path.resolve().relative_to(project)
+        except ValueError:
+            add_issue(issues, "error", "external-validation-artifact", ref,
+                      "Validation artifacts must belong to the submitted repository.")
+            continue
+        committed_file = git(["show", f"HEAD:{ref}"], project)
+        if (committed_file.returncode != 0 or not path.is_file()
+                or path.read_text(encoding="utf-8") != committed_file.stdout):
+            add_issue(issues, "error", "uncommitted-validation-artifact", ref,
+                      "Commit this exact validation input and obtain CI for the updated commit.")
+    return issues
+
+
 def _validate_dispatch_cli_specific(
     project: Path, paths: RunnerPaths, manifest: dict[str, Any], stage: str
 ) -> list[dict[str, Any]]:
@@ -1339,18 +1469,17 @@ def _validate_dispatch_cli_specific(
             add_issue(issues, "warning", "important-decision-open", decision_ref, "Important decision request is still open.")
 
     if stage == "final":
+        issues.extend(committed_validation_issues(project, paths, manifest))
         review = review_evidence_summary(project, manifest)
         if review["missing"]:
             add_issue(issues, "error", "missing-review-evidence", "manifest", f"Review evidence is missing: {review['missing']}")
-        elif review["commands_count"] == 0:
-            add_issue(issues, "error", "review-no-commands", review["results"], "Review captured no verification commands.")
+        if review["github_actions"] is None:
+            add_issue(issues, "error", "github-actions-not-verified", review["results"] or "manifest", "Complete CI for exact HEAD is not verified: " + "; ".join(review["ci_errors"]))
         if review["failed_commands"]:
             for item in review["failed_commands"]:
                 add_issue(issues, "error", "review-command-failed", review["results"], f"Review command failed: {item.get('command')}")
         if review["placeholder_scaffold"]:
             add_issue(issues, "error", "review-placeholder", review["review"], "Review report still contains placeholder scaffold markers.")
-        if review["semantic_verdict"] != "approved":
-            add_issue(issues, "error", "semantic-review-not-approved", review["review"] or "manifest", "Semantic code-quality-governor review is not approved.")
 
         worker_reports = worker_report_summary(project, manifest)
         if not worker_reports["expected"]:
@@ -1441,8 +1570,10 @@ def command_validate(args: argparse.Namespace) -> int:
     ensure_project_dirs(paths)
     manifest = load_manifest(paths)
     issues = validate_run(project, paths, manifest, stage=args.stage)
-    report_path = paths.run_dir / "validation.md"
-    json_path = paths.run_dir / "validation.json"
+    external = args.stage == "final" or (args.stage == "auto" and (ci_receipt_dir(project, run_id) / "evidence.json").exists())
+    validation_dir = ci_receipt_dir(project, run_id) if external else paths.run_dir
+    report_path = validation_dir / "validation.md"
+    json_path = validation_dir / "validation.json"
     payload = {
         "run_id": run_id,
         "project": str(project),
@@ -1455,10 +1586,11 @@ def command_validate(args: argparse.Namespace) -> int:
 
     write_text(report_path, validation_markdown(manifest["feature"]["title"], run_id, issues), force=True)
     save_json(json_path, payload)
-    artifact_set(manifest, "validation", rel(report_path, project))
-    artifact_set(manifest, "validation_json", rel(json_path, project))
-    append_phase(manifest, "validate", "passed" if payload["ok"] else "failed", {"path": rel(report_path, project), "issues": len(issues)})
-    save_manifest(paths, manifest)
+    if not external:
+        artifact_set(manifest, "validation", rel(report_path, project))
+        artifact_set(manifest, "validation_json", rel(json_path, project))
+        append_phase(manifest, "validate", "passed" if payload["ok"] else "failed", {"path": rel(report_path, project), "issues": len(issues)})
+        save_manifest(paths, manifest)
     print_json(payload)
     return validation_exit_code(issues, args.fail_on_warnings)
 
@@ -1699,8 +1831,8 @@ def command_optimize(args: argparse.Namespace) -> int:
         proposals.append(
             {
                 "classification": "review-first",
-                "target": "code-quality-governor",
-                "proposal": "Capture verification commands in the review phase before git publication.",
+                "target": "ci-verification",
+                "proposal": "Capture the PR's GitHub Actions verification evidence before readiness; use automatic Codex GitHub review for semantic findings.",
                 "why": "Makes merge readiness auditable.",
             }
         )
@@ -1708,9 +1840,9 @@ def command_optimize(args: argparse.Namespace) -> int:
         proposals.append(
             {
                 "classification": "apply-now",
-                "target": "code-quality-governor",
-                "proposal": "Require passing command evidence and an explicit approved semantic code-quality-governor verdict before status, git, or PR publication.",
-                "why": "Command output alone does not prove that correctness, maintainability, prompt/eval safety, and open-source readiness were reviewed.",
+                "target": "ci-verification",
+                "proposal": "Require passing technical command evidence before readiness; allow draft submission before CI and automatic Codex review.",
+                "why": "Technical verification and external automatic review are separate gates; submission is not merge approval.",
             }
         )
     if worker_reports["missing"] or worker_reports["blocked"]:
@@ -1818,10 +1950,23 @@ def command_pr_lane(args: argparse.Namespace) -> int:
 
     branch = git(["branch", "--show-current"], project).stdout.strip()
     title = args.title or manifest["feature"]["title"]
-    body_path = paths.run_dir / "pr-body.md"
-    pr_lane_path = paths.run_dir / "pr-lane.md"
+    external = not args.draft
+    lane_dir = ci_receipt_dir(project, run_id) if external else paths.run_dir
+    body_path = lane_dir / "pr-body.md"
+    pr_lane_path = lane_dir / "pr-lane.md"
     validation_ref = manifest.get("artifacts", {}).get("validation", "not generated")
     review_ref = manifest.get("artifacts", {}).get("review", "not generated")
+    verification_note = "CI evidence not yet captured. Keep this PR draft."
+    if external:
+        issues = validate_run(project, paths, manifest, stage="final")
+        errors = sum(item["severity"] == "error" for item in issues)
+        warnings = sum(item["severity"] == "warning" for item in issues)
+        validation_ref = f"Current final validation: {errors} errors, {warnings} warnings"
+        evidence = review_evidence_summary(project, manifest)
+        if evidence["github_actions"]:
+            ci = evidence["github_actions"]
+            review_ref = ci["url"]
+            verification_note = f"CI passed for exact commit `{ci['head_sha']}`: {ci['url']}"
     optimization_ref = manifest.get("artifacts", {}).get("workflow_optimization", "not generated")
     body = f"""## Summary
 
@@ -1834,7 +1979,7 @@ def command_pr_lane(args: argparse.Namespace) -> int:
 
 ## Verification
 
-See `{manifest.get('artifacts', {}).get('review_command_results', 'review command results not captured')}`.
+{verification_note}
 
 ## Orchestrator Notes
 
@@ -1862,12 +2007,45 @@ See `{manifest.get('artifacts', {}).get('review_command_results', 'review comman
         raise SystemExit(f"Refusing to execute remote PR creation before overwriting existing local lane without --force: {pr_lane_path}")
 
     if args.execute and not args.override_gates:
-        gate_issues = publication_gate_issues(project, paths, manifest, require_git_lane=True)
+        gate_issues = publication_gate_issues(
+            project, paths, manifest, require_git_lane=True,
+            require_verification=not args.draft,
+        )
         if gate_issues:
             raise SystemExit("PR execution blocked by publication gates:\n" + "\n".join(f"- {item}" for item in gate_issues))
 
     if args.execute:
+        if not branch:
+            raise SystemExit("PR execution requires a named branch.")
+        lookup_args = ["gh", "pr", "list", "--head", branch, "--state", "open",
+                       "--json", "url,isDraft,baseRefName,headRefOid"]
+        lookup = command(lookup_args, cwd=project)
+        if lookup.returncode != 0:
+            raise SystemExit(lookup.stderr.strip() or "Cannot inspect existing PRs")
+        existing = json.loads(lookup.stdout)
+        if len(existing) > 1:
+            raise SystemExit("Multiple open PRs for this branch; select the intended PR explicitly.")
+        if external and not existing:
+            raise SystemExit("Publish the scoped draft before capturing CI and marking it ready.")
+        if existing:
+            pr = existing[0]
+            if external:
+                submitted_head = pr.get("headRefOid")
+                local_head = git(["rev-parse", "HEAD"], project).stdout.strip()
+                if submitted_head != local_head or not evidence["github_actions"] or submitted_head != evidence["github_actions"]["head_sha"]:
+                    raise SystemExit("Open PR remote head, local HEAD and verified CI commit must match.")
+            if args.base and pr["baseRefName"] != args.base:
+                raise SystemExit("Existing PR base differs from the requested base.")
+            if pr["isDraft"] and not args.draft:
+                command_args = ["gh", "pr", "ready", pr["url"]]
+            else:
+                command_args = ["gh", "pr", "view", pr["url"], "--json", "url,isDraft"]
+            command_text = " ".join(shlex.quote(item) for item in command_args)
         write_text(body_path, body, force=True)
+        if existing:
+            update = command(["gh", "pr", "edit", existing[0]["url"], "--body-file", str(body_path)], cwd=project)
+            if update.returncode != 0:
+                raise SystemExit(update.stderr.strip() or "Cannot update the existing PR body")
         result = command(command_args, cwd=project)
         executed = {
             "command": command_text,
@@ -1876,7 +2054,7 @@ See `{manifest.get('artifacts', {}).get('review_command_results', 'review comman
             "stderr": result.stderr.strip(),
         }
         if result.returncode != 0:
-            raise SystemExit(result.stderr.strip() or "gh pr create failed")
+            raise SystemExit(result.stderr.strip() or "GitHub PR operation failed")
 
     lines = [
         f"# PR Lane: {manifest['feature']['title']}",
@@ -1910,10 +2088,11 @@ See `{manifest.get('artifacts', {}).get('review_command_results', 'review comman
     if not body_path.exists():
         write_text(body_path, body, force=args.force)
     write_text(pr_lane_path, "\n".join(lines) + "\n", force=args.force or bool(executed))
-    artifact_set(manifest, "pr_body", rel(body_path, project))
-    artifact_set(manifest, "pr_lane", rel(pr_lane_path, project))
-    append_phase(manifest, "pr_lane", "executed" if executed else "prepared", {"path": rel(pr_lane_path, project), "command": command_text})
-    save_manifest(paths, manifest)
+    if not external:
+        artifact_set(manifest, "pr_body", rel(body_path, project))
+        artifact_set(manifest, "pr_lane", rel(pr_lane_path, project))
+        append_phase(manifest, "pr_lane", "executed" if executed else "prepared", {"path": rel(pr_lane_path, project), "command": command_text})
+        save_manifest(paths, manifest)
     print_json({"run_id": run_id, "pr_lane": rel(pr_lane_path, project), "executed": bool(executed), "command": command_text})
     return 0
 
@@ -1974,7 +2153,7 @@ def command_run(args: argparse.Namespace) -> int:
     else:
         run_id = resolve_run_id(project, run_id or "latest")
 
-    phases = args.phase or ["context", "spec", "beads", "profiles", "briefs", "validate", "dispatch", "review", "optimize", "git-lane", "pr-lane", "status"]
+    phases = args.phase or ["context", "spec", "beads", "profiles", "briefs", "validate", "dispatch", "optimize", "git-lane", "pr-lane", "review", "status"]
     for phase in phases:
         if phase == "intake":
             continue
@@ -2026,9 +2205,13 @@ def command_run(args: argparse.Namespace) -> int:
             if args.force:
                 argv.append("--force")
         elif phase == "review":
-            argv = ["review", "--project", str(project), "--run-id", str(run_id)]
-            for review_command in args.command:
-                argv.extend(["--command", review_command])
+            if not args.github_actions_run and not args.dry_run:
+                print_json({"ok": False, "run_id": run_id, "stopped_at": "review",
+                            "reason": "Publish the authorized draft, then resume with --github-actions-run <id>",
+                            "outputs": outputs})
+                return 2
+            argv = ["review", "--project", str(project), "--run-id", str(run_id),
+                    "--github-actions-run", args.github_actions_run or "<successful-ci-run-id>"]
             if args.force:
                 argv.append("--force")
         elif phase == "optimize":
@@ -2556,20 +2739,40 @@ def command_review(args: argparse.Namespace) -> int:
     ensure_project_dirs(paths)
     manifest = load_manifest(paths)
     review_path = paths.reviews_dir / f"{run_id}.md"
-    results = [shell_command(item, project) for item in args.command]
+    ci = None
+    if args.github_actions_run:
+        try:
+            ci = github_actions_evidence(project, args.github_actions_run)
+        except (OSError, ValueError, KeyError) as error:
+            raise SystemExit(str(error)) from None
+        receipt = ci_receipt_dir(project, run_id) / "evidence.json"
+        annotations = {"findings": args.finding, "test_gaps": args.test_gap,
+                       "architecture_notes": args.architecture_note,
+                       "prompt_eval_notes": args.prompt_eval_note}
+        if not args.dry_run:
+            save_json(receipt, {"github_actions": ci, "annotations": annotations})
+            lines = [f"# CI evidence: {run_id}", "", f"CI: {ci['url']}",
+                     f"Commit: `{ci['head_sha']}`", "", "Semantic review: automatic Codex GitHub review"]
+            for label, items in annotations.items():
+                lines.extend(["", f"## {label.replace('_', ' ').title()}", ""])
+                lines.extend(f"- {item}" for item in items)
+            write_text(receipt.parent / "review.md", "\n".join(lines) + "\n", force=True)
+        print_json({"run_id": run_id, "github_actions": ci, "receipt": str(receipt),
+                    "semantic_review": "external-codex-github"})
+        return 0
+    results: list[dict[str, Any]] = []
     result_json_path = paths.run_dir / "review-command-results.json"
-    has_commands = bool(results)
+    has_commands = bool(results) or ci is not None
     failed = [item for item in results if item["exit_code"] != 0]
-    verdict_label = args.semantic_verdict.replace("-", " ").title()
-    findings = args.finding or ["No semantic findings recorded." if args.semantic_verdict == "approved" else "Semantic review is pending."]
-    test_gaps = args.test_gap or ["No additional test gaps recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded test gaps yet."]
-    architecture_notes = args.architecture_note or ["No architecture notes recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded architecture notes yet."]
-    prompt_eval_notes = args.prompt_eval_note or ["No prompt/eval notes recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded prompt/eval notes yet."]
+    findings = args.finding or ["Semantic findings are supplied by automatic Codex GitHub review."]
+    test_gaps = args.test_gap or ["No additional test gaps recorded by this technical verification report."]
+    architecture_notes = args.architecture_note or ["No architecture notes recorded by this technical verification report."]
+    prompt_eval_notes = args.prompt_eval_note or ["No prompt/eval notes recorded by this technical verification report."]
     lines = [
         f"# Review Report: {manifest['feature']['title']}",
         "",
         f"Date: {today()}",
-        "Reviewer: code-quality-governor",
+        "Semantic review: automatic Codex GitHub review (external)",
         f"Run ID: `{run_id}`",
         "",
         "## Inputs",
@@ -2584,7 +2787,7 @@ def command_review(args: argparse.Namespace) -> int:
         "",
         "## Required Fixes",
         "",
-        "- None detected by captured commands or semantic review." if has_commands and not failed and args.semantic_verdict == "approved" else "- Review is incomplete until verification commands pass and semantic review is approved.",
+        "- Captured technical verification passed. Semantic review is external on GitHub." if has_commands and not failed else "- Technical verification is incomplete until captured CI commands pass. Semantic review is external on GitHub.",
         "",
         "## Test Gaps",
         "",
@@ -2593,12 +2796,14 @@ def command_review(args: argparse.Namespace) -> int:
         "## Verification Commands",
         "",
     ]
+    if ci:
+        lines.append(f"- GitHub Actions CI: {ci['url']} (passed, exact commit `{ci['head_sha']}`)")
     if results:
         for result in results:
             status = "passed" if result["exit_code"] == 0 else "failed"
             lines.append(f"- `{result['command']}`: {status} (`exit={result['exit_code']}`)")
-    else:
-        lines.append("- No commands executed. Add `--command '<cmd>'` to capture verification output.")
+    elif not ci:
+        lines.append("- No commands executed. Capture the exact CI run with `--github-actions-run <id>`.")
     lines.extend(
         [
             "",
@@ -2612,7 +2817,7 @@ def command_review(args: argparse.Namespace) -> int:
             "",
             "## Verdict",
             "",
-            f"Semantic verdict: {verdict_label}",
+            "Semantic verdict: external (automatic Codex GitHub review)",
         ]
     )
     if args.dry_run:
@@ -2620,7 +2825,7 @@ def command_review(args: argparse.Namespace) -> int:
         return 0
 
     write_text(review_path, "\n".join(lines) + "\n", force=args.force)
-    save_json(result_json_path, {"run_id": run_id, "results": results, "has_commands": has_commands, "commands_exit_ok": not failed if has_commands else False})
+    save_json(result_json_path, {"run_id": run_id, "github_actions": ci, "results": results, "has_commands": has_commands, "commands_exit_ok": not failed if has_commands else False})
     artifact_set(manifest, "review", rel(review_path, project))
     artifact_set(manifest, "review_command_results", rel(result_json_path, project))
     append_phase(manifest, "review", "prepared", {"path": rel(review_path, project), "commands": len(results)})
@@ -2628,7 +2833,7 @@ def command_review(args: argparse.Namespace) -> int:
     exit_code = 0 if has_commands and not failed else 1
     if args.allow_empty and not has_commands:
         exit_code = 0
-    print_json({"run_id": run_id, "review": rel(review_path, project), "commands_exit_ok": exit_code == 0, "semantic_verdict": args.semantic_verdict})
+    print_json({"run_id": run_id, "review": rel(review_path, project), "commands_exit_ok": exit_code == 0, "semantic_review": "external-codex-github"})
     return exit_code
 
 
@@ -2843,6 +3048,10 @@ def command_status(args: argparse.Namespace) -> int:
     decisions = decision_summary(project, manifest)
     validation_issues = validate_run(project, paths, manifest, stage="final")
     review = review_evidence_summary(project, manifest)
+    if not any(issue["severity"] == "error" for issue in validation_issues) and "validation" in missing:
+        missing.remove("validation")
+    if review["ok"] and "review" in missing:
+        missing.remove("review")
     worker_reports = worker_report_summary(project, manifest)
     output = {
         "run_id": run_id,
@@ -2854,6 +3063,13 @@ def command_status(args: argparse.Namespace) -> int:
         "decision_requests": decisions,
         "validation_issues": validation_issues,
         "review_evidence": review,
+        "automatic_review": {
+            "provider": "codex-github",
+            "state": "external",
+            "required": True,
+            "note": "Inspect the current PR's automatic review and CI before an authorized merge.",
+        },
+        "merge_ready": False,
         "worker_reports": worker_reports,
         "phases": manifest.get("phases", {}),
         "br_beads": manifest.get("br_beads", {}),
@@ -2887,10 +3103,12 @@ def command_plan(args: argparse.Namespace) -> int:
         f"{runner} validate --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --stage dispatch",
         f"{runner} dispatch --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --ready-only",
         f"{runner} worker-report --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --task '<task-id>' --file-changed '<path>: <summary>' --behavior '<summary>' --verification '<command>: passed'",
-        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --command '<verification command>' --semantic-verdict approved",
         f"{runner} optimize --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} git-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
         f"{runner} pr-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --draft",
+        f"{runner} review --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --github-actions-run '<successful-ci-run-id>'",
+        f"{runner} validate --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --stage final",
+        f"{runner} pr-lane --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)} --force",
         f"{runner} status --project {shlex.quote(str(project))} --run-id {shlex.quote(run_id)}",
     ]
     print_json(
@@ -2905,9 +3123,10 @@ def command_plan(args: argparse.Namespace) -> int:
                 "Use decision-request for material blockers instead of chat-only questions.",
                 "Use dispatch output with multi_agent_v1.spawn_agent to launch real Codex workers.",
                 "Use worker-report once per dispatched task after reading worker final reports.",
-                "Use --semantic-verdict approved only after a real code-quality-governor review.",
+                "Semantic review is automatic on GitHub; local verification artifacts do not approve a merge.",
                 "Use git-lane --execute only when branch/stage/commit/push intent is explicit.",
-                "Use pr-lane --execute only after push and GitHub auth intent are explicit.",
+                "Commit implementation and planning artifacts, push the branch, then execute the draft PR lane before requesting its GitHub Actions run ID.",
+                "Use pr-lane --execute only after push and GitHub auth intent are explicit; the final non-draft lane reuses the PR and verifies its remote head.",
             ],
         }
     )
@@ -3052,12 +3271,12 @@ def build_parser() -> argparse.ArgumentParser:
     add_common_write(worker_report)
     worker_report.set_defaults(func=command_worker_report)
 
-    review = sub.add_parser("review", help="Prepare a review report and optionally capture verification commands.")
+    review = sub.add_parser("review", help="Capture GitHub Actions CI or prepare an empty report.")
     add_project(review)
     add_run(review)
-    review.add_argument("--command", action="append", default=[], help="Verification command to run from the target project.")
+    review.add_argument("--github-actions-run", help="Capture and validate the complete CI run for this repository and exact HEAD commit.")
     review.add_argument("--allow-empty", action="store_true", help="Allow a scaffold-only review report. This is not merge-ready.")
-    review.add_argument("--semantic-verdict", choices=["pending", "approved", "changes-requested", "blocked"], default="pending")
+    review.add_argument("--semantic-verdict", choices=["pending"], default="pending", help="Compatibility flag; semantic review is external on GitHub, never a local verdict.")
     review.add_argument("--finding", action="append", default=[], help="Semantic review finding. Repeatable.")
     review.add_argument("--test-gap", action="append", default=[], help="Semantic review test gap. Repeatable.")
     review.add_argument("--architecture-note", action="append", default=[], help="Semantic review architecture note. Repeatable.")
@@ -3090,7 +3309,7 @@ def build_parser() -> argparse.ArgumentParser:
     pr_lane.add_argument("--title")
     pr_lane.add_argument("--base")
     pr_lane.add_argument("--draft", action="store_true")
-    pr_lane.add_argument("--execute", action="store_true", help="Run gh pr create. Requires network/auth.")
+    pr_lane.add_argument("--execute", action="store_true", help="Create or reuse the branch PR; mark a verified draft ready. Requires network/auth.")
     pr_lane.add_argument("--override-gates", action="store_true", help="Allow execution even when final validation/review/git gates are not green.")
     add_common_write(pr_lane)
     pr_lane.set_defaults(func=command_pr_lane)
@@ -3105,7 +3324,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--create-br-beads", action="store_true")
     run.add_argument("--ready-only", action="store_true", help="Force ready-only dispatch during the run. Runs with linked br beads use ready-only automatically.")
     run.add_argument("--phase", action="append", help="Phase to run, repeated in order. Defaults to the full lane.")
-    run.add_argument("--command", action="append", default=[], help="Review command to execute during review phase.")
+    run.add_argument("--github-actions-run", help="Resume CI capture after publishing the authorized draft.")
     run.add_argument("--skip-validate", action="store_true")
     add_common_write(run)
     run.set_defaults(func=command_run)

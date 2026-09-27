@@ -66,7 +66,7 @@ If a worker needs a real decision, create it with `scripts/flywheel-runner.py de
 
 ## 6. Review Before Merge
 
-Run `code-quality-governor` after implementation. The review should prioritize:
+Publish a scoped draft, run GitHub Actions, and use only automatic Codex GitHub review. Its findings should prioritize:
 
 - correctness bugs;
 - API drift;
@@ -78,9 +78,9 @@ Run `code-quality-governor` after implementation. The review should prioritize:
 
 After each worker finishes, record its completion with `scripts/flywheel-runner.py worker-report --task <task-id> ...`. Worker dispatch proves work was assigned; worker reports prove that assigned work completed or surfaced a blocker.
 
-Use `scripts/flywheel-runner.py review --command '<verification command>' --semantic-verdict approved` to capture verification command outputs and the final governor verdict. A review with no commands, failed commands, or no approved semantic verdict does not satisfy final status or publication gates.
+Use `scripts/flywheel-runner.py review --github-actions-run 123456789` with the actual successful CI run ID. The runner verifies repository, workflow identity, required jobs and exact HEAD. CI receipts and readiness reports stay outside versioned source in the Git common directory; recording CI does not create a new commit. Automatic GitHub review supplies semantic findings.
 
-Prepare publication with `scripts/flywheel-runner.py git-lane` and `scripts/flywheel-runner.py pr-lane`. Both are inspect-first by default, require `--execute` for mutation, and block execution on failed final gates unless `--override-gates` is explicit.
+Prepare publication with `scripts/flywheel-runner.py git-lane` and `scripts/flywheel-runner.py pr-lane`. Both are inspect-first by default and require `--execute` for mutation. Submit a draft before CI; readiness requires verified CI and updates the existing PR body before `gh pr ready`. Commit planning and implementation artifacts before submitting the source commit.
 
 ## 7. Capture Durable Decisions
 
