@@ -1874,6 +1874,25 @@ See `{manifest.get('artifacts', {}).get('review_command_results', 'review comman
             raise SystemExit("PR execution blocked by publication gates:\n" + "\n".join(f"- {item}" for item in gate_issues))
 
     if args.execute:
+        if not branch:
+            raise SystemExit("PR execution requires a named branch.")
+        lookup_args = ["gh", "pr", "list", "--head", branch, "--state", "open",
+                       "--json", "url,isDraft,baseRefName"]
+        lookup = command(lookup_args, cwd=project)
+        if lookup.returncode != 0:
+            raise SystemExit(lookup.stderr.strip() or "Cannot inspect existing PRs")
+        existing = json.loads(lookup.stdout)
+        if len(existing) > 1:
+            raise SystemExit("Multiple open PRs for this branch; select the intended PR explicitly.")
+        if existing:
+            pr = existing[0]
+            if args.base and pr["baseRefName"] != args.base:
+                raise SystemExit("Existing PR base differs from the requested base.")
+            if pr["isDraft"] and not args.draft:
+                command_args = ["gh", "pr", "ready", pr["url"]]
+            else:
+                command_args = ["gh", "pr", "view", pr["url"], "--json", "url,isDraft"]
+            command_text = " ".join(shlex.quote(item) for item in command_args)
         write_text(body_path, body, force=True)
         result = command(command_args, cwd=project)
         executed = {
@@ -1883,7 +1902,7 @@ See `{manifest.get('artifacts', {}).get('review_command_results', 'review comman
             "stderr": result.stderr.strip(),
         }
         if result.returncode != 0:
-            raise SystemExit(result.stderr.strip() or "gh pr create failed")
+            raise SystemExit(result.stderr.strip() or "GitHub PR operation failed")
 
     lines = [
         f"# PR Lane: {manifest['feature']['title']}",
@@ -2567,10 +2586,10 @@ def command_review(args: argparse.Namespace) -> int:
     result_json_path = paths.run_dir / "review-command-results.json"
     has_commands = bool(results)
     failed = [item for item in results if item["exit_code"] != 0]
-    findings = args.finding or ["No semantic findings recorded." if args.semantic_verdict == "approved" else "Semantic review is pending."]
-    test_gaps = args.test_gap or ["No additional test gaps recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded test gaps yet."]
-    architecture_notes = args.architecture_note or ["No architecture notes recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded architecture notes yet."]
-    prompt_eval_notes = args.prompt_eval_note or ["No prompt/eval notes recorded." if args.semantic_verdict == "approved" else "Semantic review has not recorded prompt/eval notes yet."]
+    findings = args.finding or ["Semantic findings are supplied by automatic Codex GitHub review."]
+    test_gaps = args.test_gap or ["No additional test gaps recorded by this technical verification report."]
+    architecture_notes = args.architecture_note or ["No architecture notes recorded by this technical verification report."]
+    prompt_eval_notes = args.prompt_eval_note or ["No prompt/eval notes recorded by this technical verification report."]
     lines = [
         f"# Review Report: {manifest['feature']['title']}",
         "",
@@ -2590,7 +2609,7 @@ def command_review(args: argparse.Namespace) -> int:
         "",
         "## Required Fixes",
         "",
-        "- None detected by captured commands or semantic review." if has_commands and not failed and args.semantic_verdict == "approved" else "- Technical verification is incomplete until captured CI commands pass. Semantic review is external on GitHub.",
+        "- Captured technical verification passed. Semantic review is external on GitHub." if has_commands and not failed else "- Technical verification is incomplete until captured CI commands pass. Semantic review is external on GitHub.",
         "",
         "## Test Gaps",
         "",
@@ -3103,7 +3122,7 @@ def build_parser() -> argparse.ArgumentParser:
     pr_lane.add_argument("--title")
     pr_lane.add_argument("--base")
     pr_lane.add_argument("--draft", action="store_true")
-    pr_lane.add_argument("--execute", action="store_true", help="Run gh pr create. Requires network/auth.")
+    pr_lane.add_argument("--execute", action="store_true", help="Create or reuse the branch PR; mark a verified draft ready. Requires network/auth.")
     pr_lane.add_argument("--override-gates", action="store_true", help="Allow execution even when final validation/review/git gates are not green.")
     add_common_write(pr_lane)
     pr_lane.set_defaults(func=command_pr_lane)

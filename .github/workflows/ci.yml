@@ -16,6 +16,10 @@ jobs:
   flywheel:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
     defaults:
       run:
         working-directory: agent-flywheel
@@ -23,15 +27,31 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install runner test dependencies
         run: python -m pip install --disable-pip-version-check -e '.[dev]'
       - name: Install smoke dependencies
         run: sudo apt-get update && sudo apt-get install -y ripgrep
-      - name: Runner contract tests
-        run: python -m pytest tests/flywheel
-      - name: Submission and verification smoke
-        run: bash scripts/run-runner-smoke.sh
+      - name: Verify pinned harness contract and provenance
+        run: |
+          python -c "from study_agent.feedback.outbox import OUTBOX_SCHEMA_VERSION; assert OUTBOX_SCHEMA_VERSION == 2"
+          python -c "import importlib.metadata as m, json; d=m.distribution('study-agent-harness').read_text('direct_url.json'); assert json.loads(d or '{}').get('vcs_info', {}).get('commit_id') == 'e74c4da9c737f97dd460c606dbb7afcc66137b84'"
+      - name: Full devkit tests
+        run: python -m pytest
+      - name: Ruff
+        run: python -m ruff check .
+      - name: Mypy
+        run: python -m mypy
+      - name: Scaffold, validators and submission smoke
+        if: matrix.python-version == '3.13'
+        run: bash scripts/check-flywheel.sh
+      - name: Build distribution
+        run: python -m build
+      - name: Clean wheel import
+        run: |
+          python -m venv /tmp/study-agent-devkit-wheel
+          /tmp/study-agent-devkit-wheel/bin/python -m pip install dist/*.whl
+          /tmp/study-agent-devkit-wheel/bin/python -c "from study_agent_devkit.capability_gap import SQLiteCapabilityGapStore; from study_agent.feedback.outbox import OUTBOX_SCHEMA_VERSION; assert OUTBOX_SCHEMA_VERSION == 2"
 
   apple:
     runs-on: macos-15

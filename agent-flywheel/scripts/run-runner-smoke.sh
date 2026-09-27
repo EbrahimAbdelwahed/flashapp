@@ -369,15 +369,27 @@ mkdir -p "$TMPROOT/fake-bin"
 cat >"$TMPROOT/fake-bin/gh" <<'GH'
 #!/bin/sh
 case "$*" in
-  *"pr create"*"--draft"*) echo 'https://github.com/example/example/pull/1' ;;
+  *"pr list"*)
+    if test -f "$FAKE_GH_STATE"; then
+      echo '[{"url":"https://github.com/example/example/pull/1","isDraft":true,"baseRefName":"main"}]'
+    else
+      echo '[]'
+    fi ;;
+  *"pr create"*"--draft"*) touch "$FAKE_GH_STATE"; echo 'https://github.com/example/example/pull/1' ;;
+  *"pr ready"*) echo ready > "$FAKE_GH_STATE" ;;
   *) echo 'unexpected gh invocation' >&2; exit 1 ;;
 esac
 GH
 chmod +x "$TMPROOT/fake-bin/gh"
+export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --execute >/dev/null
 expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" review --project "$PUBLISH" --run-id publish --command "test -f README.md" >/dev/null
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
+PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force >/dev/null
+test "$(cat "$FAKE_GH_STATE")" = ready
+rg 'Captured technical verification passed' "$PUBLISH/docs/reviews/publish.md" >/dev/null
+log "PASS: existing verified draft becomes ready without a second PR"
 expect_failure "local semantic approval is unsupported" "$RUNNER" review \
   --project "$PUBLISH" --run-id publish --semantic-verdict approved --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
@@ -385,7 +397,13 @@ expect_failure "local semantic approval is unsupported" "$RUNNER" review \
 "$RUNNER" optimize --project "$PUBLISH" --run-id publish >/dev/null
 "$RUNNER" git-lane --project "$PUBLISH" --run-id publish --force >/dev/null
 "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --force >/dev/null
-"$RUNNER" status --project "$PUBLISH" --run-id publish >/dev/null
+"$RUNNER" status --project "$PUBLISH" --run-id publish > "$TMPROOT/status.json"
+python3 - "$TMPROOT/status.json" <<'PY_STATUS'
+import json, sys
+status = json.load(open(sys.argv[1]))
+assert status["merge_ready"] is False
+assert status["automatic_review"]["state"] == "external"
+PY_STATUS
 log "PASS: final verification requires worker reports and technical evidence, not local review"
 
 BEFORE_BRANCH="$(git -C "$PUBLISH" branch --show-current)"

@@ -24,9 +24,9 @@ Run phases that write the same `run_id` sequentially, or use the `run` command. 
 - Agent Mail may coordinate live workers, but it is not required for the runner and is not treated as strict-ready storage.
 - Git actions are inspect-only unless `git-lane --execute` is passed with explicit branch/stage/commit/push flags.
 - PR creation is inspect-only unless `pr-lane --execute` is passed with explicit GitHub auth/network intent.
-- Git/PR execution is blocked by final validation and review gates unless `--override-gates` is explicit.
+- Git publication and draft creation require scope/decision gates. Marking a PR ready additionally requires final technical verification; semantic review is automatic on GitHub.
 - Worker dispatch is prepared as JSON packets; the orchestrator calls `multi_agent_v1.spawn_agent` with each packet.
-- Publication readiness requires one complete worker report per task bead in the run, passing verification commands, and an approved semantic `code-quality-governor` verdict.
+- PR readiness requires complete worker reports and passing technical verification. Publish a draft first; do not invoke a local semantic reviewer. Before any authorized merge, inspect current CI and automatic Codex review on GitHub.
 
 ## Recommended Orchestrator Flow
 
@@ -216,7 +216,7 @@ study-agent-devkit/scripts/flywheel-runner.py worker-report \
   --verification "pnpm -w typecheck: passed"
 ```
 
-After workers finish, prepare the review:
+After publishing a draft so GitHub Actions can run, capture technical verification:
 
 ```bash
 study-agent-devkit/scripts/flywheel-runner.py review \
@@ -224,8 +224,8 @@ study-agent-devkit/scripts/flywheel-runner.py review \
   --run-id latest \
   --command "pnpm -w typecheck" \
   --command "pnpm -w test" \
-  --semantic-verdict approved \
-  --finding "No blocking correctness or maintainability issues found."
+  \
+  --finding "Technical verification captured; semantic review is automatic on GitHub."
 ```
 
 Prepare the git lane:
@@ -346,7 +346,7 @@ Use stages:
 
 - `--stage spec`: validate only the feature spec before beads exist.
 - `--stage dispatch`: validate context, non-Draft spec, task beads, worker profiles, worker briefs, and open blocking decisions without blocking on failed review commands.
-- `--stage final`: validate publication readiness after worker execution, including dispatch packets, complete worker reports, passing review command results, and approved semantic review.
+- `--stage final`: validate publication readiness after worker execution, including dispatch packets, complete worker reports, and passing technical command results. This does not authorize a merge or replace automatic GitHub review.
 - `--stage auto`: validate the spec before task beads, dispatch readiness before worker execution artifacts exist, and final publication readiness once dispatch, worker reports, and review are present.
 
 The command writes:
@@ -386,7 +386,7 @@ Each packet contains:
 
 Use `--ready-only` to dispatch only tasks that have a linked `br` id and are returned by `br ready`. Tasks without linked `br` ids are skipped in this mode. The sequenced `run` command automatically uses ready-only dispatch when the manifest has linked `br` beads.
 
-`dispatch` validates spec/task/brief readiness before preparing packets, but it does not block on failed review command results. That is intentional: after a review failure, the orchestrator should be able to redispatch a worker for rework. Failed review commands still block publication through the review/git/PR gate.
+`dispatch` validates spec/task/brief readiness before preparing packets, but it does not block on failed review command results. That is intentional: after a review failure, the orchestrator should be able to redispatch a worker for rework. Failed technical commands block PR readiness. Git publication and draft submission remain possible so GitHub Actions can verify the change.
 
 ### `worker-report`
 
@@ -398,7 +398,7 @@ Use this after reading each worker's final response. Publication gates require o
 
 Creates `docs/reviews/<run-id>.md` and captures verification command outputs in `review-command-results.json`.
 
-Use `--semantic-verdict approved` only after running the `code-quality-governor` checklist against the implemented changes and worker reports. A review without commands exits non-zero unless `--allow-empty` is explicitly passed, and command-only or scaffold-only review evidence does not satisfy `status` or publication gates.
+This command captures technical verification, not semantic approval. A report without commands exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
 
 ### `optimize`
 
@@ -408,11 +408,11 @@ This implements the end-of-conversation optimizer habit without requiring the us
 
 ### `git-lane`
 
-Captures branch, status, staged diff summary, unstaged diff summary, and proposed git commands. It does not mutate git unless `--execute` is present. Execution requires final validation and review gates to be green unless `--override-gates` is explicit.
+Captures branch, status, staged diff summary, unstaged diff summary, and proposed git commands. It does not mutate git unless `--execute` is present. Execution requires scope and decision gates to be green unless `--override-gates` is explicit.
 
 ### `pr-lane`
 
-Prepares a PR body and `gh pr create` command. It does not run GitHub operations unless `--execute` is present. Execution requires final validation, review gates, and a prepared git lane unless `--override-gates` is explicit.
+Prepares a PR body and command. With `--execute`, it looks up the branch’s open PR, creates it when absent, reuses it when present, or runs `gh pr ready` for a verified draft. Draft submission requires scope/decision gates and a git lane; readiness additionally requires final technical verification. It never merges.
 
 When `--execute` is used, the runner checks local lane artifact overwrite safety before calling `gh`, so a remote PR is not created and then followed by a local overwrite failure.
 
@@ -432,7 +432,7 @@ Prints manifest state, missing phases, live validation issues, worker profile co
 - If `br` materialization fails partway through, keep markdown artifacts as source of truth and inspect the manifest before retrying.
 - If final validation reports missing worker reports, ingest reports with `worker-report` or redispatch unfinished work.
 - If `review` exits non-zero with no commands, rerun it with real verification commands or use `--allow-empty` only for a non-merge-ready scaffold.
-- If review commands fail or semantic review is not approved, do not proceed to git push.
+- If technical checks fail, keep the PR draft and fix the same branch. Before an authorized merge, require current CI and automatic Codex review evidence.
 - If Agent Mail reports `usable=true` but `ready=false`, it can coordinate live work but must not be treated as the durable archive.
 
 ## Verification
