@@ -1395,6 +1395,54 @@ def shared_materialization_issues(
     ]
 
 
+def committed_validation_issues(
+    project: Path, paths: RunnerPaths, manifest: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Scope, decisions and worker evidence must exist in the submitted commit."""
+    issues: list[dict[str, Any]] = []
+    keys = {"intake", "context", "spec", "task_beads", "worker_briefs",
+            "worker_profiles", "worker_reports", "worker_dispatch",
+            "worker_dispatch_report", "decision_requests", "decisions", "implementation_goal"}
+    committed = git(["show", f"HEAD:{rel(paths.manifest, project)}"], project)
+    try:
+        original = json.loads(committed.stdout) if committed.returncode == 0 else None
+    except json.JSONDecodeError:
+        original = None
+    def inputs(value: dict[str, Any]) -> dict[str, Any]:
+        return {"feature": value.get("feature"), "br_beads": value.get("br_beads"),
+                "artifacts": {key: ref for key, ref in value.get("artifacts", {}).items() if key in keys}}
+    if original is None or inputs(original) != inputs(manifest):
+        add_issue(issues, "error", "uncommitted-validation-manifest", "manifest",
+                  "Commit the current scope, decision and worker-evidence references before CI.")
+    refs: set[str] = set()
+    def collect(value: Any) -> None:
+        if isinstance(value, str):
+            refs.add(value)
+        elif isinstance(value, dict):
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+    for key, value in manifest.get("artifacts", {}).items():
+        if key in keys:
+            collect(value)
+    for ref in sorted(refs):
+        path = project / ref
+        try:
+            path.resolve().relative_to(project)
+        except ValueError:
+            add_issue(issues, "error", "external-validation-artifact", ref,
+                      "Validation artifacts must belong to the submitted repository.")
+            continue
+        committed_file = git(["show", f"HEAD:{ref}"], project)
+        if (committed_file.returncode != 0 or not path.is_file()
+                or path.read_text(encoding="utf-8") != committed_file.stdout):
+            add_issue(issues, "error", "uncommitted-validation-artifact", ref,
+                      "Commit this exact validation input and obtain CI for the updated commit.")
+    return issues
+
+
 def _validate_dispatch_cli_specific(
     project: Path, paths: RunnerPaths, manifest: dict[str, Any], stage: str
 ) -> list[dict[str, Any]]:
@@ -1414,6 +1462,7 @@ def _validate_dispatch_cli_specific(
             add_issue(issues, "warning", "important-decision-open", decision_ref, "Important decision request is still open.")
 
     if stage == "final":
+        issues.extend(committed_validation_issues(project, paths, manifest))
         review = review_evidence_summary(project, manifest)
         if review["missing"]:
             add_issue(issues, "error", "missing-review-evidence", "manifest", f"Review evidence is missing: {review['missing']}")
@@ -2690,8 +2739,17 @@ def command_review(args: argparse.Namespace) -> int:
         except (OSError, ValueError, KeyError) as error:
             raise SystemExit(str(error)) from None
         receipt = ci_receipt_dir(project, run_id) / "evidence.json"
+        annotations = {"findings": args.finding, "test_gaps": args.test_gap,
+                       "architecture_notes": args.architecture_note,
+                       "prompt_eval_notes": args.prompt_eval_note}
         if not args.dry_run:
-            save_json(receipt, {"github_actions": ci})
+            save_json(receipt, {"github_actions": ci, "annotations": annotations})
+            lines = [f"# CI evidence: {run_id}", "", f"CI: {ci['url']}",
+                     f"Commit: `{ci['head_sha']}`", "", "Semantic review: automatic Codex GitHub review"]
+            for label, items in annotations.items():
+                lines.extend(["", f"## {label.replace('_', ' ').title()}", ""])
+                lines.extend(f"- {item}" for item in items)
+            write_text(receipt.parent / "review.md", "\n".join(lines) + "\n", force=True)
         print_json({"run_id": run_id, "github_actions": ci, "receipt": str(receipt),
                     "semantic_review": "external-codex-github"})
         return 0

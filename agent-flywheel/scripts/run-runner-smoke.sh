@@ -395,7 +395,7 @@ mkdir -p "$PUBLISH/.github"
 cat > "$PUBLISH/.github/ci-contract.json" <<'JSON_CONTRACT'
 {"workflow":".github/workflows/ci.yml","name":"CI","required_jobs":["apple","flywheel (3.12)","flywheel (3.13)"]}
 JSON_CONTRACT
-git -C "$PUBLISH" add .github/ci-contract.json
+git -C "$PUBLISH" add .github/ci-contract.json docs
 git -C "$PUBLISH" -c user.name="Runner Smoke" -c user.email="runner-smoke@example.invalid" commit -m "Define CI contract" >/dev/null
 export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
 export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
@@ -412,7 +412,18 @@ expect_failure "incomplete CI job set is rejected" env FAKE_GH_JOBS='[{"name":"a
 expect_failure "sequenced run pauses after preparing draft" "$RUNNER" run --project "$PUBLISH" --run-id publish --phase git-lane --phase pr-lane --phase review --force
 BEFORE_CI_STATUS="$(git -C "$PUBLISH" status --porcelain)"
 env FAKE_GH_REPO=another-owner/renamed-project "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
-"$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force >/dev/null
+"$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --finding "Captured finding" --test-gap "Captured gap" --architecture-note "Captured architecture" --prompt-eval-note "Captured eval" --force >/dev/null
+python3 - "$PUBLISH/.git/codex-ci-receipts/publish/evidence.json" <<'PY_ANNOTATIONS'
+import json, sys
+annotations = json.load(open(sys.argv[1]))['annotations']
+assert annotations == {'findings':['Captured finding'], 'test_gaps':['Captured gap'],
+                       'architecture_notes':['Captured architecture'], 'prompt_eval_notes':['Captured eval']}
+PY_ANNOTATIONS
+REPORT="$PUBLISH/docs/worker-reports/publish/publish-second-task.md"
+cp "$REPORT" "$TMPROOT/committed-report.md"
+printf '\nUncommitted post-CI worker evidence.\n' >> "$REPORT"
+expect_failure "post-CI uncommitted worker evidence is rejected" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
+cp "$TMPROOT/committed-report.md" "$REPORT"
 expect_failure "captured CI is rechecked before readiness" env FAKE_GH_CONCLUSION=failure "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final >/dev/null
 expect_failure "different remote PR head blocks readiness" env FAKE_GH_REMOTE_SHA=newer "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
