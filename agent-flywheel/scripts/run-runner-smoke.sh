@@ -375,6 +375,7 @@ cat >"$TMPROOT/fake-bin/gh" <<'GH'
 #!/bin/sh
 case "$*" in
   *"repo view"*) echo "${FAKE_GH_REPO:-EbrahimAbdelwahed/flashapp}" ;;
+  *"contents/.github/ci-contract.json"*) test -n "$FAKE_GH_BASE_CONTRACT" || exit 1; echo "$FAKE_GH_BASE_CONTRACT" ;;
   *"api repos/"*) echo '{"id":1,"path":".github/workflows/ci.yml"}' ;;
   *"run view"*)
     echo "{\"headSha\":\"$FAKE_GH_SHA\",\"workflowName\":\"CI\",\"workflowDatabaseId\":1,\"event\":\"pull_request\",\"status\":\"completed\",\"conclusion\":\"$FAKE_GH_CONCLUSION\",\"url\":\"https://github.com/example/example/actions/runs/1\",\"jobs\":$FAKE_GH_JOBS}" ;;
@@ -397,6 +398,7 @@ cat > "$PUBLISH/.github/ci-contract.json" <<'JSON_CONTRACT'
 JSON_CONTRACT
 git -C "$PUBLISH" add .github/ci-contract.json docs
 git -C "$PUBLISH" -c user.name="Runner Smoke" -c user.email="runner-smoke@example.invalid" commit -m "Define CI contract" >/dev/null
+export FAKE_GH_BASE_CONTRACT="$(base64 < "$PUBLISH/.github/ci-contract.json" | tr -d '\n')"
 export FAKE_GH_STATE="$TMPROOT/fake-gh-state"
 export FAKE_GH_SHA="$(git -C "$PUBLISH" rev-parse HEAD)"
 export FAKE_GH_CONCLUSION=success
@@ -406,6 +408,7 @@ PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id p
 expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
 expect_failure "local commands are unsupported" "$RUNNER" review --project "$PUBLISH" --run-id publish --command "true"
 expect_failure "local command success cannot replace CI" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
+expect_failure "unapproved default-branch CI contract is rejected" env FAKE_GH_BASE_CONTRACT= "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "older CI commit is rejected" env FAKE_GH_SHA=older "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "failed CI is rejected" env FAKE_GH_CONCLUSION=failure "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "incomplete CI job set is rejected" env FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"}]' "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force

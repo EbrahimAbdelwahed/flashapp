@@ -1065,7 +1065,14 @@ def github_actions_evidence(project: Path, run_id: str) -> dict[str, Any]:
     if configured.returncode != 0:
         raise ValueError("Commit .github/ci-contract.json with the required CI workflow and jobs")
     contract = json.loads(configured.stdout)
-    names = contract.get("required_jobs")
+    trusted = command(["gh", "api", f"repos/{repo}/contents/.github/ci-contract.json",
+                       "--jq", ".content"], cwd=project)
+    if trusted.returncode != 0:
+        raise ValueError("Approve the initial CI contract on the GitHub default branch before runner readiness")
+    approved = json.loads(base64.b64decode(trusted.stdout).decode("utf-8"))
+    if contract != approved:
+        raise ValueError("The submitted CI contract differs from the approved default-branch contract")
+    names = approved.get("required_jobs")
     workflow_path = contract.get("workflow", "")
     workflow_name = contract.get("name")
     if (not isinstance(names, list) or not names
