@@ -2986,6 +2986,8 @@ def command_status(args: argparse.Namespace) -> int:
     decisions = decision_summary(project, manifest)
     validation_issues = validate_run(project, paths, manifest, stage="final")
     review = review_evidence_summary(project, manifest)
+    if not any(issue["severity"] == "error" for issue in validation_issues) and "validation" in missing:
+        missing.remove("validation")
     if review["ok"] and "review" in missing:
         missing.remove("review")
     worker_reports = worker_report_summary(project, manifest)
