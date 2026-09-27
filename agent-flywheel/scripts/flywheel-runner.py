@@ -119,7 +119,7 @@ RUNNER_COMMANDS: dict[str, dict[str, Any]] = {
         "output": "json",
     },
     "review": {
-        "summary": "Prepare a review report and optionally capture verification command results.",
+        "summary": "Capture verified GitHub Actions CI or prepare an empty report.",
         "side_effects": ["local_write", "executes_user_commands_optional"],
         "supports_dry_run": True,
         "output": "json",
@@ -287,24 +287,6 @@ def command(args: list[str], cwd: Path | None = None, check: bool = False) -> su
             + f"\nexit={completed.returncode}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
         )
     return completed
-
-
-def shell_command(command_text: str, cwd: Path) -> dict[str, Any]:
-    completed = subprocess.run(
-        command_text,
-        cwd=str(cwd),
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
-    return {
-        "command": command_text,
-        "exit_code": completed.returncode,
-        "stdout": completed.stdout[-COMMAND_OUTPUT_LIMIT:],
-        "stderr": completed.stderr[-COMMAND_OUTPUT_LIMIT:],
-    }
 
 
 def ensure_project_dirs(paths: RunnerPaths) -> None:
@@ -1918,6 +1900,10 @@ def command_pr_lane(args: argparse.Namespace) -> int:
     review_ref = manifest.get("artifacts", {}).get("review", "not generated")
     verification_note = "CI evidence not yet captured. Keep this PR draft."
     if external:
+        issues = validate_run(project, paths, manifest, stage="final")
+        errors = sum(item["severity"] == "error" for item in issues)
+        warnings = sum(item["severity"] == "warning" for item in issues)
+        validation_ref = f"Current final validation: {errors} errors, {warnings} warnings"
         evidence = review_evidence_summary(project, manifest)
         if evidence["github_actions"]:
             ci = evidence["github_actions"]
@@ -2162,8 +2148,6 @@ def command_run(args: argparse.Namespace) -> int:
                 argv.append("--force")
         elif phase == "review":
             argv = ["review", "--project", str(project), "--run-id", str(run_id)]
-            for review_command in args.command:
-                argv.extend(["--command", review_command])
             if args.force:
                 argv.append("--force")
         elif phase == "optimize":
@@ -2697,15 +2681,13 @@ def command_review(args: argparse.Namespace) -> int:
             ci = github_actions_evidence(project, args.github_actions_run)
         except (OSError, ValueError, KeyError) as error:
             raise SystemExit(str(error)) from None
-        if args.command:
-            raise SystemExit("Capture CI separately from local commands")
         receipt = ci_receipt_dir(project, run_id) / "evidence.json"
         if not args.dry_run:
             save_json(receipt, {"github_actions": ci})
         print_json({"run_id": run_id, "github_actions": ci, "receipt": str(receipt),
                     "semantic_review": "external-codex-github"})
         return 0
-    results = [shell_command(item, project) for item in args.command]
+    results: list[dict[str, Any]] = []
     result_json_path = paths.run_dir / "review-command-results.json"
     has_commands = bool(results) or ci is not None
     failed = [item for item in results if item["exit_code"] != 0]
@@ -3216,11 +3198,10 @@ def build_parser() -> argparse.ArgumentParser:
     add_common_write(worker_report)
     worker_report.set_defaults(func=command_worker_report)
 
-    review = sub.add_parser("review", help="Prepare a review report and optionally capture verification commands.")
+    review = sub.add_parser("review", help="Capture GitHub Actions CI or prepare an empty report.")
     add_project(review)
     add_run(review)
     review.add_argument("--github-actions-run", help="Capture and validate the complete CI run for this repository and exact HEAD commit.")
-    review.add_argument("--command", action="append", default=[], help="Verification command to run from the target project.")
     review.add_argument("--allow-empty", action="store_true", help="Allow a scaffold-only review report. This is not merge-ready.")
     review.add_argument("--semantic-verdict", choices=["pending"], default="pending", help="Compatibility flag; semantic review is external on GitHub, never a local verdict.")
     review.add_argument("--finding", action="append", default=[], help="Semantic review finding. Repeatable.")
@@ -3270,7 +3251,6 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--create-br-beads", action="store_true")
     run.add_argument("--ready-only", action="store_true", help="Force ready-only dispatch during the run. Runs with linked br beads use ready-only automatically.")
     run.add_argument("--phase", action="append", help="Phase to run, repeated in order. Defaults to the full lane.")
-    run.add_argument("--command", action="append", default=[], help="Review command to execute during review phase.")
     run.add_argument("--skip-validate", action="store_true")
     add_common_write(run)
     run.set_defaults(func=command_run)

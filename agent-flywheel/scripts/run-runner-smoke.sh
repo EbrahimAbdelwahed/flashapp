@@ -169,8 +169,11 @@ expect_failure "open blocking decision blocks dispatch" "$RUNNER" dispatch --pro
 log "PASS: resolved decision unblocks dispatch validation"
 
 expect_failure "review without commands is not merge-ready" "$RUNNER" review --project "$READYONLY" --run-id readyonly
-"$RUNNER" review --project "$READYONLY" --run-id readyonly --command "test -f docs/flywheel-runs/readyonly/manifest.json" --force >/dev/null
-log "PASS: review requires command evidence"
+expect_failure "local verification commands are unsupported" "$RUNNER" review --project "$READYONLY" --run-id readyonly --command "touch $TMPROOT/forbidden-local-command" --force
+test ! -e "$TMPROOT/forbidden-local-command"
+expect_failure "run cannot forward local verification" "$RUNNER" run --project "$READYONLY" --run-id readyonly --phase review --command "touch $TMPROOT/forbidden-local-command"
+test ! -e "$TMPROOT/forbidden-local-command"
+log "PASS: verification requires GitHub Actions evidence"
 
 expect_failure "ready-only dispatch skips tasks without br ids" "$RUNNER" dispatch --project "$READYONLY" --run-id readyonly --ready-only
 
@@ -395,7 +398,7 @@ export FAKE_GH_JOBS='[{"name":"apple","conclusion":"success"},{"name":"flywheel 
 export PATH="$TMPROOT/fake-bin:$PATH"
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --draft --execute >/dev/null
 expect_failure "ready PR still requires technical verification" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force
-"$RUNNER" review --project "$PUBLISH" --run-id publish --command "true" >/dev/null
+expect_failure "local commands are unsupported" "$RUNNER" review --project "$PUBLISH" --run-id publish --command "true"
 expect_failure "local command success cannot replace CI" "$RUNNER" validate --project "$PUBLISH" --run-id publish --stage final
 expect_failure "older CI commit is rejected" env FAKE_GH_SHA=older "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
 expect_failure "failed CI is rejected" env FAKE_GH_CONCLUSION=failure "$RUNNER" review --project "$PUBLISH" --run-id publish --github-actions-run 1 --force
@@ -408,7 +411,7 @@ expect_failure "different remote PR head blocks readiness" env FAKE_GH_REMOTE_SH
 PATH="$TMPROOT/fake-bin:$PATH" "$RUNNER" pr-lane --project "$PUBLISH" --run-id publish --execute --force >/dev/null
 test "$(cat "$FAKE_GH_STATE")" = ready
 test "$(git -C "$PUBLISH" status --porcelain)" = "$BEFORE_CI_STATUS"
-rg 'Captured technical verification passed' "$PUBLISH/docs/reviews/publish.md" >/dev/null
+rg 'Current final validation: 0 errors' "$PUBLISH/.git/codex-ci-receipts/publish/pr-body.md" >/dev/null
 log "PASS: existing verified draft becomes ready without a second PR"
 expect_failure "local semantic approval is unsupported" "$RUNNER" review \
   --project "$PUBLISH" --run-id publish --semantic-verdict approved --force

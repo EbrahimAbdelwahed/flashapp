@@ -216,16 +216,6 @@ study-agent-devkit/scripts/flywheel-runner.py worker-report \
   --verification "pnpm -w typecheck: passed"
 ```
 
-After publishing a draft so GitHub Actions can run, capture technical verification:
-
-```bash
-study-agent-devkit/scripts/flywheel-runner.py review \
-  --project study-agent-platform \
-  --run-id latest \
-  --github-actions-run 123456789 \
-  --finding "Technical verification captured; semantic review is automatic on GitHub."
-```
-
 Prepare the git lane:
 
 ```bash
@@ -272,6 +262,26 @@ study-agent-devkit/scripts/flywheel-runner.py pr-lane \
   --draft \
   --execute
 ```
+
+After publishing a draft so GitHub Actions can run, capture technical verification:
+
+```bash
+study-agent-devkit/scripts/flywheel-runner.py review \
+  --project study-agent-platform \
+  --run-id latest \
+  --github-actions-run 123456789 \
+  --finding "Technical verification captured; semantic review is automatic on GitHub."
+```
+
+Validate the exact submitted commit and prepare the ready transition after CI:
+
+```bash
+study-agent-devkit/scripts/flywheel-runner.py validate \
+  --project study-agent-platform --run-id latest --stage final
+study-agent-devkit/scripts/flywheel-runner.py pr-lane \
+  --project study-agent-platform --run-id latest --execute
+```
+
 
 ## Phase Semantics
 
@@ -394,9 +404,9 @@ Use this after reading each worker's final response. Publication gates require o
 
 ### `review`
 
-Creates `docs/reviews/<run-id>.md` and captures verification command outputs in `review-command-results.json`.
+Captures verified GitHub Actions CI outside the versioned tree. Without a CI run, it can prepare an explicitly empty report.
 
-This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. The canonical workflow ID, event and prescribed job set are checked. CI receipts, final validation and readiness lane reports live under the Git common directory (`codex-ci-receipts/`), outside versioned source; commit planning and implementation artifacts before publishing the draft. Final validation and PR readiness recheck the live run; arbitrary local commands and older green commits cannot satisfy those gates. A report without commands exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
+This command captures technical verification, not semantic approval. Use `--github-actions-run <id>` to ingest the complete `CI` workflow from this repository for exact `HEAD`. The canonical workflow ID, event and prescribed job set are checked. CI receipts, final validation and readiness lane reports live under the Git common directory (`codex-ci-receipts/`), outside versioned source; commit planning and implementation artifacts before publishing the draft. Final validation and PR readiness recheck the live run; Local verification command execution is unsupported; older green commits cannot satisfy those gates. A report without a CI run exits non-zero unless `--allow-empty` is explicitly passed; an empty scaffold cannot satisfy final technical gates. Semantic review comes only from automatic Codex GitHub review. Run prescribed tests in GitHub Actions and capture their evidence rather than rerunning them locally.
 
 ### `optimize`
 
@@ -429,7 +439,7 @@ Prints manifest state, missing phases, live validation issues, worker profile co
 - If a task has broad or unclear file scope, refine the bead before launching a worker.
 - If `br` materialization fails partway through, keep markdown artifacts as source of truth and inspect the manifest before retrying.
 - If final validation reports missing worker reports, ingest reports with `worker-report` or redispatch unfinished work.
-- If `review` exits non-zero with no commands, rerun it with real verification commands or use `--allow-empty` only for a non-merge-ready scaffold.
+- If `review` exits non-zero without a CI run, publish the draft and capture its passing `--github-actions-run`, or use `--allow-empty` only for a non-merge-ready scaffold.
 - If technical checks fail, keep the PR draft and fix the same branch. Before an authorized merge, require current CI and automatic Codex review evidence.
 - If Agent Mail reports `usable=true` but `ready=false`, it can coordinate live work but must not be treated as the durable archive.
 
